@@ -3,7 +3,7 @@ local sv
 local scl=socket.bind("*",1337)
 local logfile=io.open("log.txt","a")
 local function log(txt)
-	txt="["..(socket.gettime()-1394214999).."]"..txt
+	txt="["..(math.floor(socket.gettime()-1394214999)).."] "..txt
 	logfile:write(txt.."\n")
 	print(txt)
 end
