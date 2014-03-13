@@ -19,7 +19,10 @@ local function send(txt)
 	sv:send(txt.."\n")
 end
 local function respond(user,txt)
-	send("PRIVMSG "..(user.chan=="^v" and user.nick or user.chan).." :"..txt)
+	send((user.chan=="^v" and "NOTICE " or "PRIVMSG ")..(user.chan=="^v" and user.nick or user.chan).." :"..txt)
+end
+local function antiping(name)
+	return name:sub(1,-2).."."..name:sub(-1,-1)
 end
 dofile("hook.lua")
 
@@ -34,24 +37,71 @@ hook.new("msg",function(user,chan,txt)
 end)
 
 hook.new("raw",function(txt)
-	txt:gsub("^PING (.+)",function(txt)
-		send("PONG "..txt)
-	end)
 	txt:gsub("^:^v MODE ^v :%+i",function()
 		send("JOIN #oc")
 		send("JOIN #pixel")
 	end)
 	txt:gsub("^:([^!]+)!([^@]+)@(%S+) PRIVMSG (%S+) :(.+)",function(nick,real,host,chan,txt)
 		local ctcp=txt:match("^\1(.-)\1?$")
-		local user={chan=chan,nick=nick,real=real,host=host}
+		local user={txt=txt,chan=chan,nick=nick,real=real,host=host}
 		if ctcp and chan=="^v" then
 			hook.queue("ctcp",user,chan,ctcp)
 		else
-			hook.queue("msg",user,chan,txt)
+			if ctcp and ctcp:sub(1,7)=="ACTION " then
+				hook.queue("msg",user,chan,txt:sub(8,-2),true)
+			else
+				hook.queue("msg",user,chan,txt)
+			end
 		end
 	end)
 end)
 
+local perms={}
+hook.new("raw",function(txt)
+	txt:gsub("^:%S+ 354 ^v (%S+) (%S+) (%S+)",function(host,nick,account)
+		print(host..","..nick..","..account)
+		perms[nick]={
+			host=host,
+		}
+		if account~="0" then
+			perms[nick].account=account
+		end
+	end)
+	txt:gsub("^:([^%s!]+)![^%s@]+@(%S+) JOIN #oc",function(nick,host)
+		perms[nick]={
+			host=host,
+		}
+		send("WHOIS "..nick)
+	end)
+	txt:gsub("^:%S+ 330 ^v (%S+) (%S+)",function(nick,account)
+		local p=perms[nick]
+		if p and account~="0" then
+			p.account=account
+		end
+	end)
+	txt:gsub("^:([^%s!]+)![^%s@]+@%S+ PART #oc :.*",function(nick)
+		perms[nick]=nil
+	end)
+	txt:gsub("^:([^%s!]+)![^%s@]+@%S+ NICK :(.+)",function(nick,tonick)
+		if perms[nick] then
+			perms[tonick]=perms[nick]
+			perms[nick]=nil
+		end
+	end)
+	txt:gsub("^:([^%s!]+)![^%s@]+@(%S+) QUIT :.*",function(nick)
+		perms[nick]=nil
+	end)
+end)
+
+hook.new("command_account",function(user,chan,txt)
+	respond(user,user.nick..", "..((perms[txt] or {}).account or "none"))
+end)
+
+hook.new({"command_source","command_sauce"},function(user,chan,txt)
+	respond(user,user.nick..", https://github.com/P-T-/-v4/")
+end)
+
+dofile("help.lua")
 do
 	local wikinames={
 		["api-colors"]={"color","colors","color api","colors api"},
@@ -62,7 +112,7 @@ do
 		["api-internet"]={"internet api"},
 		["api-http"]={"http","http api"},
 		["api-keyboard"]={"keyboard","keys","keyboard api","keys api"},
-		["api-robot"]={"robot api","robots api"},
+		["api-robot"]={"robot","robots","robot api","robots api","turtle","turtle api"},
 		["api-shell"]={"shell api","shell"},
 		["api-sides"]={"sides","sides api"},
 		["api-term"]={"term","term api"},
@@ -94,6 +144,18 @@ do
 		["tutorial-harddrives"]={"tutorial2","tutorial hdd","tutorial hdds","tutorial filesystem","tutorial fs"},
 		["tutorial-writingcode"]={"tutorial3","tutorial code","tutorial coding"},
 		["tutorials"]={"tutorials","help","tutorial"},
+		[":http://www.lua.org/manual/5.2/manual.html#6.8"]={"io","io api"},
+		[":http://www.lua.org/manual/5.2/manual.html#6.7"]={"bit32","bit32 api","bit","bit api"},
+		[":http://www.lua.org/manual/5.2/manual.html#6.6"]={"math","math api"},
+		[":http://www.lua.org/manual/5.2/manual.html#6.5"]={"table","table api","tables","tables api"},
+		[":http://www.lua.org/manual/5.2/manual.html#6.4"]={"string","string api","strings","strings api"},
+		[":http://www.lua.org/manual/5.2/manual.html#6.2"]={"coroutine","coroutine api","coroutines","coroutine api"},
+		[":http://en.wikipedia.org/wiki/Sod's_law"]={"joshtheender","ender","josh"},
+		[":http://en.wikipedia.org/wiki/Ping_of_death"]={"ping","pong","^v","pixeltoast"},
+		[":http://en.wikipedia.org/wiki/Hydrofluoric_acid"]={"bizzycola","cola","bizzy"},
+		[":http://en.wikipedia.org/wiki/OS_X"]={"asie","asiekierka","kierka"},
+		[":http://en.wikipedia.org/wiki/Stoner_(drug_user)"]={"kenny"},
+		[":http://en.wikipedia.org/wiki/Methylcyclopentadienyl_Manganese_Tricarbonyl"]={"vexatos"},
 	}
 	do
 		local o={}
@@ -108,12 +170,8 @@ do
 	for k,v in pairs(wikinames) do
 		twikinames[v]=true
 	end
-	hook.new({"command_wiki","command_w"},function(user,chan,txt)
+	hook.new({"command_wiki","command_w","command_help","command_h"},function(user,chan,txt)
 		txt=txt:lower()
-		if txt=="ping" or txt=="pong" or txt=="^v" then
-			respond(user,user.nick..", http://en.wikipedia.org/wiki/Mental_retardation")
-			return
-		end
 		local out="Not found."
 		local b="https://github.com/MightyPirates/OpenComputers/wiki/"
 		if txt=="" then
@@ -123,7 +181,14 @@ do
 		if twikinames[txt] then
 			out=b..txt
 		elseif wikinames[txt] then
-			out=b..wikinames[txt]
+			local t=wikinames[txt]
+			if t:sub(1,1)==":" then
+				out=t:sub(2)
+			else
+				out=b..t
+			end
+		elseif help[txt] then
+			out=help[txt]
 		end
 		respond(user,user.nick..", "..out)
 	end)
@@ -157,18 +222,78 @@ hook.new("command_commits",function(user,chan,txt)
 	respond(user,out)
 end)
 
-dofile("help.lua")
-hook.new({"command_help","command_h"},function(user,chan,txt)
-	txt=txt:lower():gsub("%s","")
-	if txt=="" then
-		respond(user,user.nick..", Usage: .help command Example: .help term.write")
-		return
+hook.new({"command_random"},function(user,chan,fname)
+	local t={}
+	local n=0
+	local file=io.open("log.txt","r")
+	local line=file:read("*l")
+	local txt,name
+	while line do
+		txt,name=line:match("^%[%d+%] (<(%S-)> .*)")
+		if not txt then
+			txt,name=line:match("^%[%d+%] (%(%S-) .*)")
+		end
+		if txt and (name==fname or fname=="") then
+			n=n+1
+			t[n]=txt
+		end
+		line=file:read("*l")
 	end
-	if help[txt] then
-		respond(user,user.nick..", "..help[txt])
+	file:close()
+	if n==0 then
+		respond(user,user.nick..", Not found")
 	else
-		respond(user,user.nick..", Function not found.")
+		respond(user,user.nick..", "..t[math.random(1,n)])
 	end
+end)
+
+hook.new({"command_stats","command_messages"},function(user,chan,txt)
+	local o={}
+	local file=io.open("log.txt","r")
+	local line=file:read("*l")
+	local t=0
+	local alias={}
+	while line do
+		local fnick,tonick=line:match("^%[%d+%] (%S+) is now known as (%S+)")
+		if fnick then
+			if alias[fnick] then
+				alias[fnick][tonick]=true
+			elseif alias[tonick] then
+				alias[tonick][fnick]=true
+			else
+				alias[fnick]={[tonick]=true}
+			end
+		end
+		local usr=line:match("^%[%d+%] <(%S-)> .*") or line:match("^%[%d+%] (%S+) .*")
+		if usr then
+			t=t+1
+			o[usr]=(o[usr] or 0)+1
+		end
+		line=file:read("*l")
+	end
+	file:close()
+	local c=0
+	for k,v in pairs(alias) do
+		o[k]=o[k] or 0
+		for n,l in pairs(v) do
+			o[k]=o[k]+(o[n] or 0)
+			o[n]=nil
+		end
+	end
+	for k,v in tpairs(o) do
+		c=c+1
+		o[k]=nil
+		o[c]={k,v}
+	end
+	table.sort(o,function(a,b) return a[2]>b[2] end)
+	local out=user.nick..", Total messages: "..t
+	for l1=1,10 do
+		if not o[l1] then
+			break
+		end
+		out=out..", "..o[l1][1].." "..(math.ceil((o[l1][2]/t)*1000)/10).."%"
+	end
+	respond(user,out)
 end)
 
 local function shorturl(url)
@@ -195,7 +320,11 @@ local function shorturl(url)
 	return out
 end
 
-hook.new({"command_jenkins","command_build","command_beta"},function(user,chan,txt)
+hook.new({"command_s","command_short","command shorturl"},function(user,chan,txt)
+	respond(user,user.nick..", "..shorturl(txt))
+end)
+
+hook.new({"command_j","command_jenkins","command_build","command_beta"},function(user,chan,txt)
 	local dat,err=http.request("http://ci.cil.li/job/OpenComputers/")
 	if not dat then
 		if err then
@@ -219,6 +348,7 @@ hook.new({"command_jenkins","command_build","command_beta"},function(user,chan,t
 	end
 end)
 
+send("WHO #oc %hna")
 sv:settimeout(0)
 while true do
 	local s,e=sv:receive()

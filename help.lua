@@ -132,7 +132,17 @@ help={"component.doc(address:string, method:string):string Returns the documenta
 "unicode.upper(value: string):string UTF-8 aware version of string.upper.",
 }
 local o={}
+local alias={
+	["filesystem"]="fs",
+	["robot"]="turtle",
+}
 for k,v in pairs(help) do
-	o[v:match("^[^%(]+")]=v
+	local func=v:match("^[^%(]+"):lower()
+	o[func]=v
+	for n,l in pairs(alias) do
+		if func:match("^"..n.."%.") then
+			o[func:gsub(n,l)]=v
+		end
+	end
 end
 help=o

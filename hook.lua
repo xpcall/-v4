@@ -1,4 +1,6 @@
-hook={}
+hook={
+	interval=1
+}
 local hooks={}
 function hook.queue(name,...)
 	if type(name)~="table" then

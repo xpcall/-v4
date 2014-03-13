@@ -5,6 +5,7 @@ local logfile=io.open("log.txt","a")
 local function log(txt)
 	txt="["..(math.floor(socket.gettime()-1394214999)).."] "..txt
 	logfile:write(txt.."\n")
+	logfile:flush()
 	print(txt)
 end
 local function connect()
@@ -48,7 +49,7 @@ while true do
 	if s then
 		local nick,txt=s:match("^:([^!]+)![^@]+@%S+ PRIVMSG #oc :(.*)$")
 		if nick then
-			local action=txt:match("^\1ACTION (.+)\1?$")
+			local action=txt:match("^\1ACTION (.-)\1?$")
 			if action then
 				log("* "..nick.." "..action)
 			else
@@ -73,6 +74,11 @@ while true do
 		end
 		print(">"..s)
 		cl:send(s.."\n")
+		local pong=s:match("^PING(.*)$")
+		if pong then
+			sv:send("PONG"..pong.."\n")
+			print("<PONG"..pong)
+		end
 	end
 	socket.select({sv,cl})
 end
