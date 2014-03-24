@@ -11,7 +11,9 @@ end
 local function connect()
 	sv=socket.connect("irc.esper.net",6667)
 	while not sv do
+		print("failed")
 		socket.sleep(5)
+		print("retrying")
 		sv=socket.connect("irc.esper.net",6667)
 	end
 	sv:send("NICK ^v\n")
@@ -29,11 +31,13 @@ print("got client")
 connect()
 while true do
 	if scheck(cl) then
+		print("lost client")
 		cl=scl:accept()
 		cl:settimeout(0)
 		print("got client")
 	end
 	if scheck(sv) then
+		print("lost server")
 		connect()
 	end
 	local s,e=cl:receive()
@@ -74,11 +78,11 @@ while true do
 		end
 		print(">"..s)
 		cl:send(s.."\n")
-		local pong=s:match("^PING(.*)$")
+		local pong=s:match("^PING (.+)$")
 		if pong then
-			sv:send("PONG"..pong.."\n")
-			print("<PONG"..pong)
+			sv:send("PONG "..pong.."\n")
+			print("<PONG "..pong)
 		end
 	end
-	socket.select({sv,cl})
+	socket.select({sv,cl},nil,10)
 end
