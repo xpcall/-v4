@@ -15,6 +15,22 @@ function antiping(name)
 	return n
 end
 
+hook.new({"command_derp"},function()
+	return "herp"
+end)
+hook.new({"command_herp"},function()
+	return "derp"
+end)
+
+hook.new({"command_rainbow","command_rb"},function(user,chan,txt)
+	local c=0
+	local colors={"04","07","08","03","02","12","06","04","07"}
+	return txt:gsub(".",function(t)
+		c=(c%9)+1
+		return "\3"..colors[c]..t
+	end)
+end)
+
 hook.new({"command_source","command_sauce"},function(user,chan,txt)
 	return "https://github.com/P-T-/-v4/"
 end)
@@ -84,13 +100,13 @@ hook.new({"command_logmatch"},function(user,chan,fmatch)
 	local n=0
 	local file=io.open("log.txt","r")
 	local line=file:read("*l")
-	local txt,name
+	local txt,name,rl
 	while line do
-		txt,name=line:match("^%[%d+%] (<(%S-)> .*)")
+		txt,name,rl=line:match("^%[%d+%] (<(%S-)> (.*))")
 		if not txt then
-			txt,name=line:match("^%[%d+%] (%(%S-) .*)")
+			txt,name,rl=line:match("^%[%d+%] (%(%S-) (.*))")
 		end
-		if txt and txt:match(fmatch) then
+		if txt and rl:match(fmatch) then
 			n=n+1
 			t[n]=txt
 		end
@@ -131,6 +147,7 @@ hook.new({"command_stats","command_messages"},function(user,chan,txt)
 	local file=io.open("log.txt","r")
 	local line=file:read("*l")
 	local t=0
+	local ch=0
 	local alias={}
 	while line do
 		local fnick,tonick=line:match("^%[%d+%] (%S+) is now known as (%S+)")
@@ -144,7 +161,9 @@ hook.new({"command_stats","command_messages"},function(user,chan,txt)
 			end
 		end
 		local usr=line:match("^%[%d+%] <(%S-)> .*") or line:match("^%[%d+%] (%S+) .*")
+		local rl=line:match("^%[%d+%] <%S-> (.*)") or line:match("^%[%d+%] %S+ (.*)")
 		if usr then
+			ch=ch+#rl
 			t=t+1
 			o[usr]=(o[usr] or 0)+1
 		end
@@ -171,7 +190,7 @@ hook.new({"command_stats","command_messages"},function(user,chan,txt)
 		end
 	end
 	table.sort(o,function(a,b) return a[2]>b[2] end)
-	local out="Total messages: "..t..", "..antiping("Sangar").." 9001%"
+	local out="Total messages: "..t..", chars: "..ch..", "..antiping("Sangar").." 9001%"
 	for l1=1,4 do
 		if not o[l1] then
 			break
@@ -269,15 +288,6 @@ hook.new({"command_fc","command_failcaps"},function(user,chan,txt)
 	end)
 end)
 
-hook.new("msg",function(user,chan,txt)
-	if user.account=="ping" then
-		local nm=txt:match("slaps (.+)")
-		if nm then
-			respond(user,"\1ACTION double slaps "..nm.."\1")
-		end
-	end
-end)
-
 hook.new({"command_fb","command_failblend"},function(user,chan,txt)
 	local out={}
 	for stxt in txt:gmatch("%S+") do
@@ -306,4 +316,49 @@ hook.new({"command_lc","command_flipcaps"},function(user,chan,txt)
 	return txt:gsub(".",function(n)
 		return n:lower()==n and n:upper() or n:lower()
 	end)
+end)
+
+hook.new({"command_sksboard"},function(user,chan,txt)
+	return txt:gsub(".",function(n)
+		return math.random(1,5)==1 and n:rep(2) or n
+	end)
+end)
+
+hook.new("command_2^14","command_16384",function()
+	return "http://rudradevbasak.github.io/16384_hex/"
+end)
+hook.new({"command_2^53","command_9007199254740992"},function(user,chan)
+	return "http://www.csie.ntu.edu.tw/~b01902112/9007199254740992/"
+end)
+local t2048={
+	["doge"]="http://doge2048.com/",
+	["undo"]="http://quaxio.com/2048/",
+	["winning"]="http://jennypeng.me/2048/",
+	["undo"]="http://quaxio.com/2048/",
+	["pokemon"]="http://amschrader.github.io/2048/",
+	["tetris"]="http://prat0318.github.io/2048-tetris/",
+	["multiplayer"]="http://emils.github.io/2048-multiplayer/",
+	["flappy"]="http://hczhcz.github.io/Flappy-2048/",
+	["11"]="http://t2.technion.ac.il/~s7395779/",
+	["9007199254740992"]="http://www.csie.ntu.edu.tw/~b01902112/9007199254740992/",
+	["16384"]="http://rudradevbasak.github.io/16384_hex/",
+	["beiber"]="http://gabrielecirulli.github.io/2048/",
+	["troll"]="http://la-oui.ch/troll2048/",
+	["quantum"]="http://uhyohyo.net/quantum2048/",
+	["lhc"]="http://mattleblanc.github.io/LHC/",
+	["doctor"]="http://games.usvsth3m.com/2048-doctor-who-edition/",
+}
+hook.new({"command_2^11","command_2048"},function(user,chan,txt)
+	if t2048[txt] then
+		return t2048[txt]
+	elseif txt=="random" then
+		local t={}
+		for k,v in pairs(t2048) do
+			table.insert(t,k)
+		end
+		local r=t[math.random(1,#t)]
+		return r..": "..t2048[r]
+	end
+	txt=txt:lower()
+	return "http://gabrielecirulli.github.io/2048/"
 end)

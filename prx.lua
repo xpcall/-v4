@@ -84,5 +84,5 @@ while true do
 			print("<PONG "..pong)
 		end
 	end
-	socket.select({sv,cl},nil,10)
+	socket.select({sv,cl},nil,1)
 end

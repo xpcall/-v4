@@ -4,6 +4,10 @@ local https=require("ssl.https")
 local http=require("socket.http")
 local lfs=require("lfs")
 local bit=require("bit")
+local sql=require("luasql.sqlite3")
+local bc=require("bc")
+math.randomseed(socket.gettime())
+cnick="^v"
 function tpairs(tbl)
 	local s={}
 	local c=1
@@ -17,6 +21,36 @@ function tpairs(tbl)
 		return s[c],tbl[s[c]]
 	end
 end
+file=setmetatable({},{
+	__index=function(s,n)
+		local file=io.open(n,"r")
+		return file and file:read("*a")
+	end,
+	__newindex=function(s,n,d)
+		if not d then
+			lfs.delete(n)
+		else
+			local file=io.open(n,"w")
+			file:write(d)
+			file:close()
+		end
+	end,
+})
+function math.round(num,idp)
+	local mult=10^(idp or 0)
+	return math.floor(num*mult+0.5)/mult
+end
+function table.reverse(tbl)
+    local size=#tbl
+    local o={}
+    for k,v in ipairs(tbl) do
+		o[size-k]=v
+    end
+	for k,v in pairs(o) do
+		tbl[k+1]=v
+	end
+	return tbl
+end
 function pescape(txt)
 	local o=txt:gsub("[%.%[%]%(%)%%%*%+%-%?%^%$]","%%%1"):gsub("%z","%%z")
 	return o
@@ -29,11 +63,11 @@ local function respond(user,txt)
 		txt=txt:gsub("\1","")
 	end
 	send(
-		(user.chan=="^v" and "NOTICE " or "PRIVMSG ")..
-		(user.chan=="^v" and user.nick or user.chan)..
+		(user.chan==cnick and "NOTICE " or "PRIVMSG ")..
+		(user.chan==cnick and user.nick or user.chan)..
 		" :"..txt
 		:gsub("^[\r\n]+",""):gsub("[\r\n]+$",""):gsub("[\r\n]+"," | ")
-		:gsub("[%z\2\3\4\5\6\7\8\9\10\11\12\13\14\15\16\17\18\19\20\21\22\23\24\25\26\27\28\29\30\31]","")
+		:gsub("[%z\2\4\5\6\7\8\9\10\11\12\13\14\15\16\17\18\19\20\21\22\23\24\25\26\27\28\29\30\31]","")
 		:sub(1,446)
 	)
 end
@@ -41,7 +75,7 @@ dofile("hook.lua")
 dofile("db.lua")
 
 hook.new("raw",function(txt)
-	txt:gsub("^:^v MODE ^v :%+i",function()
+	txt:gsub("^:"..cnick.." MODE "..cnick.." :%+i",function()
 		send("JOIN #oc")
 	end)
 	txt:gsub("^PING (.+)",function(pong)
@@ -58,16 +92,21 @@ local plenv=setmetatable({
 	respond=respond,
 	hook=hook,
 	bit=bit,
-},{__index=_G})
+	sql=sql,
+	bc=bc,
+},{__index=_G,__newindex=_G})
 plenv._G=plenv
 hook.new("msg",function(user,chan,txt)
 	txt=txt:gsub("%s+$","")
 	if txt:sub(1,1)=="." then
 		print(user.nick.." used "..txt)
-		local cb=function(dat)
-			if dat then
+		local cb=function(st,dat)
+			if st==true then
 				print("responding with "..tostring(dat))
-				respond(user,user.nick..", "..tostring(dat))
+				respond(user,tostring(dat))
+			elseif st then
+				print("responding with "..tostring(st))
+				respond(user,user.nick..", "..tostring(st))
 			end
 		end
 		hook.callback=cb

@@ -79,17 +79,16 @@ function hook.del(name)
 		name={name}
 	end
 	for _,nme in pairs(name) do
-		print("del "..nme)
-		if type(name)=="function" then
+		if type(nme)=="function" then
 			for k,v in pairs(hooks) do
 				for n,l in pairs(v) do
-					if l==name then
+					if l==nme then
 						hooks[k][n]=nil
 					end
 				end
 			end
 		else
-			hooks[name]=nil
+			hooks[nme]=nil
 		end
 	end
 end

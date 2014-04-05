@@ -1,3 +1,7 @@
+local _,eris=pcall(require,"eris")
+if not _ then
+	eris=nil
+end
 local sapis={
 	math=math,
 	string=string,
@@ -5,7 +9,8 @@ local sapis={
 	table=table,
 	coroutine=coroutine,
 }
-local sbox={
+local sbox
+sbox={
 	_VERSION=_VERSION,
 	assert=assert,
 	collectgarbage=collectgarbage,
@@ -13,7 +18,7 @@ local sbox={
 	getmetatable=getmetatable,
 	ipairs=ipairs,
 	load=function(ld,source,env)
-		return load(ld,source,"t",env)
+		return load(ld,source,"t",env or sbox)
 	end,
 	next=next,
 	pairs=pairs,
@@ -59,6 +64,14 @@ if not func then
 	end
 end
 local func=coroutine.create(func)
-debug.sethook(func,function() error("Time limit exeeded.",0) end,"",10000)
-local err,res=coroutine.resume(func)
-print(res)
+debug.sethook(func,function()
+	debug.sethook(func)
+	debug.sethook(func,function()
+		error("Time limit exeeded.",0)
+	end,"",1)
+	error("Time limit exeeded.",0)
+end,"",10000)
+local o={coroutine.resume(func)}
+for l1=2,#o do
+	print(tostring(o[l1]))
+end

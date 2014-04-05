@@ -1,3 +1,19 @@
+function tobits(c)
+	local o={}
+	for l1=1,7 do
+		o[8-l1]=c%2
+		c=math.floor(c/2)
+	end
+	return unpack(o)
+end
+function frombits(t)
+	local o=0
+	for l1=0,6 do
+		o=o+(((assert(t[7-l1],7-l1)>0.3) and 1 or 0)*(2^l1))
+	end
+	return o
+end
+
 db={}
 local _tob64={
 	[0]="A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z",
@@ -215,30 +231,32 @@ function db.new(name,default)
 					return rmeta[o][1]
 				end
 				local t={}
-				tmeta[o]={o,t,{table.unpack(i[3]),n}}
-				rmeta[t]=tmeta[o]
+				print("o "..serialize(i[3])..","..serialize(n))
+				if i[3][1]==nil then
+					tmeta[t]={o,t,{n}}
+				else
+					tmeta[t]={o,t,{unpack(i[3]),n}}
+				end
+				print("n "..serialize(tmeta[t][3]))
+				rmeta[o]=tmeta[t]
 				return setmetatable(t,meta)
 			end
 			return o
 		end,
 		__newindex=function(s,n,d)
-			assert(
-				mindex(
-					db,
-					assert(
-						tmeta[s]
-					)[3]
-				)
-			,serialize(db))[n]=d
+			assert(mindex(db,assert(tmeta[s])[3]))[n]=d
 			local file=io.open("db/"..name,"w")
 			file:write(serialize(db))
 			file:close()
 		end,
 		__pairs=function(s)
-			return pairs(mindex(db,tmeta[s][3]))
+			if s==db then
+				error("wtf")
+			end
+			return pairs(mindex(db,tmeta[s][3])),nil
 		end,
 		__ipairs=function(s)
-			return ipairs(mindex(db,tmeta[s][3]))
+			return ipairs(mindex(db,tmeta[s][3])),nil
 		end,
 		__tostring=function(s)
 			return tostring(mindex(db,tmeta[s][3]))
@@ -248,9 +266,10 @@ function db.new(name,default)
 		end
 	}
 	setmetatable(out,meta)
-	return out
+	return out,db
 end
 local opairs=pairs
+local iserial=false
 function pairs(tbl)
 	local m=getmetatable(tbl)
 	if m and m.__pairs then

@@ -11,12 +11,8 @@ function admin.auth(user,resp)
 	return true
 end
 
-hook.new("command_ping",function(user,chan,txt)
-	return admin.auth(user,true) and "Hello ping :D" or "You arent ping..."
-end)
-
 hook.new("raw",function(txt)
-	txt:gsub("^:%S+ 354 ^v (%S+) (%S+) (%S+)",function(host,nick,account)
+	txt:gsub("^:%S+ 354 "..cnick.." (%S+) (%S+) (%S+)",function(host,nick,account)
 		admin.perms[nick]={
 			host=host,
 		}
@@ -25,7 +21,7 @@ hook.new("raw",function(txt)
 		end
 	end)
 	txt:gsub("^:([^%s!]+)![^%s@]+@(%S+) JOIN #oc",function(nick,host)
-		if nick=="^v" then
+		if nick==cnick then
 			send("WHO #oc %hna")
 		end
 		admin.perms[nick]={
@@ -33,7 +29,7 @@ hook.new("raw",function(txt)
 		}
 		send("WHOIS "..nick)
 	end)
-	txt:gsub("^:%S+ 330 ^v (%S+) (%S+)",function(nick,account)
+	txt:gsub("^:%S+ 330 "..cnick.." (%S+) (%S+)",function(nick,account)
 		local p=admin.perms[nick]
 		if p and account~="0" then
 			p.account=account
@@ -69,7 +65,16 @@ hook.new("raw",function(txt)
 				user[k]=v
 			end
 		end
-		if ctcp and ctcp:sub(1,7)~="ACTION " and chan=="^v" then
+		hook.callback=function(st,dat)
+			if st==true then
+				print("responding with "..tostring(dat))
+				respond(user,tostring(dat))
+			elseif st then
+				print("responding with "..tostring(st))
+				respond(user,user.nick..", "..tostring(st))
+			end
+		end
+		if ctcp and ctcp:sub(1,7)~="ACTION " and chan==cnick then
 			hook.queue("ctcp",user,chan,ctcp)
 		else
 			if ctcp and ctcp:sub(1,7)=="ACTION " then

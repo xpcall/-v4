@@ -140,10 +140,17 @@ function tobase(str,nc,toc,flen)
 	end
 	return toc:sub(1,1):rep(math.max(0,flen-#o))..o
 end
-
-hook.new({"command_encodeag","command_encagony"},function(user,chan,txt)
-	return "<[.<]"..(txt.."\r\n\0"):reverse():gsub(".",function(t) return tobase(t,nil,"$}{><@~+-.,()[]*",2) end)
-end)
+do
+	local agony={
+		[0]="$","}","{",">","<","@","~","+","-",".",",","(",")","[","]","*"
+	}
+	hook.new({"command_encodeag","command_encagony"},function(user,chan,txt)
+		return "<[.<]"..(txt.."\r\n\0"):reverse():gsub(".",function(t)
+			t=t:byte() 
+			return agony[math.floor(t/16)]..agony[t%16]
+		end)
+	end)
+end
 
 hook.new({"command_ag","command_agony"},function(user,chan,txt)
 	txt=txt:gsub("[^%$}{><@~%+%-%.,%(%)%[%]%*]","")
@@ -456,3 +463,303 @@ hook.new({"command_ssbpl"},function(user,chan,txt)
 	end
 	return o
 end)
+do
+	local conv=dofile("barely_conversion.lua")
+	hook.new("command_encbarely",function(user,chan,txt)
+		local last=126
+		return txt:gsub(".",function(t)
+			t=t:byte()
+			local o=conv[last][t].."x"
+			last=t
+			return o
+		end):reverse().."~"
+	end)
+end
+hook.new("command_barely",function(user,chan,txt)
+	if txt:match("[^%]%^bfghijklmnopqstx~]") or not txt:match("~$") then
+		return "Invalid program."
+	end
+	local cell=setmetatable({},{__index=function() return 0 end})
+	local mp=0
+	local jmp=0
+	local acc=126
+	local ip=#txt
+	local o=""
+	local se
+	local ins=0
+	while ip>0 and ip<#txt+1 do
+		local ins=se or txt:sub(ip,ip)
+		se=nil
+		if ins=="]" then
+			return o
+		elseif ins=="^" then
+			if acc==0 then
+				se="b"
+			end
+		elseif ins=="b" then
+			ip=ip+jmp
+		elseif ins=="g" then
+			acc=cell[mp]
+			se="i"
+		elseif ins=="h" then
+			acc=(acc+47)%256
+			se="k"
+		elseif ins=="i" then
+			mp=mp+1
+			se="j"
+		elseif ins=="j" then
+			acc=(acc+1)%256
+			se="k"
+		elseif ins=="k" then
+			jmp=jmp-1
+		elseif ins=="m" then
+			cell[mp]=acc
+			se="o"
+		elseif ins=="n" then
+			mp=mp-1
+			se="o"
+		elseif ins=="o" then
+			acc=(acc-1)%256
+			se="p"
+		elseif ins=="p" then
+			jmp=jmp+10
+		elseif ins=="t" then
+			return "Input not supported."
+		elseif ins=="x" then
+			o=o..string.char(acc)
+		end
+		if not se then
+			ip=ip-1
+		end
+		ins=ins+1
+		if ins>9000 then
+			return "Time limit exeeded."
+		end
+	end
+	return o
+end)
+
+hook.new({"command_sstack"},function(user,chan,txt)
+	txt=txt.." "
+	local stack={}
+	local function push(val)
+		table.insert(stack,1,math.floor((type(val)=="boolean" and (val and 1 or 0) or val)%256))
+	end
+	local function pop(n)
+		local v=stack[n or 1]
+		table.remove(stack,n or 1)
+		return v or 0
+	end
+	local sb
+	local ins={
+		["(%d+)"]=function(num)
+			sb=#num
+			return "push("..num..")"
+		end,
+		["add"]=function()
+			sb=3
+			return "push(pop()+pop())"
+		end,
+		["sub"]=function()
+			sb=3
+			return "push(pop(2)-pop())"
+		end,
+		["mul"]=function()
+			sb=3
+			return "push(pop()*pop())"
+		end,
+		["div"]=function()
+			sb=3
+			return "push(pop(2)/pop())"
+		end,
+		["mod"]=function()
+			sb=3
+			return "push(pop(2)%pop())"
+		end,
+		["random"]=function()
+			sb=6
+			return "push(math.random(0,pop()-1))"
+		end,
+		["and"]=function()
+			sb=3
+			return "push(pop()~=0 and pop()~=0)"
+		end,
+		["or"]=function()
+			sb=2
+			return "push(pop()~=0 or pop()~=0)"
+		end,
+		["xor"]=function()
+			sb=3
+			return "push(pop()~=pop())"
+		end,
+		["nand"]=function()
+			sb=4
+			return "push(not (pop()~=0 and pop()~=0))"
+		end,
+		["not"]=function()
+			sb=3
+			return "push(pop()==0)"
+		end,
+		["output"]=function()
+			sb=3
+			return "o=o..pop()..\" \""
+		end,
+		["input"]=function()
+			sb=5
+			return "error(\"Input not supported.\",0)"
+		end,
+		["outputascii"]=function()
+			sb=11
+			return "o=o..string.char(pop())"
+		end,
+		["inputascii"]=function()
+			sb=10
+			return "error(\"Input not supported.\",0)"
+		end,
+		["pop"]=function()
+			sb=3
+			return "pop()"
+		end,
+		["swap"]=function()
+			sb=4
+			return "stack[1],stack[2]=stack[2],stack[1]"
+		end,
+		["cycle"]=function()
+			sb=5
+			return "table.insert(stack,pop())"
+		end,
+		["rcycle"]=function()
+			sb=6
+			return "push(table.remove(stack))"
+		end,
+		["dup"]=function()
+			sb=3
+			return "push(stack[1])"
+		end,
+		["rev"]=function()
+			sb=3
+			return "table.reverse(stack)"
+		end,
+		["if"]=function()
+			sb=2
+			return "while stack[1]>0 do"
+		end,
+		["fi"]=function()
+			sb=2
+			return "end"
+		end,
+		["quit"]=function()
+			sb=4
+			return "error(o,0)"
+		end,
+		["debug"]=function()
+			sb=5
+			return "o=o..table.concat(stack,\" | \")..\" \""
+		end,
+	}
+	local out=""
+	while #txt>0 do
+		sb=1
+		for k,v in pairs(ins) do
+			local p={txt:match("^"..k.."%s")}
+			if p[1] then
+				out=out..v(unpack(p)).." "
+			end
+		end
+		txt=txt:sub(sb+1)
+	end
+	local func,err=loadstring(out.."return o")
+	if not func then
+		return err
+	end
+	local func=coroutine.create(setfenv(func,{
+		push=push,
+		pop=pop,
+		stack=stack,
+		string=string,
+		math=math,
+		table=table,
+		o="",
+	}))
+	debug.sethook(func,function() error("Time limit exeeded.",0) end,"",100000)
+	local err,res=coroutine.resume(func)
+	return res or "nil"
+end)
+
+hook.new("command_repnotate",function(user,chan,txt)
+	local o=""
+	while #txt>0 do
+		local n=txt:match("^"..pescape(txt:sub(1,1)).."+")
+		if #n>2 then
+			o=o..txt:sub(1,1)..#n
+		else
+			o=o..n
+		end
+		txt=txt:sub(#n+1)
+	end
+	return o
+end)
+
+hook.new({"command_df","command_deadfish"},function(user,chan,txt)
+	local o=""
+	local ac=0
+	txt:gsub("(.)(%d+)",function(char,cnt)
+		return char:rep(tonumber(cnt))
+	end):gsub(".",function(ins)
+		if ins=="i" then
+			ac=ac+1
+		elseif ins=="d" then
+			ac=ac-1
+		elseif ins=="s" then
+			ac=ac^2
+		elseif ins=="o" then
+			o=o..string.char(ac)
+		end
+		ac=(ac>=256 or ac<=-1) and 0 or ac
+	end)
+	return o
+end)
+
+hook.new({"command_fishstacks"},function(user,chan,txt)
+	local o=""
+	local ac=0
+	txt:gsub("(.)(%d+)",function(char,cnt)
+		return char:rep(tonumber(cnt))
+	end):gsub(".",function(ins)
+		if ins=="i" then
+			ac=ac+1
+		elseif ins=="d" then
+			ac=ac-1
+		elseif ins=="s" then
+			ac=ac^2
+		elseif ins=="p" then
+			o=o..string.char(ac)
+			ac=0
+		end
+		ac=(ac>=256 or ac<=-1) and 0 or ac
+	end)
+	return o:sub(1,-3)
+end)
+
+do
+	local sqr={[0]={0,0},{0,0}}
+	local tsqr={
+		[0]="","is","iis","iiis","iiss","iisis","iisiis","iiisdds","iiisds",
+		"iiiss","iiisis","iiisiis","iiisiiis","iissddds","iissdds","iissds",
+	}
+	for l1=2,210 do
+		sqr[l1]={math.floor(math.sqrt(l1)+0.5),math.floor(math.sqrt(l1)+0.5)^2}
+	end
+	for l1=211,255 do
+		sqr[l1]={15,225}
+	end
+	local o={}
+	for x=0,255 do
+		local prw=sqr[x]
+		local sdt=x-prw[2]
+		o[string.char(x)]=tsqr[prw[1]]..(sdt>0 and "i" or "d"):rep(math.abs(sdt))
+	end
+	hook.new({"command_fishencode"},function(user,chan,txt)
+		return txt:gsub(".",function(t) return o[t].."p" end).."ppp"
+	end)
+end

@@ -35,7 +35,7 @@ do
 		["blocks"]={"blocks","block list","blocks list"},
 		["codeconventions"]={"conventions","code conventions"},
 		["component-commandblock"]={"command block","commandblock","command block component"},
-		["component-computer"]={"computer component","component computer"},
+		["component-computer"]={"computer","computer api","computer component","component computer"},
 		["component-crafting"]={"crafting","crafter","crafting component","crafter component","craft api","crafting api","crafter api"},
 		["component-generator"]={"generator","generator component","generator api"},
 		["component-gpu"]={"gpu","gpu api","gpu component"},
@@ -71,6 +71,8 @@ do
 		[":http://en.wikipedia.org/wiki/Stoner_(drug_user)"]={"kenny"},
 		[":http://en.wikipedia.org/wiki/Methylcyclopentadienyl_Manganese_Tricarbonyl"]={"vexatos"},
 		[":http://en.wikipedia.org/wiki/Insomnia"]={"kodos"},
+		[":http://en.wikipedia.org/wiki/Dustbin"]={"dusty","spiriteddusty","dustbin"},
+		[":http://en.wikipedia.org/wiki/Wii_U"]={"ds","ds84182"},
 		[":http://ci.cil.li/"]={"jenkins","build","builds","beta"},
 	}
 	do
