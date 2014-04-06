@@ -18,7 +18,7 @@ hook.new("msg",function(user,chan,txt,act)
 			v.fat=math.max(0,v.fat-1)
 		end
 	end
-	if act and user.account and chan=="#ocbots" then
+	if act and user.account and (chan=="#ocbots" or chan=="#ccbots") then
 		local action,usr=txt:match("^(%S+) (.-)%s*$")
 		action=string.lower(action or "")
 		local uacc=user.account

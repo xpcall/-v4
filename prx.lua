@@ -64,7 +64,7 @@ while true do
 		if nick then
 			log(nick.." ("..ident..") has joined")
 		end
-		local nick,reason=s:match("^:([^!]+)![^@]+@%S+ PART #oc :(.*)$")
+		local nick,reason=s:match("^:([^!]+)![^@]+@%S+ PART #oc ?:?(.*)$")
 		if nick then
 			log(nick.." has left ("..reason..")")
 		end

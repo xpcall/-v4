@@ -59,7 +59,7 @@ function hook.newTimer(tme)
 	return n
 end
 local lst=socket.gettime()
-hook.new("interval",function()
+hook.new("select",function()
 	local dt=socket.gettime()-lst
 	local mn
 	for num,tme in tpairs(timers) do

@@ -467,7 +467,7 @@ do
 	local conv=dofile("barely_conversion.lua")
 	hook.new("command_encbarely",function(user,chan,txt)
 		local last=126
-		return txt:gsub(".",function(t)
+		return "]"..txt:gsub(".",function(t)
 			t=t:byte()
 			local o=conv[last][t].."x"
 			last=t
@@ -477,7 +477,7 @@ do
 end
 hook.new("command_barely",function(user,chan,txt)
 	if txt:match("[^%]%^bfghijklmnopqstx~]") or not txt:match("~$") then
-		return "Invalid program."
+		return "Unexpected "..(txt:match("[^%]%^bfghijklmnopqstx~]") or "~")
 	end
 	local cell=setmetatable({},{__index=function() return 0 end})
 	local mp=0
@@ -486,7 +486,7 @@ hook.new("command_barely",function(user,chan,txt)
 	local ip=#txt
 	local o=""
 	local se
-	local ins=0
+	local insnum=0
 	while ip>0 and ip<#txt+1 do
 		local ins=se or txt:sub(ip,ip)
 		se=nil
@@ -502,7 +502,7 @@ hook.new("command_barely",function(user,chan,txt)
 			acc=cell[mp]
 			se="i"
 		elseif ins=="h" then
-			acc=(acc+47)%256
+			acc=(acc+71)%256
 			se="k"
 		elseif ins=="i" then
 			mp=mp+1
@@ -531,8 +531,8 @@ hook.new("command_barely",function(user,chan,txt)
 		if not se then
 			ip=ip-1
 		end
-		ins=ins+1
-		if ins>9000 then
+		insnum=insnum+1
+		if insnum>9000 then
 			return "Time limit exeeded."
 		end
 	end

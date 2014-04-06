@@ -39,6 +39,10 @@ hook.new("raw",function(txt)
 		hook.queue("part",nick)
 		admin.perms[nick]=nil
 	end)
+	txt:gsub("^:([^%s!]+)![^%s@]+@%S+ PART #oc$",function(nick)
+		hook.queue("part",nick)
+		admin.perms[nick]=nil
+	end)
 	txt:gsub("^:([^%s!]+)![^%s@]+@%S+ KICK #oc :(%S+)",function(fnick,nick)
 		hook.queue("kick",fnick,nick)
 		admin.perms[nick]=nil

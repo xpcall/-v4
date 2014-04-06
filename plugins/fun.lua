@@ -319,9 +319,14 @@ hook.new({"command_lc","command_flipcaps"},function(user,chan,txt)
 end)
 
 hook.new({"command_sksboard"},function(user,chan,txt)
-	return txt:gsub(".",function(n)
-		return math.random(1,5)==1 and n:rep(2) or n
-	end)
+	return txt:gsub(".",function(n) return math.random(1,5)==1 and n:rep(2) or n end)
+end)
+
+hook.new({"command_aeiou"},function(user,chan,txt)
+	local vowel={
+		a="e",e="i",i="o",o="u",u="a",A="E",E="I",I="O",O="U",U="A",
+	}
+	return txt:gsub("[aeiouAEIOU]",function(t) return vowel[t] end)
 end)
 
 hook.new("command_2^14","command_16384",function()

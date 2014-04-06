@@ -139,6 +139,8 @@ function serialize(dat,options)
 					end
 				end
 			end
+		else
+			ot="userdata"
 		end
 		if cu[2]=="key" then
 			if type(ot)=="string" then
