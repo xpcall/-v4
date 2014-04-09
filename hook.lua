@@ -19,9 +19,10 @@ function hook.queue(name,...)
 	if type(name)~="table" then
 		name={name}
 	end
+	local p={}
 	for _,nme in pairs(name) do
 		for k,v in tpairs(hooks[nme] or {}) do
-			local p={v(...)}
+			p={v(...)}
 			if callback then
 				callback(unpack(p))
 			end
@@ -30,6 +31,7 @@ function hook.queue(name,...)
 			end
 		end
 	end
+	return unpack(p)
 end
 function hook.newsocket(sk)
 	table.insert(hook.sel,sk)
@@ -68,10 +70,12 @@ hook.new("select",function()
 			hook.queue("timer_"..num)
 			timers[num]=nil
 		else
-			mn=math.min(mn or timers[num],mn)
+			mn=math.min(mn or timers[num],mn or math.huge)
 		end
 	end
-	hook.interval=mn
+	if mn and mn+1>mn then
+		hook.interval=mn
+	end
 	lst=socket.gettime()
 end)
 function hook.del(name)

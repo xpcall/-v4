@@ -260,7 +260,7 @@ hook.new({"command_ag","command_agony"},function(user,chan,txt)
 end)
 
 local enc={
-	[0]=57 ,109,60 ,46 ,84 ,86 ,97 ,99 ,96 ,117,89 ,42 ,77 ,75 ,39 ,88 ,126,120,68 ,
+	57 ,109,60 ,46 ,84 ,86 ,97 ,99 ,96 ,117,89 ,42 ,77 ,75 ,39 ,88 ,126,120,68 ,
 	108,125,82 ,69 ,111,107,78 ,58 ,35 ,63 ,71 ,34 ,105,64 ,53 ,122,93 ,38 ,103,
 	113,116,121,102,114,36 ,40 ,119,101,52 ,123,87 ,80 ,41 ,72 ,45 ,90 ,110,44 ,
 	91 ,37 ,92 ,51 ,100,76 ,43 ,81 ,59 ,62 ,85 ,33 ,112,74 ,83 ,55 ,50 ,70 ,104,
@@ -283,7 +283,10 @@ local function crz(a,b)
 	out[a..","..b]=o
 	return o
 end
-hook.new({"command_mb","command_malbolge"},function(user,chan,txt)
+hook.new({"command_mb","command_malbolge"},function(user,chan,txt,dbg)
+	if #txt<2 then
+		return "Minimum program is 2 chars."
+	end
 	local a,c,d,bse,o,ins,mem=0,0,0,3^10,"",0,{}
 	for l1=1,#txt do
 		mem[l1-1]=string.byte(txt,l1,l1)
@@ -291,15 +294,24 @@ hook.new({"command_mb","command_malbolge"},function(user,chan,txt)
 	for l1=#mem+1,bse do
 		mem[l1]=crz(mem[l1-1],mem[l1-2])
 	end
+	local dbo=""
 	while true do
 		local leip=c
 		local op=(mem[c]+c)%94
+		if dbg then
+			dbo=" | a="..a..",c="..c..",d="..d
+		end
 		if op==4 then
 			c=mem[d]
 		elseif op==5 then
-			o=o..string.char(a%256)
+			if dbg then
+				o=o..a.." "
+			else
+				o=o..string.char(a%256)
+			end
 		elseif op==23 then
-			return "Input not supported."
+			a=math.random(0,255)
+			--return "Input not supported."..dbo
 		elseif op==39 then
 			a=((mem[d]%3)*3^9)+math.floor(mem[d]/3)
 			mem[d]=a
@@ -309,16 +321,22 @@ hook.new({"command_mb","command_malbolge"},function(user,chan,txt)
 			a=crz(mem[d],a)
 			mem[d]=a
 		elseif op==81 then
-			return o
+			return o..dbo
 		end
-		mem[c]=enc[mem[c]%94] or mem[c]
+		if enc[mem[c]-33] then
+			mem[c]=enc[mem[c]-33]
+		end
+		mem[c]=enc[mem[c]] or mem[c]
 		c=(c+1)%bse
 		d=(d+1)%bse
 		ins=ins+1
 		if ins>9000 then
-			return "Time limit exeeded."
+			return "Time limit exeeded."..dbo
 		end
 	end
+end)
+hook.new({"command_mbdbg","command_malbolgedbg"},function(user,chan,txt)
+	return hook.queue("command_mb",user,chan,txt,true)
 end)
 hook.new({"command_["},function(user,chan,txt)
 	txt=txt:gsub("[^%(%)<>{}%[%]]","")
@@ -476,14 +494,17 @@ do
 	end)
 end
 hook.new("command_barely",function(user,chan,txt)
-	if txt:match("[^%]%^bfghijklmnopqstx~]") or not txt:match("~$") then
-		return "Unexpected "..(txt:match("[^%]%^bfghijklmnopqstx~]") or "~")
+	local stdin=txt:match("~(.*)")
+	txt=txt:match("^(.-)~")
+	if not txt or txt:match("[^%]%^bfghijklmnopqstx~]") or not stdin then
+		return "Unexpected "..((txt or ""):match("[^%]%^bfghijklmnopqstx~]") or "~")
 	end
+	local ip=#txt
+	txt=txt.."~"..stdin
 	local cell=setmetatable({},{__index=function() return 0 end})
 	local mp=0
 	local jmp=0
 	local acc=126
-	local ip=#txt
 	local o=""
 	local se
 	local insnum=0
@@ -522,9 +543,13 @@ hook.new("command_barely",function(user,chan,txt)
 			acc=(acc-1)%256
 			se="p"
 		elseif ins=="p" then
-			jmp=jmp+10
+			jmp=jmp+16
 		elseif ins=="t" then
-			return "Input not supported."
+			if #stdin==0 then
+				return "End of stdin, "..o
+			end
+			acc=string.byte(stdin,1,1)
+			stdin=stdin:sub(2)
 		elseif ins=="x" then
 			o=o..string.char(acc)
 		end
@@ -590,7 +615,7 @@ hook.new({"command_sstack"},function(user,chan,txt)
 		end,
 		["xor"]=function()
 			sb=3
-			return "push(pop()~=pop())"
+			return "push((pop()==0)~=(pop()==0))"
 		end,
 		["nand"]=function()
 			sb=4

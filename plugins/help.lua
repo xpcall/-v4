@@ -64,6 +64,7 @@ do
 		[":http://www.lua.org/manual/5.2/manual.html#6.5"]={"table","table api","tables","tables api"},
 		[":http://www.lua.org/manual/5.2/manual.html#6.4"]={"string","string api","strings","strings api"},
 		[":http://www.lua.org/manual/5.2/manual.html#6.2"]={"coroutine","coroutine api","coroutines","coroutine api"},
+		[":http://www.lua.org/manual/5.1/manual.html#5.4.1"]={"patterns","pattern","regex"},
 		[":http://en.wikipedia.org/wiki/Sod's_law"]={"joshtheender","ender","josh"},
 		[":http://en.wikipedia.org/wiki/Ping_of_death"]={"ping","pong","^v","pixeltoast"},
 		[":http://en.wikipedia.org/wiki/Hydrofluoric_acid"]={"bizzycola","cola","bizzy"},

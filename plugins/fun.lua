@@ -15,11 +15,101 @@ function antiping(name)
 	return n
 end
 
+hook.new({"command_rep","command_repeat"},function(user,chant,txt)
+	local str,num=txt:match("^(.+) (%d+)")
+	return str and str:rep(tonumber(num)) or "Usage: .repeat <text> <number>"
+end)
+
 hook.new({"command_derp"},function()
 	return "herp"
 end)
 hook.new({"command_herp"},function()
 	return "derp"
+end)
+hook.new({"command_beep"},function()
+	return "boop"
+end)
+hook.new({"command_boop"},function()
+	return "beep"
+end)
+
+do
+	local ukey={
+		{"q","w","e","r","t","y","u","i","o","p"},
+		{"a","s","d","f","g","h","j","k","l",";"},
+		{"z","x","c","v","b","n","m",",",".","/"},
+	}
+	local ckey={
+		{"Q","W","E","R","T","Y","U","I","O","P"},
+		{"A","S","D","F","G","H","J","K","L",":"},
+		{"Z","X","C","V","B","N","M","<",">","?"},
+	}
+	local k={}
+	local function ins(key,n,x,y)
+		local tn=(key[y] or {})[x]
+		if tn then
+			table.insert(k[n],tn)
+		end
+	end
+	for _,key in pairs({ukey,ckey}) do
+		for y=1,3 do
+			for x=1,10 do
+				local l=key[y][x]
+				k[l]={}
+				ins(key,l,x+1,y)
+				ins(key,l,x-1,y)
+				ins(key,l,x,y+1)
+				ins(key,l,x,y-1)
+				ins(key,l,x-1,y+1)
+				ins(key,l,x+1,y-1)
+				assert(#k[l]>0,l)
+			end
+		end
+	end
+	hook.new({"command_mispell"},function(user,chan,txt)
+		if txt=="" then
+			txt="Usage: .mispell text"
+		end
+		if #txt:gsub("[^%a<>%?/:,%./;]","")==0 then
+			return txt
+		end
+		local otxt=txt
+		while txt==otxt do
+			txt=txt:gsub(".",function(t)
+				local tk=k[t]
+				if math.random(1,10)==1 and tk then
+					return tk[math.random(1,#tk)]
+				end
+			end):gsub("..",function(t)
+				if math.random(1,10)==1 then
+					return t:reverse()
+				end
+			end)
+		end
+		return txt
+	end)
+end
+
+hook.new({"command_slap"},function(user,chan,txt)
+	send("PRIVMSG "..(chan==cnick and user.nick or chan).." :\1ACTION slaps "..txt.."\1")
+end)
+
+hook.new({"command_wikipedia"},function(user,chan,txt)
+	local sv=socket.connect("en.wikipedia.org",80)
+	sv:send("GET /wiki/Special:Random HTTP/1.1\r\nHost: en.wikipedia.org\r\n\r\n")
+	sv:settimeout(2)
+	local s,e=sv:receive()
+	if not s then
+		return e
+	end
+	while s do
+		local l=s:match("Location: (.+)")
+		if l then
+			return l
+		end
+		s,e=sv:receive()
+	end
+	return e
 end)
 
 hook.new({"command_rainbow","command_rb"},function(user,chan,txt)
@@ -255,8 +345,16 @@ local function shorturl(url)
 	return out
 end
 
+hook.new({"command_len"},function(user,chan,txt)
+	return tostring(#txt)
+end)
+
 hook.new({"command_s","command_short","command shorturl"},function(user,chan,txt)
 	return shorturl(txt)
+end)
+
+hook.new({"command_reverse"},function(user,chan,txt)
+	return txt:reverse()
 end)
 
 hook.new({"command_j","command_jenkins","command_build","command_beta"},function(user,chan,txt)
@@ -279,6 +377,12 @@ hook.new({"command_j","command_jenkins","command_build","command_beta"},function
 		return "Last successful build "..size.." "..shorturl("http://ci.cil.li/job/OpenComputers/lastSuccessfulBuild/artifact/build/"..url).." "..tme
 	else
 		return "Error parsing page."
+	end
+end)
+
+hook.new({"command_raw"},function(user,chan,txt)
+	if admin.auth(user) then
+		send(txt)
 	end
 end)
 
@@ -366,4 +470,25 @@ hook.new({"command_2^11","command_2048"},function(user,chan,txt)
 	end
 	txt=txt:lower()
 	return "http://gabrielecirulli.github.io/2048/"
+end)
+
+hook.new("command_pipe",function(user,chan,txt)
+	local o=""
+	for cmd in txt:gmatch("[^|]+") do
+		local cm,tx=cmd:match("(%S+) ?(.*)")
+		if not cm or not hook.hooks["command_"..cm] then
+			return "Unknown command \""..(cm or "").."\""
+		end
+		o=hook.queue("command_"..cm,user,chan,tx..o) or ""
+	end
+	return o
+end)
+
+hook.new("command_pastebin",function(user,chan,txt)
+	local res={}
+	local scc,err=http.request("http://pastebin.com/raw.php?i="..txt)
+	if err==404 then
+		return "Not found."
+	end
+	return scc or err
 end)

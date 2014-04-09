@@ -6,6 +6,7 @@ local lfs=require("lfs")
 local bit=require("bit")
 local sql=require("luasql.sqlite3")
 local bc=require("bc")
+local lanes=require("lanes")
 math.randomseed(socket.gettime())
 cnick="^v"
 function tpairs(tbl)
@@ -67,7 +68,7 @@ local function respond(user,txt)
 		(user.chan==cnick and user.nick or user.chan)..
 		" :"..txt
 		:gsub("^[\r\n]+",""):gsub("[\r\n]+$",""):gsub("[\r\n]+"," | ")
-		:gsub("[%z\2\4\5\6\7\8\9\10\11\12\13\14\15\16\17\18\19\20\21\22\23\24\25\26\27\28\29\30\31]","")
+		:gsub("[%z\2\4\5\6\7\8\9\10\11\12\13\14\16\17\18\19\20\21\22\23\24\25\26\27\28\29\30\31]","")
 		:sub(1,446)
 	)
 end
@@ -94,6 +95,7 @@ local plenv=setmetatable({
 	bit=bit,
 	sql=sql,
 	bc=bc,
+	lanes=lanes,
 },{__index=_G,__newindex=_G})
 plenv._G=plenv
 hook.new("msg",function(user,chan,txt)
