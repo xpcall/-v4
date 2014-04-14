@@ -451,13 +451,13 @@ local t2048={
 	["11"]="http://t2.technion.ac.il/~s7395779/",
 	["9007199254740992"]="http://www.csie.ntu.edu.tw/~b01902112/9007199254740992/",
 	["16384"]="http://rudradevbasak.github.io/16384_hex/",
-	["beiber"]="http://gabrielecirulli.github.io/2048/",
 	["troll"]="http://la-oui.ch/troll2048/",
 	["quantum"]="http://uhyohyo.net/quantum2048/",
 	["lhc"]="http://mattleblanc.github.io/LHC/",
 	["doctor"]="http://games.usvsth3m.com/2048-doctor-who-edition/",
 }
 hook.new({"command_2^11","command_2048"},function(user,chan,txt)
+	txt=txt:lower()
 	if t2048[txt] then
 		return t2048[txt]
 	elseif txt=="random" then
@@ -491,4 +491,21 @@ hook.new("command_pastebin",function(user,chan,txt)
 		return "Not found."
 	end
 	return scc or err
+end)
+
+hook.new("command_hastebin",function(user,chan,txt)
+	local res={}
+	local scc,err=http.request("http://hastebin.com/raw/"..txt)
+	if err==404 then
+		return "Not found."
+	end
+	return scc or err
+end)
+
+hook.new("command_tohastebin",function(user,chan,txt)
+	local dat,err=http.request("http://hastebin.com/documents",txt)
+	if dat and dat:match('{"key":"(.-)"') then
+		return "http://hastebin.com/"..dat:match('{"key":"(.-)"')
+	end
+	return "Error "..err
 end)

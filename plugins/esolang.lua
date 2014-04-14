@@ -681,6 +681,10 @@ hook.new({"command_sstack"},function(user,chan,txt)
 			sb=5
 			return "o=o..table.concat(stack,\" | \")..\" \""
 		end,
+		["\"(.-)\""]=function(txt)
+			sb=#txt+2
+			return "for l1="..#txt..",1,-1 do push((\""..txt.."\"):byte(l1,l1)) end"
+		end,
 	}
 	local out=""
 	while #txt>0 do
@@ -788,3 +792,309 @@ do
 		return txt:gsub(".",function(t) return o[t].."p" end).."ppp"
 	end)
 end
+
+function ntob64(n)
+	local o=""
+	while n>0 do
+		o=_tob64[n%64]..o
+		n=math.floor(n/64)
+	end
+	return o
+end
+function nunb64(n)
+	local o=0
+	for l1=#n,1,-1 do
+		o=o+((2^(l1-1))*_unb64[n:sub(l1,l1)])
+	end
+	return o
+end
+hook.new({"command_rl"},function(user,chan,txt)
+	local ip=1
+	local reg={b=false,n=0,s=""}
+	local stack={b={},n={},s={}}
+	local clstack={0}
+	local o=""
+	local tpe={
+		["string"]="s",
+		["number"]="n",
+		["boolean"]="b",
+	}
+	local face={
+		["n"]=0,
+		["e"]=1,
+		["s"]=2,
+		["w"]=3,
+		["u"]=4,
+		["d"]=5,
+		[0]="n","e","s","w","u","d"
+	}
+	local inv={
+		0,0,0,0,
+		0,0,0,0,
+		0,0,0,0,
+		0,0,0,0,
+	}
+	local x,y,z,f=0,64,0,0
+	local map=setmetatable({},{
+		__index=function(s,x) 
+			local o=setmetatable({},{
+				__index=function(s,y)
+					local o=setmetatable({},{
+						__index=function(s,z)
+							local o=0
+							if y==0 then
+								o=2
+							elseif y<64 then
+								o=1
+							end
+							s[z]=o
+							return o
+						end
+					})
+					s[y]=o
+					return o
+				end
+			})
+			s[x]=o
+			return o
+		end
+	})
+	local ins=0
+	local function pop(n)
+		if not stack[n] then
+			error(ip..","..n)
+		end
+		local t=stack[n][1]
+		table.remove(stack[n],1)
+		return t
+	end
+	local tdir={
+		["l"]=-1,
+		["f"]=0,
+		["r"]=1,
+		["b"]=2,
+	}
+	local coord={
+		["n"]={1,0,0},
+		["e"]={0,0,1},
+		["s"]={-1,0,0},
+		["w"]={0,0,-1},
+		["u"]={0,1,0},
+		["d"]={0,-1,0},
+	}
+	local function pdir(dir)
+		if face[dir] then
+			return face[dir]
+		end
+		return (tdir[dir]+f)%4
+	end
+	local function parse(p)
+		local pr=p:sub(1,1)
+		if pr=="#" then
+			local ln=_unb64[p:sub(2,2)]
+			return nunb64(p:sub(3,2+ln)),2+ln
+		elseif pr=="'" then
+			local ln=_unb64[p:sub(2,2)]
+			return p:sub(3,2+ln),2+ln
+		elseif reg[pr]~=nil then
+			return reg[pr],1
+		elseif pr=="1" then
+			return true,1
+		elseif pr=="0" then
+			return false,1
+		elseif tdir[pr] or face[pr] then
+			return pdir(pr),1
+		end
+	end
+	local function tgoto(dir,len)
+		local d=pdir(dir)
+		local dx,dy,dz=unpack(coord[dir])
+		while len>0 do
+			local nx,ny,nz=x+dx,y+dy,z+dz
+			if map[nx][ny][nz]>0 then
+				return false
+			end
+			len=len-1
+			x,y,z=nx,ny,nz
+		end
+		return true
+	end
+	while ip>0 and ip<#txt do
+		local op=txt:sub(ip,ip)
+		local p=txt:sub(ip+1)
+		if op=="M" then
+			local len,st=parse(p:sub(2))
+			reg.b=tgoto(p:sub(1,1),len)
+			ip=ip+2+st
+		elseif op=="F" then
+			f=pdir(p:sub(1,1))
+			ip=ip+2
+		elseif op=="D" then
+			local crd,st=parse(p)
+			local lx,ly,lz=unpack(coord[face[crd]])
+			lx,ly,lz=lx+x,ly+y,lz+z
+			if map[lx][ly][lz]>1 then
+				reg.b=false
+			else
+				inv[1]=inv[1]+1
+				local n=1
+				while inv[n]>64 do
+					inv[n]=64
+					if n==16 then
+						break
+					end
+					inv[n+1]=inv[n+1]+1
+					n=n+1
+				end
+				map[lx][ly][lz]=0
+				reg.b=true
+			end
+			ip=ip+1+st
+		elseif op=="U" then
+			ip=ip+1
+		elseif op=="P" then
+			local crd,st=parse(p)
+			local lx,ly,lz=unpack(coord[face[crd]])
+			lx,ly,lz=lx+x,ly+y,lz+z
+			local sl,st2=parse(p:sub(st+1))
+			if inv[sl]>0 then
+				if map[lx][ly][lz]>0 then
+					reg.b=false
+					inv[sl]=inv[sl]-1
+				else
+					map[lx][ly][lz]=1
+					reg.b=true
+				end
+			end
+			ip=ip+1+st+st2
+		elseif op=="R" then
+			local crd,st=parse(p)
+			local sl,st2=parse(p:sub(st+1))
+			local cnt,st3=parse(p:sub(st2+st+1))
+			if inv[sl]>=cnt then
+				inv[sl]=inv[sl]-cnt
+				reg.b=true
+			else
+				reg.b=false
+			end
+			ip=ip+1+st+st2+st3
+		elseif op=="S" then
+			local sl,st=parse(p)
+			reg.b=false
+			ip=ip+1+st
+		elseif op=="G" then
+			local ax=p:sub(1,1)
+			local ep,st=parse(p:sub(2))
+			local dt
+			if ax=="x" then
+				dt=x-ep
+			elseif ax=="y" then
+				dt=y-ep
+			elseif ax=="z" then
+				dt=z-ep
+			end
+			reg.b=tgoto(dt>0 and "n" or "s",math.floor(dt))
+			ip=ip+2+st
+		elseif op=="C" then
+			local crd,st=parse(p)
+			local lx,ly,lz=unpack(coord[face[crd]])
+			lx,ly,lz=lx+x,ly+y,lz+z
+			local sl,st2=parse(p:sub(st+1))
+			reg.b=map[lx][ly][lz]==inv[sl]
+			ip=ip+1+st+st2
+		elseif op=="T" then
+			local crd,st=parse(p)
+			local lx,ly,lz=unpack(coord[face[crd]])
+			lx,ly,lz=lx+x,ly+y,lz+z
+			local sl,st2=parse(p:sub(st+1))
+			reg.b=map[lx][ly][lz]==inv[sl]
+			ip=ip+1+st+st2
+		elseif op=="H" then
+			table.insert(stack[p:sub(1,1)],1,reg[p:sub(1,1)])
+			ip=ip+2
+		elseif op=="O" then
+			table.remove(stack[p:sub(1,1)],1)
+			ip=ip+2
+		elseif op=="K" then
+			local ln,st=parse(p:sub(2))
+			print("K"..p:sub(1,1)..ln)
+			reg[p:sub(1,1)]=stack[p:sub(1,1)][ln]
+			ip=ip+2+st
+		elseif op=="B" then
+			local ln,st=parse(p:sub(2))
+			for l1=1,st do
+				pop(p:sub(1,1))
+			end
+			ip=ip+2+st
+		elseif op==">" then
+			reg.b=pop("n")>reg.n
+			ip=ip+1
+		elseif op=="<" then
+			reg.b=pop("n")<reg.n
+			ip=ip+1
+		elseif op=="+" then
+			reg.n=pop("n")+reg.n
+			ip=ip+1
+		elseif op=="-" then
+			reg.n=pop("n")-reg.n
+			ip=ip+1
+		elseif op=="*" then
+			reg.n=pop("n")*reg.n
+			ip=ip+1
+		elseif op=="/" then
+			reg.n=math.floor(pop("n")/reg.n)
+			ip=ip+1
+		elseif op=="%" then
+			reg.n=pop("n")%reg.n
+			ip=ip+1
+		elseif op=="^" then
+			reg.n=pop("n")^reg.n
+			ip=ip+1
+		elseif op=="!" then
+			reg.b=not reg.b
+			ip=ip+1
+		elseif op=="&" then
+			reg.b=pop("b") and reg.b
+			ip=ip+1
+		elseif op=="|" then
+			reg.b=pop("b") or reg.b
+			ip=ip+1
+		elseif op=="=" then
+			reg.b=pop(p:sub(1,1))==reg[p:sub(1,1)]
+			ip=ip+2
+		elseif op=="J" or op=="I" then
+			if op~="I" or reg.b then
+				ip=parse(p)
+			else
+				ip=ip+1
+			end
+		elseif op=="L" then
+			local nip,st=parse(p)
+			table.insert(clstack,ip+st+1)
+			ip=nip
+		elseif op=="N" then
+			ip=cltack[1]
+			table.remove(clstack,1)
+		elseif op=="V" then
+			local vl,st=parse(p)
+			reg[tpe[type(vl)]]=vl
+			ip=ip+1+st
+		elseif op=="." then
+			o=o..tostring(reg[p:sub(1,1)])
+			ip=ip+2
+		elseif parse(op..p)~=nil then
+			local vl,st=parse(op..p)
+			reg[tpe[type(vl)]]=vl
+			ip=ip+st
+		elseif op==" " then
+			ip=ip+1
+		else
+			return o.."ip:"..ip..":Invalid opcode: "..op
+		end
+		ins=ins+1
+		if ins>9000 then
+			return o.."ip:"..ip..":Time limit exeeded."
+		end
+	end
+	return o
+end)

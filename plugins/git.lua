@@ -7,23 +7,27 @@ hook.new("msg",function(user,chan,txt,act)
 		end
 		local desc=""
 		local cn=dat:match('"description":"()')
-		local esc=false
-		while true do
-			local cc=dat:sub(cn,cn)
-			desc=desc..cc
-			io.write(cc)
-			cn=cn+1
-			if esc then
-				esc=false
-			else
-				if cc=="\\" then
-					desc=desc:sub(1,-2)
-					esc=true
-				elseif cc=='"' then
-					desc=desc:sub(1,-2)
-					break
+		if cn then
+			local esc=false
+			while true do
+				local cc=dat:sub(cn,cn)
+				desc=desc..cc
+				io.write(cc)
+				cn=cn+1
+				if esc then
+					esc=false
+				else
+					if cc=="\\" then
+						desc=desc:sub(1,-2)
+						esc=true
+					elseif cc=='"' then
+						desc=desc:sub(1,-2)
+						break
+					end
 				end
 			end
+		else
+			desc="No desc."
 		end
 		local lang=dat:match('"language":"(.-)",')
 		o=desc..

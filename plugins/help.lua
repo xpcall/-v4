@@ -26,6 +26,7 @@ do
 		["api-http"]={"http","http api"},
 		["api-keyboard"]={"keyboard","keys","keyboard api","keys api"},
 		["api-robot"]={"robot","robots","robot api","robots api","turtle","turtle api"},
+		["api-serialization"]={"serialize","serialization","serial","serializer"},
 		["api-shell"]={"shell api","shell"},
 		["api-sides"]={"sides","sides api"},
 		["api-term"]={"term","term api"},

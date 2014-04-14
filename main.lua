@@ -4,7 +4,6 @@ local https=require("ssl.https")
 local http=require("socket.http")
 local lfs=require("lfs")
 local bit=require("bit")
-local sql=require("luasql.sqlite3")
 local bc=require("bc")
 local lanes=require("lanes")
 math.randomseed(socket.gettime())
@@ -78,6 +77,8 @@ dofile("db.lua")
 hook.new("raw",function(txt)
 	txt:gsub("^:"..cnick.." MODE "..cnick.." :%+i",function()
 		send("JOIN #oc")
+		send("JOIN #ocbots")
+		send("JOIN #OpenPrograms")
 	end)
 	txt:gsub("^PING (.+)",function(pong)
 		sv:send("PONG "..pong.."\n")
@@ -101,22 +102,33 @@ plenv._G=plenv
 hook.new("msg",function(user,chan,txt)
 	txt=txt:gsub("%s+$","")
 	if txt:sub(1,1)=="." then
-		print(user.nick.." used "..txt)
-		local cb=function(st,dat)
-			if st==true then
-				print("responding with "..tostring(dat))
-				respond(user,tostring(dat))
-			elseif st then
-				print("responding with "..tostring(st))
-				respond(user,user.nick..", "..tostring(st))
+		local err,res=xpcall(function()
+			print(user.nick.." used "..txt)
+			local cb=function(st,dat)
+				if st==true then
+					print("responding with "..tostring(dat))
+					respond(user,tostring(dat))
+				elseif st then
+					print("responding with "..tostring(st))
+					respond(user,user.nick..", "..tostring(st))
+				end
 			end
-		end
-		hook.callback=cb
-		hook.queue("command",user,chan,txt:sub(2))
-		local cmd,param=txt:match("^%.(%S+) ?(.*)")
-		if cmd then
 			hook.callback=cb
-			hook.queue("command_"..cmd,user,chan,param)
+			hook.queue("command",user,chan,txt:sub(2))
+			local cmd,param=txt:match("^%.(%S+) ?(.*)")
+			if cmd then
+				hook.callback=cb
+				hook.queue("command_"..cmd,user,chan,param)
+			end
+		end,debug.traceback)
+		if not err then
+			print(res)
+			local dat,err=http.request("http://hastebin.com/documents",res)
+			if dat and dat:match('{"key":"(.-)"') then
+				respond(user,"Oh noes! http://hastebin.com/"..dat:match('{"key":"(.-)"')..".txt "..res:match("^[^\n]+"))
+			else
+				respond(user,"Oh noes! "..res:match("^[^\n]+"))
+			end
 		end
 	end
 end)
@@ -127,7 +139,7 @@ for fn in lfs.dir("plugins") do
 	end
 end
 
-send("WHO #oc %hna")
+send("WHOIS "..cnick)
 sv:settimeout(0)
 hook.newsocket(sv)
 while true do

@@ -51,13 +51,7 @@ hook.new({"command_l","command_lua"},function(user,chan,txt)
 	file:write(txt)
 	file:close()
 	local fi=io.popen("lua52.exe sbox.lua")
-	local o={}
-	local line=fi:read("*l")
-	while line do
-		table.insert(o,line)
-		line=fi:read("*l")
-	end
-	return table.concat(o," | ")
+	return fi:read("*a")
 end)
 
 hook.new({"command_l53","command_lua53"},function(user,chan,txt)
@@ -65,13 +59,7 @@ hook.new({"command_l53","command_lua53"},function(user,chan,txt)
 	file:write(txt)
 	file:close()
 	local fi=io.popen("lua53.exe sbox.lua")
-	local o={}
-	local line=fi:read("*l")
-	while line do
-		table.insert(o,line)
-		line=fi:read("*l")
-	end
-	return table.concat(o," | ")
+	return fi:read("*a")
 end)
 
 hook.new({"command_l32","command_lua32"},function(user,chan,txt)
@@ -165,7 +153,7 @@ do
 			error=error,
 			getfenv=function(func)
 				if tsbox[func] then
-					return false,"Nope."
+					return sbox
 				end
 				local res=getfenv(func)
 				if res==_G then
@@ -230,6 +218,9 @@ do
 					if cmd=="slap" or cmd=="jenkins" or cmd=="j" or cmd=="beta" or cmd=="build" or cmd=="short" or cmd=="s" then -- spammy / slow
 						return false,"Nope."
 					end
+					if not hook.hooks["command_"..(cmd or txt)] then
+						return false,"No such command."
+					end
 					return hook.queue("command_"..(cmd or txt),usr,usr.chan,tx or "")
 				end,
 				exit=function()
@@ -248,6 +239,8 @@ do
 			math=math,
 			table=table,
 			string=string,
+			bit=bit,
+			bc=bc,
 		}) do
 			sbox[k]={}
 			for n,l in pairs(v) do
@@ -269,15 +262,24 @@ do
 	if not sbox then
 		error("wtf")
 	end
-	hook.new({"command_resetl51","command_resetlua51"},function(user,chan,txt)
+	hook.new({"command_rstl51","command_resetlua51"},function(user,chan,txt)
 		rst()
 		return "Sandbox reset."
 	end)
 	hook.new({"command_l51","command_lua51"},function(user,chan,txt)
 		usr=user
+		sbox.user={}
 		sbox.irc={}
+		for k,v in pairs(admin.chans[chan] or {}) do
+			sbox.irc[k]={nick=k}
+			local u=sbox.irc[k]
+			for k,v in pairs(admin.perms[k]) do
+				u[k]=v
+			end
+		end
+		sbox.irc[user.nick]=sbox.user
 		for k,v in pairs(user) do
-			sbox.irc[k]=v
+			sbox.user[k]=v
 		end
 		out=""
 		local func,err=loadstring("return "..txt,"=lua51")
