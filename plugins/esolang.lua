@@ -1,6 +1,37 @@
+hook.new({"command_geneso","command_genesolang"},function(user,chan,txt)
+	local bits=2^math.random(1,6)
+	local o=bits.." bit "
+	local mem={"tape","cell","stack","register","variable"}
+	local cmem=mem[math.random(1,#mem)]
+	o=o..cmem.." "
+	if math.random(1,5)==1 then
+		local c
+		repeat
+			c=mem[math.random(1,#mem)]
+		until c~=cmem
+		o=o.."and "..c.." "
+	end
+	o=o.."based "
+	if math.random(1,10)==1 then
+		o=o.."verbose "
+	elseif math.random(1,10)==1 then
+		o=o.."2D "
+	end
+	if math.random(1,10)==1 then
+		o=o.."self modifying "
+	end
+	if math.random(1,5)==1 then
+		o=o.."brainfuck derivitive "
+	end
+	return o:sub(1,-2)
+end)
+
 function brainfuck(txt)
 	return loadstring(
 		"local s,p,o={},0,\"\""..txt
+		:gsub("(.)(%d+)",function(d,num)
+			return d:rep(tonumber(num))
+		end)
 		:gsub("[^%[%]%+%-+.%,<>]","")
 		:gsub("%]"," end")
 		:gsub("%["," while (s[p] or 0)~=0 do")
@@ -17,6 +48,30 @@ end
 
 hook.new({"command_bf","command_brainfuck"},function(user,chan,txt)
 	local func,err=brainfuck(txt)
+	if not func then
+		return err
+	end
+	local func=coroutine.create(setfenv(func,_G))
+	debug.sethook(func,function() error("Time limit exeeded.",0) end,"",100000)
+	local err,res=coroutine.resume(func)
+	return res or "nil"
+end)
+
+hook.new({"command_ff","command_failfuck"},function(user,chan,txt)
+	local func,err=loadstring(
+		"local s,p,o={},0,\"\""..txt
+		:gsub("[^%[%]%+%-+.%,<>]","")
+		:gsub("%]","\nend")
+		:gsub(",","\nerror(\"Input not supported.\")")
+		:gsub("%[","\nfor l1=1,1000 do if s[p]==0 then break end")
+		:gsub("[%+%-]+",function(txt)
+			return "\ns[p]=((s[p] or 0)"..txt:sub(1,1)..#txt..")%256"
+		end)
+		:gsub("[<>]+",function(txt)
+			return "\np=p"..(txt:sub(1,1)==">" and "+" or "-")..#txt
+		end)
+		:gsub("%.","\no=o..string.char(s[p] or 0)")
+	.." return o","=brainfuck")
 	if not func then
 		return err
 	end

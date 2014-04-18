@@ -203,6 +203,7 @@ local alias={
 	["robot"]={"beepboop","turtle"},
 	["modem"]={"allurrfz","rednot","rednet"},
 	["command_block"]={"commandblock"},
+	[".+"]={"%1%(%)"}
 }
 for k,v in pairs(help) do
 	local func=v:match("^[^%(]+"):lower()

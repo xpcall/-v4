@@ -34,6 +34,7 @@ function hook.queue(name,...)
 	return unpack(p)
 end
 function hook.newsocket(sk)
+	sk:settimeout(0)
 	table.insert(hook.sel,sk)
 end
 function hook.remsocket(sk)

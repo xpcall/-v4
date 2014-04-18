@@ -9,6 +9,9 @@ local function maxval(tbl)
 end
 hook.new({"command_>"},function(user,chan,txt)
 	if admin.auth(user) then
+		if txt:sub(1,1)=="\27" then
+			return "Nope."
+		end
 		local func,err=loadstring("return "..txt,"=lua")
 		if not func then
 			func,err=loadstring(txt,"=lua")
@@ -29,6 +32,9 @@ end)
 
 hook.new({"command_<"},function(user,chan,txt)
 	if admin.auth(user) then
+		if txt:sub(1,1)=="\27" then
+			return "Nope."
+		end
 		local func,err=loadstring("return "..txt,"=lua")
 		if not func then
 			func,err=loadstring(txt,"=lua")
@@ -47,6 +53,9 @@ hook.new({"command_<"},function(user,chan,txt)
 end)
 
 hook.new({"command_l","command_lua"},function(user,chan,txt)
+	if txt:sub(1,1)=="\27" then
+		return "Nope."
+	end
 	local file=io.open("sbox.tmp","w")
 	file:write(txt)
 	file:close()
@@ -55,6 +64,9 @@ hook.new({"command_l","command_lua"},function(user,chan,txt)
 end)
 
 hook.new({"command_l53","command_lua53"},function(user,chan,txt)
+	if txt:sub(1,1)=="\27" then
+		return "Nope."
+	end
 	local file=io.open("sbox.tmp","w")
 	file:write(txt)
 	file:close()
@@ -64,6 +76,9 @@ end)
 
 hook.new({"command_l32","command_lua32"},function(user,chan,txt)
 	if admin.auth(user) then
+		if txt:sub(1,1)=="\27" then
+			return "Nope."
+		end
 		local file=io.open("sbox.tmp","w")
 		file:write(txt)
 		file:close()
@@ -77,6 +92,29 @@ hook.new({"command_l32","command_lua32"},function(user,chan,txt)
 		return table.concat(o," | ")
 	end
 end)
+
+do
+	hook.new({"command_ips"},function(user,chan,txt)
+		local p=coroutine.create(function()
+			while true do
+				local a={}
+				for l1=1,1000 do
+					table.insert(a,1234)
+				end
+			end
+		end)
+		local ltime=socket.gettime()
+		local rt
+		debug.sethook(p,function()
+			local tme=socket.gettime()
+			local dt=tme-ltime
+			rt=1000000/dt
+			error()
+		end,"",1000000)
+		coroutine.resume(p)
+		return rt
+	end)
+end
 
 hook.new({"command_cmd"},function(user,chan,txt)
 	if admin.auth(user) then
@@ -146,6 +184,10 @@ do
 	local usr
 	local out
 	local function rst()
+		local str={}
+		for k,v in pairs(string) do
+			str[k]=v
+		end
 		local tsbox={}
 		sbox={
 			_VERSION=_VERSION,
@@ -161,7 +203,12 @@ do
 				end
 				return res
 			end,
-			getmetatable=getmetatable,
+			getmetatable=function(obj)
+				if type(obj)=="string" then
+					return str
+				end
+				return getmetatable(obj)
+			end,
 			ipairs=ipairs,
 			load=function(func,name)
 				local out=""
@@ -259,14 +306,14 @@ do
 		sbox._G=sbox
 	end
 	rst()
-	if not sbox then
-		error("wtf")
-	end
 	hook.new({"command_rstl51","command_resetlua51"},function(user,chan,txt)
 		rst()
 		return "Sandbox reset."
 	end)
 	hook.new({"command_l51","command_lua51"},function(user,chan,txt)
+		if txt:sub(1,1)=="\27" then
+			return "Nope."
+		end
 		usr=user
 		sbox.user={}
 		sbox.irc={}

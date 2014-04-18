@@ -1,3 +1,5 @@
+
+
 function antiping(name)
 	local f=true
 	for k,v in pairs(admin.perms) do
@@ -88,6 +90,15 @@ do
 		end
 		return txt
 	end)
+end
+
+function splitn(txt,num)
+	local o={}
+	while #txt>0 do
+		table.insert(o,txt:sub(1,num))
+		txt=txt:sub(num+1)
+	end
+	return o
 end
 
 hook.new({"command_slap"},function(user,chan,txt)
@@ -479,6 +490,7 @@ hook.new("command_pipe",function(user,chan,txt)
 		if not cm or not hook.hooks["command_"..cm] then
 			return "Unknown command \""..(cm or "").."\""
 		end
+		print("piping "..tx..o)
 		o=hook.queue("command_"..cm,user,chan,tx..o) or ""
 	end
 	return o
@@ -508,4 +520,12 @@ hook.new("command_tohastebin",function(user,chan,txt)
 		return "http://hastebin.com/"..dat:match('{"key":"(.-)"')
 	end
 	return "Error "..err
+end)
+
+hook.new({"command_tob64","command_b64"},function(user,chan,txt)
+	return tob64(txt)
+end)
+
+hook.new({"command_unb64","command_ub64"},function(user,chan,txt)
+	return unb64(txt)
 end)
