@@ -332,7 +332,7 @@ hook.new({"command_freq"},function(user,chan,txt)
 	return out
 end)
 
-local function shorturl(url)
+function shorturl(url)
 	url='{"longUrl": "'..url..'"}'
 	local res={}
 	local scc,err=https.request({
@@ -366,29 +366,6 @@ end)
 
 hook.new({"command_reverse"},function(user,chan,txt)
 	return txt:reverse()
-end)
-
-hook.new({"command_j","command_jenkins","command_build","command_beta"},function(user,chan,txt)
-	local dat,err=http.request("http://ci.cil.li/job/OpenComputers/")
-	if not dat then
-		if err then
-			return "Error grabbing page. ("..err..")"
-		else
-			return "Error grabbing page."
-		end
-	end
-	local size,url
-	for s,u in dat:gmatch('<td class="fileSize">(.-)</td><td><a href="lastSuccessfulBuild/artifact/build/(.-)/%*fingerprint%*/">') do
-		size,url=s,u
-	end
-	local tme=dat:match(
-		'<a class="permalink%-link model%-link inside tl%-tr" href="lastSuccessfulBuild/">Last successful build %(#%d+%), (.-)</a>'
-	) or "Error grabbing time."
-	if url then
-		return "Last successful build "..size.." "..shorturl("http://ci.cil.li/job/OpenComputers/lastSuccessfulBuild/artifact/build/"..url).." "..tme
-	else
-		return "Error parsing page."
-	end
 end)
 
 hook.new({"command_raw"},function(user,chan,txt)

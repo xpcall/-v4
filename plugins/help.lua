@@ -1,3 +1,7 @@
+function fancynum(num)
+	num=tostring(num) return num:gsub("%..+",""):reverse():gsub("...","%1,"):reverse():gsub("^,","")..(num:match("%..+") or "")
+end
+
 hook.new({"command_forums","command_f"},function(user,chan,txt)
 	return "http://oc.cil.li/"
 end)
@@ -12,6 +16,87 @@ end)
 
 hook.new({"command_opencomponents","command_openc"},function(user,chan,txt)
 	return "http://ci.cil.li/job/OpenComponents/"..txt
+end)
+
+hook.new({"command_j","command_jenkins","command_build","command_beta"},function(user,chan,txt)
+	local dat,err=http.request("http://ci.cil.li/job/OpenComputers/")
+	if not dat then
+		if err then
+			return "Error grabbing page. ("..err..")"
+		else
+			return "Error grabbing page."
+		end
+	end
+	local size,url
+	for s,u in dat:gmatch('<td class="fileSize">(.-)</td><td><a href="lastSuccessfulBuild/artifact/build/(.-)/%*fingerprint%*/">') do
+		size,url=s,u
+	end
+	local tme=dat:match(
+		'<a class="permalink%-link model%-link inside tl%-tr" href="lastSuccessfulBuild/">Last successful build %(#%d+%), (.-)</a>'
+	) or "Error grabbing time."
+	if url then
+		return "Last successful build "..size.." "..shorturl("http://ci.cil.li/job/OpenComputers/lastSuccessfulBuild/artifact/build/"..url).." "..tme
+	else
+		return "Error parsing page."
+	end
+end)
+
+hook.new({"command_release"},function(user,chan,txt)
+	local dat,err=https.request("https://api.github.com/repos/MightyPirates/OpenComputers/releases")
+	if not dat then
+		if err then
+			return "Error grabbing page. ("..err..")"
+		else
+			return "Error grabbing page."
+		end
+	end
+	local dat=json.decode(dat)
+	if not dat or not dat[1] then
+		return "Error parsing."
+	end
+	dat=dat[1]
+	local burl="https://github.com/MightyPirates/OpenComputers/releases/download/"..dat.tag_name.."/"
+	return "Latest release: "..dat.name.." Download: 1.6.4 "..shorturl(burl..dat.assets[1].name).." 1.7.2 "..shorturl(burl..dat.assets[1].name)
+end)
+
+hook.new({"command_dlstats","command_downloads"},function(user,chan,txt)
+	local dat,err=https.request("https://api.github.com/repos/MightyPirates/OpenComputers/releases")
+	if not dat then
+		if err then
+			return "Error grabbing page. ("..err..")"
+		else
+			return "Error grabbing page."
+		end
+	end
+	local dat=json.decode(dat)
+	if not dat then
+		return "Error parsing."
+	end
+	local total=0
+	local v16=0
+	local v17=0
+	local cnt
+	local mx=0
+	for k,v in pairs(dat) do
+		local cn=0
+		if v.assets[1] then
+			local c=v.assets[1].download_count
+			total=total+c
+			v16=v16+c
+			cn=cn+c
+		end
+		if v.assets[2] then
+			local c=v.assets[1].download_count
+			total=total+c
+			v17=v17+c
+			cn=cn+c
+		end
+		if cn>mx then
+			cnt=v.name
+			mx=cn
+		end
+	end
+	return "Total: "..fancynum(total).." 1.6: "..math.round((v16/total)*100,2).."% 1.7: "..math.round((v17/total)*100,2).."% Most popular: "..cnt.." with "..fancynum(mx).." downloads"
 end)
 
 dofile("help.lua")

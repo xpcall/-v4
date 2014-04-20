@@ -6,6 +6,7 @@ local lfs=require("lfs")
 local bit=require("bit")
 local bc=require("bc")
 local lanes=require("lanes")
+local json=require("dkjson")
 math.randomseed(socket.gettime())
 cnick="^v"
 function tpairs(tbl)
@@ -96,6 +97,7 @@ local plenv=setmetatable({
 	bit=bit,
 	sql=sql,
 	bc=bc,
+	json=json,
 	lanes=lanes,
 },{__index=_G,__newindex=_G})
 plenv._G=plenv

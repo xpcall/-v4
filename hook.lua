@@ -22,12 +22,14 @@ function hook.queue(name,...)
 	local p={}
 	for _,nme in pairs(name) do
 		for k,v in tpairs(hooks[nme] or {}) do
-			p={v(...)}
-			if callback then
-				callback(unpack(p))
-			end
-			if p[1]==false then
-				hook.del(v)
+			if v then
+				p={v(...)}
+				if callback then
+					callback(unpack(p))
+				end
+				if p[1]==false then
+					hook.del(v)
+				end
 			end
 		end
 	end

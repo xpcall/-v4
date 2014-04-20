@@ -280,6 +280,8 @@ do
 					out=out..table.concat({...})
 				end,
 			},
+			serialize=serialize,
+			unserialize=unserialize,
 		}
 		for k,v in pairs({
 			coroutine=coroutine,
