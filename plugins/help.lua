@@ -18,31 +18,59 @@ hook.new({"command_opencomponents","command_openc"},function(user,chan,txt)
 	return "http://ci.cil.li/job/OpenComponents/"..txt
 end)
 
-hook.new({"command_j","command_jenkins","command_build","command_beta"},function(user,chan,txt)
-	local dat,err=http.request("http://ci.cil.li/job/OpenComputers/")
-	if not dat then
-		if err then
-			return "Error grabbing page. ("..err..")"
-		else
-			return "Error grabbing page."
+local jenkins={
+	[{"http://ci.cil.li/job/OpenComputers/api/json?depth=1","OpenComputers"}]={"oc","opencomputers","16","164","oc16","oc164"},
+	[{"http://ci.cil.li/job/OpenComputers-MC1.7/api/json?depth=1","OpenComputers 1.7"}]={"opencomputers17","17","172","oc17","oc172"},
+	[{"http://ci.cil.li/job/OpenComponents/api/json?depth=1","OpenComponents"}]={"c","c16","components","opencomponents","ocomponents"},
+	[{"http://ci.cil.li/job/OpenComponents-MC1.7/api/json?depth=1","OpenComponents 1.7"}]={"c17","components17","opencomponents17","ocomponents17"},
+}
+for k,v in tpairs(jenkins) do
+	for n,l in pairs(v) do
+		jenkins[l]=k
+	end
+	jenkins[k]=nil
+end
+hook.new({"command_j","command_build","command_beta"},function(user,chan,txt)
+	txt=txt:lower():gsub("[%s%.]","")
+	if txt=="" then
+		txt="oc"
+	end
+	if jenkins[txt] then
+		local dat,err=https.request(jenkins[txt][1])
+		if not dat then
+			if err then
+				return "Error grabbing page. ("..err..")"
+			else
+				return "Error grabbing page."
+			end
 		end
-	end
-	local size,url
-	for s,u in dat:gmatch('<td class="fileSize">(.-)</td><td><a href="lastSuccessfulBuild/artifact/build/(.-)/%*fingerprint%*/">') do
-		size,url=s,u
-	end
-	local tme=dat:match(
-		'<a class="permalink%-link model%-link inside tl%-tr" href="lastSuccessfulBuild/">Last successful build %(#%d+%), (.-)</a>'
-	) or "Error grabbing time."
-	if url then
-		return "Last successful build "..size.." "..shorturl("http://ci.cil.li/job/OpenComputers/lastSuccessfulBuild/artifact/build/"..url).." "..tme
-	else
-		return "Error parsing page."
+		local dat=json.decode(dat)
+		if not dat then
+			return "Error parsing page."
+		end
+		dat=dat.lastSuccessfulBuild
+		local miliseconds=math.floor((socket.gettime()*1000)-dat.timestamp)
+		local seconds=math.floor(miliseconds/1000)
+		local minutes=math.floor(seconds/60)
+		local hours=math.floor(minutes/60)
+		local days=math.floor(hours/24)
+		miliseconds=miliseconds~=0 and ((miliseconds%1000).." miliseconds ") or ""
+		seconds=seconds~=0 and ((seconds%60).." seconds ") or ""
+		minutes=minutes~=0 and ((minutes%60).." minutes ") or ""
+		hours=hours~=0 and ((hours%24).." hours ") or ""
+		days=days~=0 and (days.." days ") or ""
+		local url
+		for k,v in pairs(dat.artifacts) do
+			if v.relativePath:match("%-universal.jar$") then
+				url=v.relativePath
+			end
+		end
+		return "Last sucessful build for "..jenkins[txt][2]..": "..shorturl(dat.url.."artifact/"..url).." "..days..hours..minutes.."ago"
 	end
 end)
 
-hook.new({"command_release"},function(user,chan,txt)
-	local dat,err=https.request("https://api.github.com/repos/MightyPirates/OpenComputers/releases")
+hook.new({"command_release","command_releases"},function(user,chan,txt)
+	local dat,err=https.request("http://ci.cil.li/job/OpenComputers/api/json")
 	if not dat then
 		if err then
 			return "Error grabbing page. ("..err..")"
