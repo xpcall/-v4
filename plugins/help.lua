@@ -100,6 +100,7 @@ hook.new({"command_dlstats","command_downloads"},function(user,chan,txt)
 end)
 
 dofile("help.lua")
+local owikinames
 do
 	local wikinames={
 		["api-colors"]={"color","colors","color api","colors api"},
@@ -120,6 +121,7 @@ do
 		["apis"]={"apis","api","api list","apis list"},
 		["blocks"]={"blocks","block list","blocks list"},
 		["codeconventions"]={"conventions","code conventions"},
+		["component-abstract-bus"]={"abstract bus"},
 		["component-commandblock"]={"command block","commandblock","command block component"},
 		["component-computer"]={"computer","computer api","computer component","component computer"},
 		["component-crafting"]={"crafting","crafter","crafting component","crafter component","craft api","crafting api","crafter api"},
@@ -162,6 +164,7 @@ do
 		[":http://en.wikipedia.org/wiki/Wii_U"]={"ds","ds84182"},
 		[":http://ci.cil.li/"]={"jenkins","build","builds","beta"},
 	}
+	owikinames=wikinames
 	do
 		local o={}
 		for k,v in pairs(wikinames) do
@@ -195,5 +198,30 @@ do
 		else
 			return "Not found."
 		end
+	end)
+end
+
+do
+	local req={}
+	for k,v in pairs(owikinames) do
+		if k:match("^api%-") then
+			local n=k:match("^api%-(.+)")
+			local str="local "..n.."=require(\""..n.."\")"
+			for n,l in pairs(v) do
+				req[l]=str
+			end
+		elseif k:match("^component%-") then
+			local n=k:match("^component%-(.+)")
+			local str="local component=require(\"component\") local "..n.."=component."..n
+			for n,l in pairs(v) do
+				req[l]=str
+			end
+		end
+	end
+	for k,v in pairs(owikinames["component-redstoneinmotion"]) do
+		req[v]="local component=require(\"component\") local carriage=component.carriage"
+	end
+	hook.new({"command_req","command_require"},function(user,chan,txt)
+		return req[txt:lower()] or "Not found."
 	end)
 end

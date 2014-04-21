@@ -322,7 +322,7 @@ local enc={
 	79 ,65 ,49 ,67 ,66 ,54 ,118,94 ,61 ,73 ,95 ,48 ,47 ,56 ,124,106,115,98 ,
 }
 local out={} -- remember output so initializing ram doesnt take years
-local function crz(a,b)
+function crz(a,b)
 	local ot=out[a..","..b]
 	if ot then
 		return ot
@@ -338,6 +338,93 @@ local function crz(a,b)
 	out[a..","..b]=o
 	return o
 end
+local function unmb(txt)
+	local out=""
+	local conv={
+		["i"]=4,
+		["<"]=5,
+		["/"]=23,
+		["*"]=39,
+		["j"]=40,
+		["p"]=62,
+		["o"]=68,
+		["v"]=81,
+	}
+	for a=0,#txt-1 do
+		local i=conv[txt:sub(a+1,a+1)]
+		local n=false
+		for l1=33,126 do
+			if (l1+a)%94==i then
+				out=out..string.char(l1)
+				n=true
+				break
+			end
+		end
+		if not n then
+			return "unencodable character: "..i
+		end
+	end
+	return out
+end
+hook.new({"command_unmb"},function(user,chan,txt)
+	return unmb(txt)
+end)
+hook.new({"command_rnmb"},function(user,chan,txt)
+	local conv={
+		[4]="i",
+		[5]="<",
+		[23]="/",
+		[39]="*",
+		[40]="j",
+		[62]="p",
+		[68]="o",
+		[81]="v",
+	}
+	local out=""
+	for l1=1,#txt do
+		out=out..(conv[(string.byte(txt,l1,l1)+(l1-1))%94] or "0")
+	end
+	return out
+end)
+do
+	hook.new({"command_genmb"},function(user,chan,txt)
+		local a=0
+		local c=0
+		for char in txt:gmatch(".") do
+			local t={1}
+			while true do
+				local sa=a
+				local sc=c
+				for l1=1,#t do
+					local d=sc
+					if t[l1]==1 then
+						sa=(((d+39)%3)*3^9)+math.floor((d+39)/3)
+					elseif t[l1]==2 then
+						sa=crz(d+62,sa)
+					end
+					sc=sc+1
+				end
+				local o=""
+				for k,v in pairs(t) do
+					o=o..(v==1 and "*" or (v==2 and "p" or "o"))
+				end
+				print(o,sa%256)
+				if sa%256==char:byte() then
+					c=sc
+					a=sa
+					return o
+				end
+				t[1]=t[1]+1
+				local n=1
+				while t[n]>3 do
+					t[n]=1
+					t[n+1]=(t[n+1] or 0)+1
+					n=n+1
+				end
+			end
+		end
+	end)
+end
 hook.new({"command_mb","command_malbolge"},function(user,chan,txt,dbg)
 	if #txt<2 then
 		return "Minimum program is 2 chars."
@@ -350,6 +437,7 @@ hook.new({"command_mb","command_malbolge"},function(user,chan,txt,dbg)
 		mem[l1]=crz(mem[l1-1],mem[l1-2])
 	end
 	local dbo=""
+	local inst=""
 	while true do
 		local leip=c
 		local op=(mem[c]+c)%94
@@ -364,19 +452,27 @@ hook.new({"command_mb","command_malbolge"},function(user,chan,txt,dbg)
 			else
 				o=o..string.char(a%256)
 			end
+			inst=inst.."<"
 		elseif op==23 then
 			a=math.random(0,255)
 			--return "Input not supported."..dbo
+			inst=inst.."/"
 		elseif op==39 then
 			a=((mem[d]%3)*3^9)+math.floor(mem[d]/3)
 			mem[d]=a
+			inst=inst.."*"
 		elseif op==40 then
 			d=mem[d]
+			inst=inst.."j"
 		elseif op==62 then
 			a=crz(mem[d],a)
 			mem[d]=a
+			inst=inst.."p"
 		elseif op==81 then
-			return o..dbo
+			inst=inst.."v"
+			return o..dbo..", "..inst
+		else
+			inst=inst.."o"
 		end
 		if enc[mem[c]-33] then
 			mem[c]=enc[mem[c]-33]
@@ -386,7 +482,7 @@ hook.new({"command_mb","command_malbolge"},function(user,chan,txt,dbg)
 		d=(d+1)%bse
 		ins=ins+1
 		if ins>9000 then
-			return "Time limit exeeded."..dbo
+			return "Time limit exeeded."..dbo..", "..inst
 		end
 	end
 end)

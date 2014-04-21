@@ -171,6 +171,24 @@ hook.new("command_commits",function(user,chan,txt)
 	return out
 end)
 
+do
+	local u
+	hook.new({"command_namegen"},function(user,chan,txt)
+		send("cs namegen")
+		u=user
+	end)
+	hook.new("raw",function(txt)
+		local names=txt:match("^:ChanServ!ChanServ@services.esper.net NOTICE "..cnick.." :Some names to ponder: (.+)%.")
+		if names then
+			local o={}
+			for name in names:gmatch("[^,%s]+") do
+				table.insert(o,name:lower():reverse())
+			end
+			respond(u,u.nick..", "..table.concat(o,", "))
+		end
+	end)
+end
+
 hook.new({"command_random"},function(user,chan,fname)
 	local t={}
 	local n=0

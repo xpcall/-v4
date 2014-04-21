@@ -86,7 +86,7 @@ hook.new("msg",function(user,chan,txt,act)
 						return true,({
 							user.nick.." flails around a bit",
 							user.nick.." misses",
-							user.nick.." accidentally cut himselfs",
+							user.nick.." accidentally cuts himself",
 							user.nick.." held the knife the wrong way",
 						})[math.random(1,4)].." and loses "..cn.." hp ( "..uacc.hp.." now )"
 					else
