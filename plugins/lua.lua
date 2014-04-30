@@ -93,28 +93,32 @@ hook.new({"command_l32","command_lua32"},function(user,chan,txt)
 	end
 end)
 
-do
-	hook.new({"command_ips"},function(user,chan,txt)
-		local p=coroutine.create(function()
-			while true do
-				local a={}
-				for l1=1,1000 do
-					table.insert(a,1234)
-				end
+hook.new({"command_ips"},function(user,chan,txt)
+	local p=coroutine.create(function()
+		while true do
+			local a={}
+			for l1=1,1000 do
+				table.insert(a,1234)
 			end
-		end)
-		local ltime=socket.gettime()
-		local rt
-		debug.sethook(p,function()
-			local tme=socket.gettime()
-			local dt=tme-ltime
-			rt=1000000/dt
-			error()
-		end,"",1000000)
-		coroutine.resume(p)
-		return rt
+		end
 	end)
-end
+	local ltime=socket.gettime()
+	local rt
+	debug.sethook(p,function()
+		local tme=socket.gettime()
+		local dt=tme-ltime
+		rt=1000000/dt
+		error()
+	end,"",1000000)
+	coroutine.resume(p)
+	return rt
+end)
+
+hook.new({"command_bm","command_benchmark"},function(user,chan,txt)
+	local t=socket.gettime()
+	local o=hook.queue("command_lua51",user,chan,txt) or ""
+	return socket.gettime()-t.."\n"..o
+end)
 
 hook.new({"command_cmd"},function(user,chan,txt)
 	if admin.auth(user) then

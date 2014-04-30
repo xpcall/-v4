@@ -18,11 +18,13 @@ hook.new({"command_opencomponents","command_openc"},function(user,chan,txt)
 	return "http://ci.cil.li/job/OpenComponents/"..txt
 end)
 
-local jenkins={
+jenkins={
 	[{"http://ci.cil.li/job/OpenComputers/api/json?depth=1","OpenComputers"}]={"oc","opencomputers","16","164","oc16","oc164"},
 	[{"http://ci.cil.li/job/OpenComputers-MC1.7/api/json?depth=1","OpenComputers 1.7"}]={"opencomputers17","17","172","oc17","oc172"},
 	[{"http://ci.cil.li/job/OpenComponents/api/json?depth=1","OpenComponents"}]={"c","c16","components","opencomponents","ocomponents"},
 	[{"http://ci.cil.li/job/OpenComponents-MC1.7/api/json?depth=1","OpenComponents 1.7"}]={"c17","components17","opencomponents17","ocomponents17"},
+	[{"http://lanteacraft.com/jenkins/job/OpenPrinter/api/json?depth=1","OpenPrinters"}]={"op","op16","printer","printer16","openprinter","openprinters","openprinter16"},
+	[{"http://lanteacraft.com/jenkins/job/OpenPrinter1.7/api/json?depth=1","OpenPrinters 1.7"}]={"op17","printer17","openprinter17","openprinters16"},
 }
 for k,v in tpairs(jenkins) do
 	for n,l in pairs(v) do
@@ -36,12 +38,12 @@ hook.new({"command_j","command_build","command_beta"},function(user,chan,txt)
 		txt="oc"
 	end
 	if jenkins[txt] then
-		local dat,err=https.request(jenkins[txt][1])
+		local dat,err=http.request(jenkins[txt][1])
 		if not dat then
 			if err then
-				return "Error grabbing page. ("..err..")"
+				return "Error grabbing "..jenkins[txt][1].." ("..err..")"
 			else
-				return "Error grabbing page."
+				return "Error grabbing "..jenkins[txt][1]
 			end
 		end
 		local dat=json.decode(dat)
@@ -49,12 +51,12 @@ hook.new({"command_j","command_build","command_beta"},function(user,chan,txt)
 			return "Error parsing page."
 		end
 		dat=dat.lastSuccessfulBuild
-		local miliseconds=math.floor((socket.gettime()*1000)-dat.timestamp)
+		local miliseconds=(socket.gettime()*1000)-dat.timestamp
 		local seconds=math.floor(miliseconds/1000)
 		local minutes=math.floor(seconds/60)
 		local hours=math.floor(minutes/60)
 		local days=math.floor(hours/24)
-		miliseconds=miliseconds~=0 and ((miliseconds%1000).." miliseconds ") or ""
+		miliseconds=miliseconds~=0 and ((miliseconds%1000).." milliseconds ") or ""
 		seconds=seconds~=0 and ((seconds%60).." seconds ") or ""
 		minutes=minutes~=0 and ((minutes%60).." minutes ") or ""
 		hours=hours~=0 and ((hours%24).." hours ") or ""
@@ -65,12 +67,13 @@ hook.new({"command_j","command_build","command_beta"},function(user,chan,txt)
 				url=v.relativePath
 			end
 		end
+		url=url or dat.artifacts[1].relativePath
 		return "Last sucessful build for "..jenkins[txt][2]..": "..shorturl(dat.url.."artifact/"..url).." "..days..hours..minutes.."ago"
 	end
 end)
 
-hook.new({"command_release","command_releases"},function(user,chan,txt)
-	local dat,err=https.request("http://ci.cil.li/job/OpenComputers/api/json")
+hook.new({"command_r","command_release","command_releases"},function(user,chan,txt)
+	local dat,err=https.request("https://api.github.com/repos/MightyPirates/OpenComputers/releases")
 	if not dat then
 		if err then
 			return "Error grabbing page. ("..err..")"
@@ -80,7 +83,7 @@ hook.new({"command_release","command_releases"},function(user,chan,txt)
 	end
 	local dat=json.decode(dat)
 	if not dat or not dat[1] then
-		return "Error parsing."
+		error("Error parsing. "..serialize(dat))
 	end
 	dat=dat[1]
 	local burl="https://github.com/MightyPirates/OpenComputers/releases/download/"..dat.tag_name.."/"
@@ -133,10 +136,10 @@ do
 	local wikinames={
 		["api-colors"]={"color","colors","color api","colors api"},
 		["api-component"]={"component api","components api"},
-		["api-computer"]={"computer api"},
+		["api-computer"]={"computer","computer api"},
 		["api-event"]={"event","events","event api","events api"},
 		["api-filesystem"]={"fs","filesystem","fs api","filesystem api"},
-		["api-internet"]={"internet api"},
+		["api-internet"]={"internet api","tcp","socket","sockets"},
 		["api-http"]={"http","http api"},
 		["api-keyboard"]={"keyboard","keys","keyboard api","keys api"},
 		["api-robot"]={"robot","robots","robot api","robots api","turtle","turtle api"},
@@ -151,7 +154,7 @@ do
 		["codeconventions"]={"conventions","code conventions"},
 		["component-abstract-bus"]={"abstract bus"},
 		["component-commandblock"]={"command block","commandblock","command block component"},
-		["component-computer"]={"computer","computer api","computer component","component computer"},
+		["component-computer"]={"computer component","component computer"},
 		["component-crafting"]={"crafting","crafter","crafting component","crafter component","craft api","crafting api","crafter api"},
 		["component-generator"]={"generator","generator component","generator api"},
 		["component-gpu"]={"gpu","gpu api","gpu component"},

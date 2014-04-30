@@ -22,6 +22,14 @@ function tpairs(tbl)
 		return s[c],tbl[s[c]]
 	end
 end
+function string.tmatch(str,...)
+	local o={}
+	for r in str:gmatch(...) do
+		table.insert(o,r)
+	end
+	return o
+end
+getmetatable("").tmatch=string.tmatch
 file=setmetatable({},{
 	__index=function(s,n)
 		local file=io.open(n,"r")

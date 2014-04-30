@@ -365,7 +365,7 @@ function shorturl(url)
 	})
 	res=table.concat(res)
 	if not scc then
-		return err
+		return "Error "..err
 	end
 	local out=res:match('"id": "([^"]+)",')
 	if not out then
@@ -445,6 +445,40 @@ end)
 hook.new({"command_2^53","command_9007199254740992"},function(user,chan)
 	return "http://www.csie.ntu.edu.tw/~b01902112/9007199254740992/"
 end)
+
+function factor(n)
+	n=math.floor(tonumber(n) or 0)
+	if n==0 then
+		return {0}
+	elseif n==1 then
+		return {1}
+	end
+	if math.sqrt(n)%1==0 then
+		local x=factor(math.sqrt(n))
+		return {x,x}
+	end
+	for x=n-1,2,-1 do
+		if (n/x)%1==0 then
+			return {factor(n/x),factor(x)}
+		end
+	end
+	return {n}
+end
+
+hook.new({"command_factor"},function(user,chan,txt)
+	if tonumber(txt)>1000000 then
+		return "Nope."
+	end
+	return serialize(factor(txt)):gsub("{","("):gsub("}",")"):gsub(",","*"):gsub("%((%d*)%)","%1"):gsub("^%(",""):gsub("%)$","")
+end)
+
+hook.new("command_supermispell",function(user,chan,txt)
+	for l1=1,5 do
+		txt=hook.queue("command_mispell",user,chan,txt)
+	end
+	return txt
+end)
+
 local t2048={
 	["doge"]="http://doge2048.com/",
 	["undo"]="http://quaxio.com/2048/",
@@ -524,3 +558,11 @@ end)
 hook.new({"command_unb64","command_ub64"},function(user,chan,txt)
 	return unb64(txt)
 end)
+
+hook.new({"command_drama"},function(user,chan,txt)
+	local dat,err=http.request("http://asie.pl/drama.php?plain")
+	return dat or "Error "..err
+end)
+function urlencode(txt)
+	return txt:gsub("\r?\n","\r\n"):gsub("[^%w ]",function(t) return string.format("%%%02X",t:byte()) end):gsub(" ","+")
+end

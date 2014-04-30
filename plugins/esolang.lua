@@ -386,6 +386,17 @@ hook.new({"command_rnmb"},function(user,chan,txt)
 	end
 	return out
 end)
+hook.new({"command_genmb"},function(user,chan,txt)
+	local c=""
+	for char in txt:match(".") do
+		local t={1}
+		while true do
+			if hook.queue("command_mb",user,chan,unmb(c)) then
+				
+			end
+		end
+	end
+end)
 do
 	hook.new({"command_genmb"},function(user,chan,txt)
 		local a=0
@@ -446,6 +457,7 @@ hook.new({"command_mb","command_malbolge"},function(user,chan,txt,dbg)
 		end
 		if op==4 then
 			c=mem[d]
+			inst=inst.."i"
 		elseif op==5 then
 			if dbg then
 				o=o..a.." "
@@ -470,7 +482,7 @@ hook.new({"command_mb","command_malbolge"},function(user,chan,txt,dbg)
 			inst=inst.."p"
 		elseif op==81 then
 			inst=inst.."v"
-			return o..dbo..", "..inst
+			return o..dbo
 		else
 			inst=inst.."o"
 		end
@@ -482,7 +494,7 @@ hook.new({"command_mb","command_malbolge"},function(user,chan,txt,dbg)
 		d=(d+1)%bse
 		ins=ins+1
 		if ins>9000 then
-			return "Time limit exeeded."..dbo..", "..inst
+			return "Time limit exeeded."..dbo
 		end
 	end
 end)
