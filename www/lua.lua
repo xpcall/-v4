@@ -25,7 +25,7 @@ print([[<!doctype html>
 		<form action="http://71.238.153.166/lua.lua" method="post" onsubmit="onSubmit()">
 			<input type="hidden" id="htext" name="text"/>
 			<div id="container">
-				<div id="editor">]]..htmlencode(postdata.text or 'print("Hello, World!")')..[[</div><br/>
+				<div id="editor">]]..htmlencode(postdata.text or 'print(2<<15)'):gsub("<br>","\r\n")..[[</div><br/>
 				<input type="submit" value="Submit"/>
 			</div>
 		</form>

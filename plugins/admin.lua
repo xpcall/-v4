@@ -16,15 +16,16 @@ hook.new("raw",function(txt)
 	txt:gsub("^:%S+ 319 "..cnick.." "..cnick.." :(.*)",function(chans)
 		for chan in chans:gmatch("#%S+") do
 			admin.chans[chan]={}
-			send("WHO "..chan.." %chsna")
+			send("WHO "..chan.." %cihsna")
 		end
 	end)
-	txt:gsub("^:%S+ 354 "..cnick.." (%S+) (%S+) (%S+) (%S+) (%S+)",function(chan,host,server,nick,account)
+	txt:gsub("^:%S+ 354 "..cnick.." (%S+) (%S+) (%S+) (%S+) (%S+) (%S+)",function(chan,ip,host,server,nick,account)
 		if admin.chans[chan] then 
 			admin.chans[chan][nick]=true
 			admin.perms[nick]={
 				host=host,
 				server=server,
+				ip=ip,
 			}
 			if account~="0" then
 				admin.perms[nick].account=account
@@ -34,14 +35,17 @@ hook.new("raw",function(txt)
 	txt:gsub("^:([^%s!]+)![^%s@]+@(%S+) JOIN (%S+)",function(nick,host,chan)
 		if nick==cnick then
 			admin.chans[chan]={}
-			send("WHO "..chan.." %chna")
+			send("WHO "..chan.." %cihsna")
 		end
 		admin.chans[chan]=admin.chans[chan] or {}
 		admin.chans[chan][nick]=true
-		admin.perms[nick]={
-			host=host,
-		}
-		send("WHOIS "..nick)
+		if not admin.perms[nick] then
+			admin.perms[nick]={
+				host=host,
+				ip=socket.dns.toip(host),
+			}
+			send("WHOIS "..nick)
+		end
 	end)
 	txt:gsub("^:%S+ 312 "..cnick.." (%S+) (%S+)",function(nick,server)
 		local p=admin.perms[nick]

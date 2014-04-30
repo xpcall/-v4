@@ -439,7 +439,7 @@ hook.new({"command_aeiou"},function(user,chan,txt)
 	return txt:gsub("[aeiouAEIOU]",function(t) return vowel[t] end)
 end)
 
-hook.new("command_2^14","command_16384",function()
+hook.new({"command_2^14","command_16384"},function()
 	return "http://rudradevbasak.github.io/16384_hex/"
 end)
 hook.new({"command_2^53","command_9007199254740992"},function(user,chan)
@@ -563,6 +563,7 @@ hook.new({"command_drama"},function(user,chan,txt)
 	local dat,err=http.request("http://asie.pl/drama.php?plain")
 	return dat or "Error "..err
 end)
+
 function urlencode(txt)
 	return txt:gsub("\r?\n","\r\n"):gsub("[^%w ]",function(t) return string.format("%%%02X",t:byte()) end):gsub(" ","+")
 end
