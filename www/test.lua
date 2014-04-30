@@ -1,0 +1,1 @@
+print("<center><h1>"..hook.queue("command_mispell",nil,nil,hook.queue("command_drama")).."</h1></center>")

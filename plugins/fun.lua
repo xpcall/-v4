@@ -79,7 +79,7 @@ do
 		while txt==otxt do
 			txt=txt:gsub(".",function(t)
 				local tk=k[t]
-				if math.random(1,10)==1 and tk then
+				if math.random(1,20)==1 and tk then
 					return tk[math.random(1,#tk)]
 				end
 			end):gsub("..",function(t)
