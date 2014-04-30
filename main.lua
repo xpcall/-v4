@@ -9,6 +9,70 @@ local lanes=require("lanes")
 local json=require("dkjson")
 math.randomseed(socket.gettime())
 cnick="^v"
+fs={
+	exists=function(file)
+		return lfs.attributes(file)~=nil
+	end,
+	isDir=function(file)
+		local dat=lfs.attributes(file)
+		if not dat then
+			return nil
+		end
+		return dat.mode=="directory"
+	end,
+	isFile=function(file)
+		local dat=lfs.attributes(file)
+		if not dat then
+			return nil
+		end
+		return dat.mode=="file"
+	end,
+	split=function(file)
+		local t={}
+		for dir in file:gmatch("[^/]+") do
+			t[#t+1]=dir
+		end
+		return t
+	end,
+	combine=function(filea,fileb)
+		local o={}
+		for k,v in pairs(fs.split(filea)) do
+			table.insert(o,v)
+		end
+		for k,v in pairs(fs.split(fileb)) do
+			table.insert(o,v)
+		end
+		return filea:match("^/?")..table.concat(o,"/")..fileb:match("/?$")
+	end,
+	resolve=function(file)
+		local b,e=file:match("^(/?).-(/?)$")
+		local t=fs.split(file)
+		local s=0
+		for l1=#t,1,-1 do
+			local c=t[l1]
+			if c=="." then
+				table.remove(t,l1)
+			elseif c==".." then
+				table.remove(t,l1)
+				s=s+1
+			elseif s>0 then
+				table.remove(t,l1)
+				s=s-1
+			end
+		end
+		return b..table.concat(t,"/")..e
+	end,
+	list=function(dir)
+		dir=dir or ""
+		local o={}
+		for fn in lfs.dir(dir) do
+			if fn~="." and fn~=".." then
+				table.insert(o,fn)
+			end
+		end
+		return o
+	end,
+}
 function tpairs(tbl)
 	local s={}
 	local c=1
