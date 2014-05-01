@@ -361,7 +361,7 @@ local function unmb(txt)
 			end
 		end
 		if not n then
-			return "unencodable character: "..i
+			return "unencodable character: "..txt:sub(a+1,a+1)
 		end
 	end
 	return out

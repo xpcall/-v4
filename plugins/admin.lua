@@ -16,36 +16,64 @@ hook.new("raw",function(txt)
 	txt:gsub("^:%S+ 319 "..cnick.." "..cnick.." :(.*)",function(chans)
 		for chan in chans:gmatch("#%S+") do
 			admin.chans[chan]={}
-			send("WHO "..chan.." %cihsna")
+			send("WHO "..chan.." %cihsnfa")
 		end
 	end)
-	txt:gsub("^:%S+ 354 "..cnick.." (%S+) (%S+) (%S+) (%S+) (%S+) (%S+)",function(chan,ip,host,server,nick,account)
-		if admin.chans[chan] then 
+	txt:gsub("^:%S+ 353 "..cnick.." . (%S+) :(.+)",function(chan,txt)
+		print("ulist "..chan.." , "..txt)
+		for user in txt:gmatch("%S+") do
+			local pfx,nick=user:match("^([@%+]?)(.+)$")
+			admin.perms[nick]=admin.perms[nick] or {op={},voice={}}
+			if pfx=="@" then
+				admin.perms[nick].op[chan]=true
+			elseif pfx=="+" then
+				admin.perms[nick].voice[chan]=true
+			end
+		end
+	end)
+	txt:gsub("^:([^%s!]+)![^%s@]+@%S+ MODE (%S+) (.)(%a) (.+)",function(nick,chan,pm,mode,user)
+		if mode=="o" then
+			admin.perms[user].op[chan]=pm=="+" or nil
+		elseif mode=="v" then
+			admin.perms[user].voice[chan]=pm=="+" or nil
+		end
+	end)
+	txt:gsub("^:%S+ 354 "..cnick.." (%S+) (%S+) (%S+) (%S+) (%S+) (%S+) (%S+)",function(chan,ip,host,server,nick,modes,account)
+		if admin.chans[chan] then
 			admin.chans[chan][nick]=true
-			admin.perms[nick]={
-				host=host,
-				server=server,
-				ip=ip,
-			}
+			admin.perms[nick]=admin.perms[nick] or {}
+			local perms=admin.perms[nick]
+			perms.op=perms.op or {}
+			perms.voice=perms.voice or {}
+			perms.host=host
+			perms.server=server
+			perms.ip=ip
 			if account~="0" then
 				admin.perms[nick].account=account
+			end
+			if modes:match("@") then
+				admin.perms[nick].op[chan]=true
+			elseif modes:match("%+") then
+				admin.perms[nick].voice[chan]=true
 			end
 		end
 	end)
 	txt:gsub("^:([^%s!]+)![^%s@]+@(%S+) JOIN (%S+)",function(nick,host,chan)
 		if nick==cnick then
 			admin.chans[chan]={}
-			send("WHO "..chan.." %cihsna")
-		end
-		admin.chans[chan]=admin.chans[chan] or {}
-		admin.chans[chan][nick]=true
-		if not admin.perms[nick] then
-			admin.perms[nick]={
-				host=host,
-				ip=socket.dns.toip(host),
-			}
+			send("WHO "..chan.." %cihsnfa")
+		else
 			send("WHOIS "..nick)
 		end
+		admin.chans[chan]=admin.chans[chan] or {}
+		admin.chans[chan][nick]=admin.chans[chan][nick] or 0
+		admin.perms[nick]=admin.perms[nick] or {}
+		local perms=admin.perms[nick]
+		perms.op=perms.op or {}
+		perms.voice=perms.voice or {}
+		perms.host=host
+		perms.ip=socket.dns.toip(host)
+		hook.queue("join",nick,chan)
 	end)
 	txt:gsub("^:%S+ 312 "..cnick.." (%S+) (%S+)",function(nick,server)
 		local p=admin.perms[nick]
@@ -116,6 +144,8 @@ hook.new("raw",function(txt)
 				user[k]=v
 			end
 		end
+		user.op=(user.op or {})[chan]==true
+		user.voice=(user.voice or {})[chan]==true
 		hook.callback=function(st,dat)
 			if st==true then
 				print("responding with "..tostring(dat))
