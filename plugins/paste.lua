@@ -1,10 +1,12 @@
+local chars="qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM0987654321"
 function paste(txt)
 	local id=""
 	for l1=1,5 do
-		id=id.._tob64[math.random(0,#_tob64)]
+		local n=math.random(1,#chars)
+		id=id..chars:sub(n,n)
 	end
 	local file=assert(io.open("www/paste/"..id..".txt","w"))
-	file:write(txt)
+	file:write(txt:sub(1,100000))
 	file:close()
 	return "http://71.238.153.166/paste/"..id..".txt"
 end

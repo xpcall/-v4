@@ -23,7 +23,7 @@ local function connect()
 end
 local function scheck(s)
 	local s,e=s:receive(0)
-	return e=="closed"
+	return e and e~="timeout"
 end
 local cl=scl:accept()
 cl:settimeout(0)

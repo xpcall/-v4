@@ -197,12 +197,7 @@ hook.new("msg",function(user,chan,txt)
 		end,debug.traceback)
 		if not err then
 			print(res)
-			local dat,err=http.request("http://hastebin.com/documents",res)
-			if dat and dat:match('{"key":"(.-)"') then
-				respond(user,"Oh noes! http://hastebin.com/"..dat:match('{"key":"(.-)"')..".txt "..res:match("^[^\n]+"))
-			else
-				respond(user,"Oh noes! "..res:match("^[^\n]+"))
-			end
+			respond(user,"Oh noes! "..paste(res))
 		end
 	end
 end)
