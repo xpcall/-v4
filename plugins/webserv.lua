@@ -8,6 +8,7 @@ local function close(cl)
 	cli[cl]=nil
 	hook.remsocket(cl)
 end
+
 function urlencode(txt)
 	return txt:gsub("\r?\n","\r\n"):gsub("[^%w ]",function(t) return string.format("%%%02X",t:byte()) end):gsub(" ","+")
 end
@@ -28,7 +29,7 @@ local ctype={
 	["html"]="text/html",
 	["css"]="text/css",
 	["png"]="image/png",
-	["txt"]="text/raw",
+	["txt"]="text/plain",
 }
 local base="www"
 local function req(cl)
@@ -130,10 +131,10 @@ end
 hook.new("select",function()
 	local cl=sv:accept()
 	while cl do
-		print("got client")
 		hook.newsocket(cl)
 		cl:settimeout(0)
 		cli[cl]={headers={},ip=cl:getpeername()}
+		print("got client "..cli[cl].ip.." "..hook.queue("command_find",nil,nil,"ip "..cli[cl].ip))
 		cl=sv:accept()
 	end
 	for cl,cldat in pairs(cli) do

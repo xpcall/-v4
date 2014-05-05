@@ -110,20 +110,6 @@ hook.new({"command_cf","command_clusterfuck"},function(user,chan,txt)
 	return res or "nil"
 end)
 
-hook.new({"command_binfuck","command_binaryfuck"},function(user,chan,txt)
-	--[[if #txt%4~=1 
-		txt=unb
-	end
-	local func,err=brainfuck(txt)
-	if not func then
-		return err
-	end
-	local func=coroutine.create(setfenv(func,_G))
-	debug.sethook(func,function() error("Time limit exeeded.",0) end,"",100000)
-	local err,res=coroutine.resume(func)
-	return res or "nil"]]
-end)
-
 function base(n,c,tf)
 	if not c then
 		return string.format("%X",n)
@@ -195,6 +181,94 @@ function tobase(str,nc,toc,flen)
 	end
 	return toc:sub(1,1):rep(math.max(0,flen-#o))..o
 end
+
+hook.new({"command_gendfuck","command_gendumbfuck"},function(user,chan,txt)
+	local function rot(c)
+		for l1=1,3 do
+			table.insert(c,1,c[8])
+			table.remove(c)
+		end
+		return c
+	end
+	local function eq(a,b)
+		return table.concat(a)==table.concat(b)
+	end
+	local c={0,0,0,0,0,0,0,0}
+	local o=""
+	return txt:gsub(".",function(char)
+		char=char:byte()
+		local cu={}
+		for l1=0,7 do
+			table.insert(cu,1,math.floor(char/(2^l1))%2)
+		end
+		local ocu={}
+		for k,v in pairs(cu) do
+			ocu[k]=v
+		end
+		local to={}
+		for b=1,2 do
+			local ato=""
+			if b==2 then
+				ato=">"
+				c={0,0,0,0,0,0,0,0}
+			end
+			for l1=1,8 do
+				if c[8]~=cu[8] then
+					ato=ato.."."
+					c[8]=cu[8]
+				end
+				local bto=""
+				for l2=1,8 do
+					if eq(ocu,c) then
+						table.insert(to,ato..bto)
+					end
+					bto=bto.."/"
+					c=rot(c)
+				end
+				ato=ato.."/"
+				cu=rot(cu)
+				c=rot(c)
+			end
+		end
+		c=""
+		local mn=math.huge
+		local out
+		for k,v in pairs(to) do
+			if #v<=mn then
+				out=v
+				mn=#v
+			end
+		end
+		c=cu
+		return out..","
+	end)
+end)
+
+hook.new({"command_dfuck","command_dumbfuck"},function(user,chan,txt)
+	local o=""
+	local ip=1
+	local ptr=0
+	local mem=setmetatable({},{__index=function() return 0 end})
+	while ip>0 and ip<=#txt do
+		local ins=txt:sub(ip,ip)
+		if ins=="<" then
+			ptr=ptr-1
+		elseif ins==">" then
+			ptr=ptr+1
+		elseif ins=="/" then
+			mem[ptr]=(math.floor(mem[ptr]/8)+((mem[ptr]%8)*32))%256
+		elseif ins=="." then
+			mem[ptr]=(math.floor(mem[ptr]/2)*2)+((mem[ptr]%2)==1 and 0 or 1)
+		elseif ins=="," then
+			o=o..string.char(mem[ptr])
+		elseif ins=="'" then
+			
+		end
+		ip=ip+1
+	end
+	return o
+end)
+
 do
 	local agony={
 		[0]="$","}","{",">","<","@","~","+","-",".",",","(",")","[","]","*"

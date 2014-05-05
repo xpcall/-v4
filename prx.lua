@@ -17,7 +17,7 @@ local function connect()
 		sv=socket.connect("irc.esper.net",6667)
 	end
 	sv:send("NICK ^v\n")
-	sv:send("USER pingbot ~ ~ :ping's bot\n")
+	sv:send("USER ping ~ ~ :pong\n")
 	sv:settimeout(0)
 	print("got server")
 end

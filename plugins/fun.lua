@@ -564,6 +564,24 @@ hook.new({"command_drama"},function(user,chan,txt)
 	return dat or "Error "..err
 end)
 
-function urlencode(txt)
-	return txt:gsub("\r?\n","\r\n"):gsub("[^%w ]",function(t) return string.format("%%%02X",t:byte()) end):gsub(" ","+")
-end
+hook.new({"command_lines"},function(user,chan,txt)
+	local count
+	function count(dir)
+		local t=0
+		for k,v in pairs(fs.list(dir)) do
+			local file=fs.combine(dir,v)
+			if fs.isDir(file) then
+				t=t+count(file)
+			elseif v:match("%.lua$") then
+				local fl=assert(io.open(file,"r"))
+				for l in fl:read("*a"):gmatch("\n") do
+					t=t+1
+				end
+				fl:close()
+			end
+		end
+		return t
+	end
+	return count(lfs.currentdir())
+end)
+

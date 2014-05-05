@@ -16,7 +16,7 @@ hook.new("raw",function(txt)
 	txt:gsub("^:%S+ 319 "..cnick.." "..cnick.." :(.*)",function(chans)
 		for chan in chans:gmatch("#%S+") do
 			admin.chans[chan]={}
-			send("WHO "..chan.." %cihsnfa")
+			send("WHO "..chan.." %cuihsnfar")
 		end
 	end)
 	txt:gsub("^:%S+ 353 "..cnick.." . (%S+) :(.+)",function(chan,txt)
@@ -38,7 +38,7 @@ hook.new("raw",function(txt)
 			admin.perms[user].voice[chan]=pm=="+" or nil
 		end
 	end)
-	txt:gsub("^:%S+ 354 "..cnick.." (%S+) (%S+) (%S+) (%S+) (%S+) (%S+) (%S+)",function(chan,ip,host,server,nick,modes,account)
+	txt:gsub("^:%S+ 354 "..cnick.." (%S+) (%S+) (%S+) (%S+) (%S+) (%S+) (%S+) (%S+) :(.+)",function(chan,username,ip,host,server,nick,modes,account,realname)
 		if admin.chans[chan] then
 			admin.chans[chan][nick]=true
 			admin.perms[nick]=admin.perms[nick] or {}
@@ -48,6 +48,9 @@ hook.new("raw",function(txt)
 			perms.host=host
 			perms.server=server
 			perms.ip=ip
+			perms.nick=nick
+			perms.realname=realname
+			perms.username=username
 			if account~="0" then
 				admin.perms[nick].account=account
 			end
@@ -58,10 +61,10 @@ hook.new("raw",function(txt)
 			end
 		end
 	end)
-	txt:gsub("^:([^%s!]+)![^%s@]+@(%S+) JOIN (%S+)",function(nick,host,chan)
+	txt:gsub("^:([^%s!]+)!([^%s@]+)@(%S+) JOIN (%S+)",function(nick,username,host,chan)
 		if nick==cnick then
 			admin.chans[chan]={}
-			send("WHO "..chan.." %cihsnfa")
+			send("WHO "..chan.." %cuihsnfar")
 		else
 			send("WHOIS "..nick)
 		end
@@ -73,7 +76,14 @@ hook.new("raw",function(txt)
 		perms.voice=perms.voice or {}
 		perms.host=host
 		perms.ip=socket.dns.toip(host)
+		perms.nick=nick
+		perms.username=username
 		hook.queue("join",nick,chan)
+	end)
+	txt:gsub("^:%S+ 311 "..cnick.." (%S+) .- :(.+)",function(nick,realname)
+		if admin.perms[nick] then
+			admin.perms[nick].realname=realname
+		end
 	end)
 	txt:gsub("^:%S+ 312 "..cnick.." (%S+) (%S+)",function(nick,server)
 		local p=admin.perms[nick]
@@ -116,14 +126,15 @@ hook.new("raw",function(txt)
 		admin.perms[nick]=nil
 	end)
 	txt:gsub("^:([^%s!]+)![^%s@]+@%S+ NICK :(.+)",function(nick,tonick)
-		hook.queue("nick",nick,tonick)
 		if admin.perms[nick] then
 			for k,v in pairs(admin.chans) do
 				v[tonick]=v[nick]
 				v[nick]=nil
 			end
+			admin.perms[nick].nick=tonick
 			admin.perms[tonick]=admin.perms[nick]
 			admin.perms[nick]=nil
+			hook.queue("nick",nick,tonick)
 		end
 	end)
 	txt:gsub("^:([^%s!]+)![^%s@]+@(%S+) QUIT :.*",function(nick)
@@ -186,4 +197,26 @@ hook.new({"command_host"},function(user,chan,txt)
 		return (admin.perms[user.nick] or {}).host or "none"
 	end
 	return (admin.perms[txt] or {}).host or "none"
+end)
+
+hook.new({"command_find"},function(user,chan,txt)
+	local a,b=txt:match("^(%S+) (.+)")
+	local o={}
+	for k,v in pairs(admin.perms) do
+		if v[a]==b then
+			table.insert(o,k)
+		end
+	end
+	return limitoutput(table.concat(o,","))
+end)
+
+hook.new({"command_pfind"},function(user,chan,txt)
+	local a,b=txt:match("^(%S+) (.+)")
+	local o={}
+	for k,v in pairs(admin.perms) do
+		if v[a]:match(b) then
+			table.insert(o,k)
+		end
+	end
+	return limitoutput(table.concat(o,","))
 end)

@@ -7,7 +7,7 @@ local function maxval(tbl)
 	end
 	return mx
 end
-local function foutput(txt)
+function limitoutput(txt)
 	if #txt>250 then
 		return paste(txt)
 	end
@@ -32,7 +32,7 @@ hook.new({"command_>"},function(user,chan,txt)
 		for l1=2,maxval(res) do
 			o=(o or "")..tostring(res[l1]).."\n"
 		end
-		return foutput(o or "nil")
+		return limitoutput(o or "nil")
 	end
 end)
 
@@ -54,7 +54,7 @@ hook.new({"command_<"},function(user,chan,txt)
 		for l1=2,maxval(res) do
 			o=(o or "")..tostring(res[l1]).."\n"
 		end
-		return foutput(o or "nil")
+		return limitoutput(o or "nil")
 	end
 end)
 
@@ -66,7 +66,7 @@ hook.new({"command_l","command_lua"},function(user,chan,txt)
 	file:write(txt)
 	file:close()
 	local fi=io.popen("lua52.exe sbox.lua")
-	return foutput(fi:read("*a"))
+	return limitoutput(fi:read("*a"))
 end)
 
 hook.new({"command_l53","command_lua53"},function(user,chan,txt)
@@ -77,7 +77,7 @@ hook.new({"command_l53","command_lua53"},function(user,chan,txt)
 	file:write(txt)
 	file:close()
 	local fi=io.popen("lua53.exe sbox.lua")
-	return foutput(fi:read("*a"))
+	return limitoutput(fi:read("*a"))
 end)
 
 hook.new({"command_l32","command_lua32"},function(user,chan,txt)
@@ -95,7 +95,7 @@ hook.new({"command_l32","command_lua32"},function(user,chan,txt)
 			table.insert(o,line)
 			line=fi:read("*l")
 		end
-		return foutput(table.concat(o," | "))
+		return limitoutput(table.concat(o," | "))
 	end
 end)
 
@@ -144,7 +144,7 @@ hook.new({"command_calc"},function(user,chan,txt)
 	if not func then
 		func,err=loadstring(txt,"=lua")
 		if not func then
-			return foutput(erro or err)
+			return limitoutput(erro or err)
 		end
 	end
 	local meta
@@ -186,7 +186,7 @@ hook.new({"command_calc"},function(user,chan,txt)
 	for l1=2,#res do
 		o=o..tostring(res[l1]).."\n"
 	end
-	return foutput(erro or o)
+	return limitoutput(erro or o)
 end)
 
 do
@@ -345,7 +345,7 @@ do
 		if not func then
 			func,err=loadstring(txt,"=lua51")
 			if not func then
-				return foutput(err)
+				return limitoutput(err)
 			end
 		end
 		local func=coroutine.create(setfenv(func,sbox))
@@ -361,6 +361,6 @@ do
 		for l1=2,maxval(res) do
 			o=(o or "")..tostring(res[l1]).."\n"
 		end
-		return foutput(out..(o or "nil"))
+		return limitoutput(out..(o or "nil"))
 	end)
 end

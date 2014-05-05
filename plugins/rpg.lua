@@ -3,7 +3,7 @@ local file=io.open("db/rpg","r")
 if file then
 	rpg=unserialize(file:read("*a"))
 	if not rpg then
-		srpg={}
+		rpg={}
 	end
 end
 local function update()
