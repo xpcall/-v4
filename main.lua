@@ -73,6 +73,10 @@ fs={
 		return o
 	end,
 }
+function timestamp()
+	local date=os.date("!*t")
+	return date.month.."/"..date.day.." "..date.hour..":"..("0"):rep(2-#tostring(date.min))..date.min
+end
 function tpairs(tbl)
 	local s={}
 	local c=1
@@ -204,9 +208,18 @@ hook.new("msg",function(user,chan,txt)
 	end
 end)
 
-for fn in lfs.dir("plugins") do
-	if fn:sub(-4,-1)==".lua" then
-		setfenv(assert(loadfile("plugins/"..fn)),plenv)()
+do
+	local loaded={}
+	function reqplugin(fn)
+		if not loaded[fn] then
+			setfenv(assert(loadfile("plugins/"..fn)),plenv)()
+		end
+		loaded[fn]=true
+	end
+	for fn in lfs.dir("plugins") do
+		if fn:sub(-4,-1)==".lua" then
+			reqplugin(fn)
+		end
 	end
 end
 

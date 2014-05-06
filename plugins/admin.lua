@@ -2,6 +2,24 @@ admin={}
 admin.perms={}
 admin.chans={}
 
+function admin.match(user,txt)
+	local pfx,mt=txt:match("^$([ar]):(.+)")
+	mt=pescape(mt or txt):gsub("%%%*",".-")
+	return (pfx=="a" and user.account:match(mt)~=nil)
+		or (pfx=="r" and user.realname:match(mt)~=nil)
+		or (not pfx and (user.nick.."!"..user.username.."@"..user.host):match(mt)~=nil)
+end
+
+function admin.find(txt)
+	local o={}
+	for k,v in pairs(admin.perms) do
+		if admin.match(v,txt) then
+			table.insert(o,k)
+		end
+	end
+	return o
+end
+
 function admin.auth(user,resp)
 	if admin.perms[user.nick]==nil or admin.perms[user.nick].account~="ping" then
 		if not resp then

@@ -1,4 +1,4 @@
-tcpnet=socket.connect("71.238.153.166",25476)
+local tcpnet=socket.connect("71.238.153.166",25476)
 if tcpnet then
 	local file=io.open("tcpnetpassword.txt","r")
 	local port=file:read("*a"):gsub("[\r\n]","")

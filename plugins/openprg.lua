@@ -41,7 +41,18 @@ hook.new("command_openprg",function(user,chan,txt)
 	file:write(serialize(last))
 	file:close()
 	if update then
-		os.execute("start openprograms.bat")
+		local file=io.open("openprograms.bat","w")
+		file:write([[cd C:\Users\Kevin\Documents\GitHub\openprograms.github.io
+git pull
+lua C:\Users\Kevin\Documents\GitHub\openprograms.github.io\generate.lua
+git commit
+git add index.html
+git add style.css
+git commit -m "Auto compile"
+git push
+exit]])
+		file:close()
+		os.execute("openprograms.bat")
 		return "Updated "..table.concat(updated,", ")
 	else
 		return "No updates"
