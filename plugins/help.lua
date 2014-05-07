@@ -11,7 +11,7 @@ hook.new({"command_git","command_github"},function(user,chan,txt)
 end)
 
 hook.new({"command_openprograms","command_openp"},function(user,chan,txt)
-	return "https://github.com/OpenPrograms/"..txt
+	return "openprograms.github.io https://github.com/OpenPrograms/"..txt
 end)
 
 hook.new({"command_opencomponents","command_openc"},function(user,chan,txt)

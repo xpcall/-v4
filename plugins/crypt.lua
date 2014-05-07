@@ -7,3 +7,14 @@ function crypt.xor(a,b)
 	end
 	return o
 end
+function crypt.rot13(txt)
+	txt=txt:gsub("%l",function(c)
+		return string.char((((c:byte()-97)+13)%26)+97)
+	end):gsub("%u",function(c)
+		return string.char((((c:byte()-65)+13)%26)+65)
+	end)
+	return txt
+end
+hook.new("command_rot13",function(user,chan,txt)
+	return crypt.rot13(txt)
+end)

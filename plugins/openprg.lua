@@ -27,7 +27,7 @@ hook.new("command_openprg",function(user,chan,txt)
 			end
 			local commit=git.get(v.commits_url:gsub("{/sha}","/"..l.sha))
 			for c,f in pairs(commit.files) do
-				if f.filename=="programs.yaml" then
+				if f.filename=="programs.yaml" or (v.name=="openprograms.github.io" and f.filename=="repos.yaml") then
 					table.insert(updated,v.name)
 					update=true
 					tupdate=true

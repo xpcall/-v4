@@ -36,6 +36,26 @@ hook.new({"command_>"},function(user,chan,txt)
 	end
 end)
 
+do
+	local c={}
+	hook.new({"command_a>"},function(user,chan,txt)
+		if admin.auth(user) then
+			if txt:sub(1,1)=="\27" then
+				return "Nope."
+			end
+			local func,err=loadstring("return "..txt,"=lua")
+			if not func then
+				func,err=loadstring(txt,"=lua")
+				if not func then
+					return err
+				end
+			end
+			async.new(setfenv(func,_G))
+			return "Running."
+		end
+	end)
+end
+
 hook.new({"command_<"},function(user,chan,txt)
 	if admin.auth(user) then
 		if txt:sub(1,1)=="\27" then

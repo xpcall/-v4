@@ -177,36 +177,6 @@ local plenv=setmetatable({
 	lanes=lanes,
 },{__index=_G,__newindex=_G})
 plenv._G=plenv
-hook.new("msg",function(user,chan,txt)
-	if chan~="#computercraft" then -- no bawts allowed
-		txt=txt:gsub("%s+$","")
-		if txt:sub(1,1)=="." then
-			local err,res=xpcall(function()
-				print(user.nick.." used "..txt)
-				local cb=function(st,dat)
-					if st==true then
-						print("responding with "..tostring(dat))
-						respond(user,tostring(dat))
-					elseif st then
-						print("responding with "..tostring(st))
-						respond(user,user.nick..", "..tostring(st))
-					end
-				end
-				hook.callback=cb
-				hook.queue("command",user,chan,txt:sub(2))
-				local cmd,param=txt:match("^%.(%S+) ?(.*)")
-				if cmd then
-					hook.callback=cb
-					hook.queue("command_"..cmd,user,chan,param)
-				end
-			end,debug.traceback)
-			if not err then
-				print(res)
-				respond(user,"Oh noes! "..paste(res))
-			end
-		end
-	end
-end)
 
 do
 	local loaded={}
@@ -235,5 +205,5 @@ while true do
 			error(e)
 		end
 	end
-	hook.queue("select",socket.select(hook.sel,nil,math.min(10,hook.interval or 10)))
+	hook.queue("select",socket.select(hook.sel,hook.rsel,math.min(10,hook.interval or 10)))
 end

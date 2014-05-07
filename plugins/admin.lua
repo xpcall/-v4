@@ -1,10 +1,11 @@
 admin={}
 admin.perms={}
 admin.chans={}
+admin.cmd={}
 
 function admin.match(user,txt)
 	local pfx,mt=txt:match("^$([ar]):(.+)")
-	mt=pescape(mt or txt):gsub("%%%*",".-")
+	mt="^"..pescape(mt or txt):gsub("%%%*",".-").."$"
 	return (pfx=="a" and user.account:match(mt)~=nil)
 		or (pfx=="r" and user.realname:match(mt)~=nil)
 		or (not pfx and (user.nick.."!"..user.username.."@"..user.host):match(mt)~=nil)
@@ -28,6 +29,58 @@ function admin.auth(user,resp)
 		return false
 	end
 	return true
+end
+
+do
+	admin.ignore={}
+	local file=io.open("db/ignore","r")
+	if file then
+		admin.ignore=unserialize(file:read("*a"))
+		if not ignore then
+			admin.ignore={}
+		end
+	end
+	local function save()
+		local file=io.open("db/ignore","w")
+		file:write(serialize(ignore))
+		file:close()
+	end
+	hook.new("command_ignore",function(user,chan,txt)
+		if admin.perms[txt] then
+			txt="*!*@"..admin.perms[txt].host
+		end
+		if admin.ignore[txt] then
+			return "Ignore unchanged."
+		else
+			admin.ignore[txt]=true
+			save()
+			return "Ignored "..txt
+		end
+	end)
+	hook.new("command_unignore",function(user,chan,txt)
+		if admin.perms[txt] then
+			local u=false
+			for k,v in tpairs(admin.ignore) do
+				if admin.match(admin.perms[txt],k) then
+					admin.ignore[k]=nil
+					u=true
+				end
+			end
+			if u then
+				return "Unignored."
+			else
+				return "Ignore unchanged."
+			end
+		else
+			if admin.ignore[txt] then
+				admin.ignore[txt]=nil
+				save()
+				return "Unignored."
+			else
+				return "Ignore unchanged."
+			end
+		end
+	end)
 end
 
 hook.new("raw",function(txt)
@@ -194,6 +247,42 @@ hook.new("raw",function(txt)
 			end
 		end
 	end)
+end)
+
+hook.new("msg",function(user,chan,txt)
+	for k,v in pairs(admin.ignore) do
+		if v and admin.match(user,k) then
+			return
+		end
+	end
+	if chan~="#computercraft" then -- no bawts allowed
+		txt=txt:gsub("%s+$","")
+		if txt:sub(1,1)=="." then
+			local err,res=xpcall(function()
+				print(user.nick.." used "..txt)
+				local cb=function(st,dat)
+					if st==true then
+						print("responding with "..tostring(dat))
+						respond(user,tostring(dat))
+					elseif st then
+						print("responding with "..tostring(st))
+						respond(user,user.nick..", "..tostring(st))
+					end
+				end
+				hook.callback=cb
+				hook.queue("command",user,chan,txt:sub(2))
+				local cmd,param=txt:match("^%.(%S+) ?(.*)")
+				if cmd then
+					hook.callback=cb
+					hook.queue("command_"..cmd,user,chan,param)
+				end
+			end,debug.traceback)
+			if not err then
+				print(res)
+				respond(user,"Oh noes! "..paste(res))
+			end
+		end
+	end
 end)
 
 hook.new("command_account",function(user,chan,txt)

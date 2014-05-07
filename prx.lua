@@ -16,9 +16,9 @@ local function connect()
 		print("retrying")
 		sv=socket.connect("irc.esper.net",6667)
 	end
-	sv:send("NICK ^v\n")
-	sv:send("USER ping ~ ~ :ping's bot\n")
-	sv:settimeout(0)
+	assert(sv:send("NICK ^v\n"))
+	assert(sv:send("USER ping ~ ~ :ping's bot\n"))
+	assert(sv:settimeout(0))
 	print("got server")
 end
 local function scheck(s)
@@ -47,7 +47,7 @@ while true do
 			log("<^v> "..txt)
 		end
 		print("<"..s)
-		sv:send(s.."\n")
+		assert(sv:send(s.."\n"))
 	end
 	local s,e=sv:receive()
 	if s then
@@ -77,10 +77,10 @@ while true do
 			log(nick.." is now known as "..tonick)
 		end
 		print(">"..s)
-		cl:send(s.."\n")
+		assert(cl:send(s.."\n"))
 		local pong=s:match("^PING (.+)$")
 		if pong then
-			sv:send("PONG "..pong.."\n")
+			assert(sv:send("PONG "..pong.."\n"))
 			print("<PONG "..pong)
 		end
 	end
