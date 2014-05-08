@@ -348,15 +348,17 @@ do
 		end
 		usr=user
 		sbox.user={}
-		sbox.irc={}
+		sbox.chan={}
 		for k,v in pairs(admin.chans[chan] or {}) do
-			sbox.irc[k]={nick=k}
-			local u=sbox.irc[k]
+			sbox.chan[k]={nick=k}
+			local u=sbox.chan[k]
 			for k,v in pairs(admin.perms[k]) do
 				u[k]=v
 			end
+			u.op=u.op[chan] or false
+			u.voice=u.voice[chan] or false
 		end
-		sbox.irc[user.nick]=sbox.user
+		sbox.chan[user.nick]=sbox.user
 		for k,v in pairs(user) do
 			sbox.user[k]=v
 		end

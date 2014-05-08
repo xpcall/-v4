@@ -258,29 +258,31 @@ hook.new("msg",function(user,chan,txt)
 	if chan~="#computercraft" then -- no bawts allowed
 		txt=txt:gsub("%s+$","")
 		if txt:sub(1,1)=="." then
-			local err,res=xpcall(function()
-				print(user.nick.." used "..txt)
-				local cb=function(st,dat)
-					if st==true then
-						print("responding with "..tostring(dat))
-						respond(user,tostring(dat))
-					elseif st then
-						print("responding with "..tostring(st))
-						respond(user,user.nick..", "..tostring(st))
+			async.new(function()
+				local err,res=xpcall(function()
+					print(user.nick.." used "..txt)
+					local cb=function(st,dat)
+						if st==true then
+							print("responding with "..tostring(dat))
+							respond(user,tostring(dat))
+						elseif st then
+							print("responding with "..tostring(st))
+							respond(user,user.nick..", "..tostring(st))
+						end
 					end
-				end
-				hook.callback=cb
-				hook.queue("command",user,chan,txt:sub(2))
-				local cmd,param=txt:match("^%.(%S+) ?(.*)")
-				if cmd then
 					hook.callback=cb
-					hook.queue("command_"..cmd,user,chan,param)
+					hook.queue("command",user,chan,txt:sub(2))
+					local cmd,param=txt:match("^%.(%S+) ?(.*)")
+					if cmd then
+						hook.callback=cb
+						hook.queue("command_"..cmd,user,chan,param)
+					end
+				end,debug.traceback)
+				if not err then
+					print(res)
+					respond(user,"Oh noes! "..paste(res))
 				end
-			end,debug.traceback)
-			if not err then
-				print(res)
-				respond(user,"Oh noes! "..paste(res))
-			end
+			end)
 		end
 	end
 end)
