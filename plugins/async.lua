@@ -51,7 +51,7 @@ function async.socket(sk,err)
 							return false,err
 						end
 						hook.newrsocket(sk)
-						local a,b=async.pullHook("select")
+						local a,b=async.pull("select")
 						hook.remrsocket(sk)
 						for k,v in pairs(b) do
 							if v==sk then

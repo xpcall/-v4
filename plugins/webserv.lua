@@ -122,11 +122,10 @@ local function req(cl)
 		o=o.."\r\n"..k..": "..v
 	end
 	cl:send(o.."\r\n\r\n")
-	for l1=1,#res.data,8192 do
-		socket.select(nil,{cl})
-		cl:send(res.data,l1,l1+8191)
-	end
-	close(cl)
+	async.new(function()
+		async.socket(cl).send(res.data)
+		close(cl)
+	end)
 end
 hook.new("select",function()
 	local cl=sv:accept()

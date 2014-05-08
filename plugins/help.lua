@@ -87,7 +87,7 @@ hook.new({"command_r","command_release","command_releases"},function(user,chan,t
 	end
 	dat=dat[1]
 	local burl="https://github.com/MightyPirates/OpenComputers/releases/download/"..dat.tag_name.."/"
-	return "Latest release: "..dat.name.." Download: 1.6.4 "..shorturl(burl..dat.assets[1].name).." 1.7.2 "..shorturl(burl..dat.assets[1].name)
+	return "Latest release: "..dat.name.." Download: 1.6.4 "..shorturl(burl..dat.assets[1].name).." 1.7.2 "..shorturl(burl..dat.assets[2].name)
 end)
 
 hook.new({"command_dlstats","command_downloads"},function(user,chan,txt)
