@@ -36,6 +36,33 @@ local ctype={
 	["txt"]="text/plain",
 }
 
+local function form(cl,res)
+	local cldat=cli[cl]
+	local headers=res.headers or {}
+	local code=code or "200 Found"
+	headers["Server"]="Less fail lua webserver"
+	headers["Content-Length"]=headers["Content-Length"] or #(res.data or "")
+	headers["Content-Type"]=headers["Content-Type"] or res.type or "text/html"
+	headers["Connection"]=(headers["Connection"] or "Keep-Alive"):lower()
+	local o="HTTP/1.1 "..code
+	for k,v in pairs(headers) do
+		o=o.."\r\n"..k..": "..v
+	end
+	async.new(function()
+		async.socket(cl).send(o.."\r\n\r\n"..res.data)
+		if headers["Connection"]=="keep-alive" then
+			for k,v in pairs(cldat) do
+				if k~=ip then
+					cldat[k]=nil
+				end
+			end
+			cldat.headers={}
+		else
+			close(cl)
+		end
+	end)
+end
+
 local base="www"
 local function req(cl)
 	local cldat=cli[cl]
@@ -71,16 +98,15 @@ local function req(cl)
 						o=o.."<a href=\""..fs.combine(url,v):gsub("^/","").."\">"..htmlencode(v).."</a><br>"
 					end
 					res.data=o
-					--res.data="<center><h1>Too lazy to make file index.</h1></center>"
 				end
 			end
 			if not res.data then
 				local bse=fs.combine(base,url):gsub("/$","")
 				local ext=url:match(".+%.(.-)$") or ""
 				res.type=ctype[ext]
-				local fl=assert(io.open(bse,"rb"))
+				local data=fs.read(bse)
 				if ext=="lua" then
-					local func,err=loadstring(fl:read("*a"),"="..url)
+					local func,err=loadstring(data,"="..url)
 					if not func then
 						res.data=err:gsub("\n","<br>")
 						res.code="500 Internal Server Error"
@@ -110,27 +136,14 @@ local function req(cl)
 						end
 					end
 				else
-					res.data=fl:read("*a")
-					fl:close()
+					res.data=data
 				end
 			end
 		end
 	end
-	res.headers=res.headers or {}
-	res.headers["Content-Length"]=#res.data
-	res.code=res.code or "200 Found"
-	res.headers["Content-Type"]=res.headers["Content-Type"] or res.type or "text/html"
-	res.headers["Connection"]="close"
-	local o="HTTP/1.1 "..res.code
-	for k,v in pairs(res.headers) do
-		o=o.."\r\n"..k..": "..v
-	end
-	cl:send(o.."\r\n\r\n")
-	async.new(function()
-		async.socket(cl).send(res.data)
-		close(cl)
-	end)
+	form(cl,res)
 end
+
 hook.new("select",function()
 	local cl=sv:accept()
 	while cl do
@@ -156,7 +169,13 @@ hook.new("select",function()
 					elseif cldat.method=="GET" then
 						req(cl)
 					else
-						close(cl)
+						form(cl,{
+							code="405 Method Not Allowed",
+							data="<center><h1>404 Not found.</h1></center>",
+							headers={
+								["Allow"]="GET, POST, HEAD"
+							},
+						})
 					end
 				else
 					if not s:match(":") then
