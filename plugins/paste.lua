@@ -12,4 +12,7 @@ function paste(txt)
 end
 hook.new("command_paste",function(user,chan,txt)
 	return paste(txt)
-end)
+end,{
+	desc="posts text to the webserver",
+	group="misc",
+})

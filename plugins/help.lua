@@ -4,19 +4,31 @@ end
 
 hook.new({"command_forums","command_f"},function(user,chan,txt)
 	return "http://oc.cil.li/"
-end)
+end,{
+	desc="links to the forums",
+	group="help",
+})
 
 hook.new({"command_git","command_github"},function(user,chan,txt)
-	return "https://github.com/MightyPirates/OpenComputers/"
-end)
+	return "https://github.com/MightyPirates/OpenComputers/"..txt
+end,{
+	desc="links to the oc github",
+	group="help",
+})
 
 hook.new({"command_openprograms","command_openp"},function(user,chan,txt)
 	return "openprograms.github.io https://github.com/OpenPrograms/"..txt
-end)
+end,{
+	desc="links to the openprograms site and github",
+	group="help",
+})
 
 hook.new({"command_opencomponents","command_openc"},function(user,chan,txt)
 	return "http://ci.cil.li/job/OpenComponents/"..txt
-end)
+end,{
+	desc="links to the opencomponents jenkins",
+	group="help",
+})
 
 jenkins={
 	[{"http://ci.cil.li/job/OpenComputers/api/json?depth=1","OpenComputers"}]={"oc","opencomputers","16","164","oc16","oc164"},
@@ -70,7 +82,10 @@ hook.new({"command_j","command_build","command_beta"},function(user,chan,txt)
 		url=url or dat.artifacts[1].relativePath
 		return "Last sucessful build for "..jenkins[txt][2]..": "..shorturl(dat.url.."artifact/"..url).." "..days..hours..minutes.."ago"
 	end
-end)
+end,{
+	desc="links downloads for jenkins",
+	group="help",
+})
 
 hook.new({"command_r","command_release","command_releases"},function(user,chan,txt)
 	local dat,err=https.request("https://api.github.com/repos/MightyPirates/OpenComputers/releases")
@@ -88,7 +103,10 @@ hook.new({"command_r","command_release","command_releases"},function(user,chan,t
 	dat=dat[1]
 	local burl="https://github.com/MightyPirates/OpenComputers/releases/download/"..dat.tag_name.."/"
 	return "Latest release: "..dat.name.." Download: 1.6.4 "..shorturl(burl..dat.assets[1].name).." 1.7.2 "..shorturl(burl..dat.assets[2].name)
-end)
+end,{
+	desc="links downloads for releases",
+	group="help",
+})
 
 hook.new({"command_dlstats","command_downloads"},function(user,chan,txt)
 	local dat,err=https.request("https://api.github.com/repos/MightyPirates/OpenComputers/releases")
@@ -128,7 +146,10 @@ hook.new({"command_dlstats","command_downloads"},function(user,chan,txt)
 		end
 	end
 	return "Total: "..fancynum(total).." 1.6: "..math.round((v16/total)*100,2).."% 1.7: "..math.round((v17/total)*100,2).."% Most popular: "..cnt.." with "..fancynum(mx).." downloads"
-end)
+end,{
+	desc="oc github download statistics",
+	group="help",
+})
 
 dofile("help.lua")
 local owikinames
@@ -228,7 +249,10 @@ do
 		else
 			return "Not found."
 		end
-	end)
+	end,{
+		desc="lists help for functions/wiki pages",
+		group="help",
+	})
 end
 
 do
@@ -253,5 +277,10 @@ do
 	end
 	hook.new({"command_req","command_require"},function(user,chan,txt)
 		return req[txt:lower()] or "Not found."
-	end)
+	end,{
+		desc="generates code to require a component or api",
+		group="help",
+	})
 end
+
+

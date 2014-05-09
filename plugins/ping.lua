@@ -6,7 +6,10 @@ hook.new("command_ping",function(user,chan,txt)
 	end
 	send("PRIVMSG "..un.." :\1PING\1")
 	pings[un]={user.chan==cnick and "NOTICE "..user.nick or "PRIVMSG "..user.chan,socket.gettime(),un}
-end)
+end,{
+	desc="CTCP pings someone",
+	group="misc",
+})
 hook.new("raw",function(txt)
 	local usr,nt=txt:match("^:([^%s!]+)![^%s@]+@%S+ NOTICE "..cnick.." :\1PING.-\1")
 	if usr and pings[usr] then

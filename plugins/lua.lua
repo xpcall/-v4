@@ -34,7 +34,10 @@ hook.new({"command_>"},function(user,chan,txt)
 		end
 		return limitoutput(o or "nil")
 	end
-end)
+end,{
+	desc="admin lua",
+	group="admin",
+})
 
 do
 	local c={}
@@ -53,7 +56,10 @@ do
 			async.new(setfenv(func,_G))
 			return "Running."
 		end
-	end)
+	end,{
+		desc="asyncronous admin lua",
+		group="admin",
+	})
 end
 
 hook.new({"command_<"},function(user,chan,txt)
@@ -76,7 +82,10 @@ hook.new({"command_<"},function(user,chan,txt)
 		end
 		return limitoutput(o or "nil")
 	end
-end)
+end,{
+	desc="admin lua with no time limit",
+	group="admin",
+})
 
 hook.new({"command_l","command_lua"},function(user,chan,txt)
 	if txt:sub(1,1)=="\27" then
@@ -87,7 +96,10 @@ hook.new({"command_l","command_lua"},function(user,chan,txt)
 	file:close()
 	local fi=io.popen("lua52.exe sbox.lua")
 	return limitoutput(fi:read("*a"))
-end)
+end,{
+	desc="executes lua 5.2 code",
+	group="help",
+})
 
 hook.new({"command_l53","command_lua53"},function(user,chan,txt)
 	if txt:sub(1,1)=="\27" then
@@ -98,7 +110,10 @@ hook.new({"command_l53","command_lua53"},function(user,chan,txt)
 	file:close()
 	local fi=io.popen("lua53.exe sbox.lua")
 	return limitoutput(fi:read("*a"))
-end)
+end,{
+	desc="executes lua 5.3 code",
+	group="help",
+})
 
 hook.new({"command_l32","command_lua32"},function(user,chan,txt)
 	if admin.auth(user) then
@@ -117,7 +132,10 @@ hook.new({"command_l32","command_lua32"},function(user,chan,txt)
 		end
 		return limitoutput(table.concat(o," | "))
 	end
-end)
+end,{
+	desc="executes lua 3.2 code",
+	group="admin",
+})
 
 hook.new({"command_ips"},function(user,chan,txt)
 	local p=coroutine.create(function()
@@ -138,20 +156,29 @@ hook.new({"command_ips"},function(user,chan,txt)
 	end,"",1000000)
 	coroutine.resume(p)
 	return rt
-end)
+end,{
+	desc="benchmarks instructions per second",
+	group="fun",
+})
 
 hook.new({"command_bm","command_benchmark"},function(user,chan,txt)
 	local t=socket.gettime()
 	local o=hook.queue("command_lua51",user,chan,txt) or ""
 	return socket.gettime()-t.."\n"..o
-end)
+end,{
+	desc="benchmarks lua 5.1 code",
+	group="fun",
+})
 
 hook.new({"command_cmd"},function(user,chan,txt)
 	if admin.auth(user) then
 		local cm=io.popen(txt,"r")
 		return cm:read("*a")
 	end
-end)
+end,{
+	desc="executes batch",
+	group="admin",
+})
 
 hook.new({"command_calc"},function(user,chan,txt)
 	local erro
@@ -207,7 +234,10 @@ hook.new({"command_calc"},function(user,chan,txt)
 		o=o..tostring(res[l1]).."\n"
 	end
 	return limitoutput(erro or o)
-end)
+end,{
+	desc="calculates large numbers",
+	group="help",
+})
 
 do
 	local sbox
@@ -341,7 +371,10 @@ do
 	hook.new({"command_rstl51","command_resetlua51"},function(user,chan,txt)
 		rst()
 		return "Sandbox reset."
-	end)
+	end,{
+		desc="resets the lua 5.1 sandbox",
+		group="help",
+	})
 	hook.new({"command_l51","command_lua51"},function(user,chan,txt)
 		if txt:sub(1,1)=="\27" then
 			return "Nope."
@@ -384,5 +417,8 @@ do
 			o=(o or "")..tostring(res[l1]).."\n"
 		end
 		return limitoutput(out..(o or "nil"))
-	end)
+	end,{
+		desc="executes lua 5.1 code",
+		group="help",
+	})
 end

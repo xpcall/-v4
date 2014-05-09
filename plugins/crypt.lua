@@ -17,4 +17,7 @@ function crypt.rot13(txt)
 end
 hook.new("command_rot13",function(user,chan,txt)
 	return crypt.rot13(txt)
-end)
+end,{
+	desc="most secure encryption ever made",
+	group="fun",
+})

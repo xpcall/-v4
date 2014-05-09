@@ -20,20 +20,45 @@ end
 hook.new({"command_rep","command_repeat"},function(user,chant,txt)
 	local str,num=txt:match("^(.+) (%d+)")
 	return str and str:rep(tonumber(num)) or "Usage: .repeat <text> <number>"
+end,{
+	desc="repeats a string",
+	group="misc",
+})
+
+hook.new({"command_ip2num"},function(user,chan,txt)
+	local ip=txt:tmatch("%d+")
+	return tostring((ip[1]*16777216)+(ip[2]*65536)+(ip[3]*256)+ip[4])
+end)
+
+hook.new({"command_num2ip"},function(user,chan,txt)
+	local ip=txt:tmatch("%d+")
+	return tostring((ip[1]*16777216)+(ip[2]*65536)+(ip[3]*256)+ip[4])
 end)
 
 hook.new({"command_derp"},function()
 	return "herp"
-end)
+end,{
+	desc="herp",
+	group="fun",
+})
 hook.new({"command_herp"},function()
 	return "derp"
-end)
+end,{
+	desc="derp",
+	group="fun",
+})
 hook.new({"command_beep"},function()
 	return "boop"
-end)
+end,{
+	desc="boop",
+	group="fun",
+})
 hook.new({"command_boop"},function()
 	return "beep"
-end)
+end,{
+	desc="beep",
+	group="fun",
+})
 
 do
 	local ukey={
@@ -89,7 +114,10 @@ do
 			end)
 		end
 		return txt
-	end)
+	end,{
+		desc="mispells text",
+		group="fun",
+	})
 end
 
 function splitn(txt,num)
@@ -102,8 +130,11 @@ function splitn(txt,num)
 end
 
 hook.new({"command_slap"},function(user,chan,txt)
-	send("PRIVMSG "..(chan==cnick and user.nick or chan).." :\1ACTION slaps "..txt.."\1")
-end)
+	return true,"\1ACTION slaps "..txt.."\1"
+end,{
+	desc="slaps someone",
+	group="fun",
+})
 
 hook.new({"command_wikipedia"},function(user,chan,txt)
 	local sv=socket.connect("en.wikipedia.org",80)
@@ -121,7 +152,10 @@ hook.new({"command_wikipedia"},function(user,chan,txt)
 		s,e=sv:receive()
 	end
 	return e
-end)
+end,{
+	desc="generates random wikipedia page",
+	group="fun",
+})
 
 hook.new({"command_rainbow","command_rb"},function(user,chan,txt)
 	local c=0
@@ -130,19 +164,31 @@ hook.new({"command_rainbow","command_rb"},function(user,chan,txt)
 		c=(c%9)+1
 		return "\3"..colors[c]..t
 	end)
-end)
+end,{
+	desc="turns text into a rainbow",
+	group="fun",
+})
 
 hook.new({"command_source","command_sauce"},function(user,chan,txt)
 	return "https://github.com/P-T-/-v4/"
-end)
+end,{
+	desc="my source",
+	group="misc",
+})
 
 hook.new({"command_wobbo","command_dubstep"},function(user,chan,txt)
 	return string.rep("Wobbo",math.random(5,15)):gsub("o",function() return ("o"):rep(math.random(1,10)) end)
-end)
+end,{
+	desc="WooooooobboooooWobboooooooooooooo",
+	group="fun",
+})
 
 hook.new({"command_echo","command_say","command_spell"},function(user,chan,txt)
 	return txt
-end)
+end,{
+	desc="echos",
+	group="misc",
+})
 
 hook.new("command_commits",function(user,chan,txt)
 	local dat,err=https.request("https://api.github.com/repos/MightyPirates/OpenComputers/contributors")
@@ -169,14 +215,20 @@ hook.new("command_commits",function(user,chan,txt)
 		out=out..", "..antiping(o[l1][1]).." "..(math.ceil((o[l1][2]/t)*1000)/10).."%"
 	end
 	return out
-end)
+end,{
+	desc="OC commit statistics",
+	group="help",
+})
 
 do
 	local u
 	hook.new({"command_namegen"},function(user,chan,txt)
 		send("cs namegen")
 		u=user
-	end)
+	end,{
+		desc="generates names using chanserv",
+		group="misc",
+	})
 	hook.new("raw",function(txt)
 		local names=txt:match("^:ChanServ!ChanServ@services.esper.net NOTICE "..cnick.." :Some names to ponder: (.+)%.")
 		if names then
@@ -212,7 +264,10 @@ hook.new({"command_random"},function(user,chan,fname)
 	else
 		return t[math.random(1,n)]
 	end
-end)
+end,{
+	desc="random quote",
+	group="misc",
+})
 
 hook.new({"command_logmatch"},function(user,chan,fmatch)
 	local t={}
@@ -237,7 +292,10 @@ hook.new({"command_logmatch"},function(user,chan,fmatch)
 	else
 		return "Total: "..n..", Random: "..t[math.random(1,n)]
 	end
-end)
+end,{
+	desc="finds random quote that matches",
+	group="misc",
+})
 
 hook.new({"command_blend"},function(user,chan,txt)
 	local out={}
@@ -259,7 +317,10 @@ hook.new({"command_blend"},function(user,chan,txt)
 		table.insert(out,o)
 	end
 	return table.concat(out," ")
-end)
+end,{
+	desc="scrambles text",
+	group="fun",
+})
 
 hook.new({"command_stats","command_messages"},function(user,chan,txt)
 	local o={}
@@ -317,7 +378,10 @@ hook.new({"command_stats","command_messages"},function(user,chan,txt)
 		out=out..", "..antiping(o[l1][1]).." "..(math.ceil((o[l1][2]/t)*1000)/10).."%"
 	end
 	return out
-end)
+end,{
+	desc="channel stats",
+	group="misc",
+})
 
 hook.new({"command_freq"},function(user,chan,txt)
 	local o={}
@@ -348,7 +412,10 @@ hook.new({"command_freq"},function(user,chan,txt)
 		out=out..", "..antiping(o[l1][1])
 	end
 	return out
-end)
+end,{
+	desc="word frequency statistics",
+	group="misc",
+})
 
 function shorturl(url)
 	url='{"longUrl": "'..url..'"}'
@@ -376,27 +443,42 @@ end
 
 hook.new({"command_len"},function(user,chan,txt)
 	return tostring(#txt)
-end)
+end,{
+	desc="shows length of text",
+	group="misc",
+})
 
 hook.new({"command_s","command_short","command shorturl"},function(user,chan,txt)
 	return shorturl(txt)
-end)
+end,{
+	desc="shortens url",
+	group="misc",
+})
 
 hook.new({"command_reverse"},function(user,chan,txt)
 	return txt:reverse()
-end)
+end,{
+	desc="reverses text",
+	group="misc",
+})
 
 hook.new({"command_raw"},function(user,chan,txt)
 	if admin.auth(user) then
 		send(txt)
 	end
-end)
+end,{
+	desc="sends raw data",
+	group="admin",
+})
 
 hook.new({"command_fc","command_failcaps"},function(user,chan,txt)
 	return txt:gsub(".",function(t)
 		return math.random(1,2)==1 and t:lower() or t:upper()
 	end)
-end)
+end,{
+	desc="scrambles caps",
+	group="fun",
+})
 
 hook.new({"command_fb","command_failblend"},function(user,chan,txt)
 	local out={}
@@ -420,31 +502,50 @@ hook.new({"command_fb","command_failblend"},function(user,chan,txt)
 	return table.concat(out," "):gsub(".",function(t)
 		return math.random(1,2)==1 and t:lower() or t:upper()
 	end)
-end)
+end,{
+	desc="scrambles letters and caps",
+	group="fun",
+})
 
 hook.new({"command_lc","command_flipcaps"},function(user,chan,txt)
 	return txt:gsub(".",function(n)
 		return n:lower()==n and n:upper() or n:lower()
 	end)
-end)
+end,{
+	desc="flips caps",
+	group="fun",
+})
 
 hook.new({"command_sksboard"},function(user,chan,txt)
 	return txt:gsub(".",function(n) return math.random(1,5)==1 and n:rep(2) or n end)
-end)
+end,{
+	desc="siimulatees SKS''s kkeyboarrd",
+	group="fun",
+})
 
 hook.new({"command_aeiou"},function(user,chan,txt)
 	local vowel={
 		a="e",e="i",i="o",o="u",u="a",A="E",E="I",I="O",O="U",U="A",
 	}
 	return txt:gsub("[aeiouAEIOU]",function(t) return vowel[t] end)
-end)
+end,{
+	desc="aeiou rotate math -> meth blame gamax",
+	group="fun",
+})
 
 hook.new({"command_2^14","command_16384"},function()
 	return "http://rudradevbasak.github.io/16384_hex/"
-end)
+end,{
+	desc="2048 clone",
+	group="fun",
+})
+
 hook.new({"command_2^53","command_9007199254740992"},function(user,chan)
 	return "http://www.csie.ntu.edu.tw/~b01902112/9007199254740992/"
-end)
+end,{
+	desc="2048 clone",
+	group="fun",
+})
 
 function factor(n)
 	n=math.floor(tonumber(n) or 0)
@@ -470,14 +571,20 @@ hook.new({"command_factor"},function(user,chan,txt)
 		return "Nope."
 	end
 	return serialize(factor(txt)):gsub("{","("):gsub("}",")"):gsub(",","*"):gsub("%((%d*)%)","%1"):gsub("^%(",""):gsub("%)$","")
-end)
+end,{
+	desc="factors a number",
+	group="misc",
+})
 
 hook.new("command_supermispell",function(user,chan,txt)
 	for l1=1,5 do
 		txt=hook.queue("command_mispell",user,chan,txt)
 	end
 	return txt
-end)
+end,{
+	desc="super mispells text",
+	group="fun",
+})
 
 local t2048={
 	["doge"]="http://doge2048.com/",
@@ -510,7 +617,10 @@ hook.new({"command_2^11","command_2048"},function(user,chan,txt)
 	end
 	txt=txt:lower()
 	return "http://gabrielecirulli.github.io/2048/"
-end)
+end,{
+	desc="2048 game",
+	group="fun",
+})
 
 hook.new("command_pipe",function(user,chan,txt)
 	local o=""
@@ -520,10 +630,15 @@ hook.new("command_pipe",function(user,chan,txt)
 			return "Unknown command \""..(cm or "").."\""
 		end
 		print("piping "..tx..o)
-		o=hook.queue("command_"..cm,user,chan,tx..o) or ""
+		local t
+		o,t=hook.queue("command_"..cm,user,chan,tx..o)
+		o=(o==true and t or o) or ""
 	end
 	return o
-end)
+end,{
+	desc="pipes commands",
+	group="misc",
+})
 
 hook.new("command_pastebin",function(user,chan,txt)
 	local res={}
@@ -532,7 +647,10 @@ hook.new("command_pastebin",function(user,chan,txt)
 		return "Not found."
 	end
 	return scc or err
-end)
+end,{
+	desc="grabs pastebin id",
+	group="misc",
+})
 
 hook.new("command_hastebin",function(user,chan,txt)
 	local res={}
@@ -541,7 +659,10 @@ hook.new("command_hastebin",function(user,chan,txt)
 		return "Not found."
 	end
 	return scc or err
-end)
+end,{
+	desc="grabs hastebin id",
+	group="misc",
+})
 
 hook.new("command_tohastebin",function(user,chan,txt)
 	local dat,err=http.request("http://hastebin.com/documents",txt)
@@ -549,20 +670,32 @@ hook.new("command_tohastebin",function(user,chan,txt)
 		return "http://hastebin.com/"..dat:match('{"key":"(.-)"')
 	end
 	return "Error "..err
-end)
+end,{
+	desc="uploads to hastebin",
+	group="misc",
+})
 
 hook.new({"command_tob64","command_b64"},function(user,chan,txt)
 	return tob64(txt)
-end)
+end,{
+	desc="base64 encodes",
+	group="misc",
+})
 
 hook.new({"command_unb64","command_ub64"},function(user,chan,txt)
 	return unb64(txt)
-end)
+end,{
+	desc="base64 decodes",
+	group="misc",
+})
 
 hook.new({"command_drama"},function(user,chan,txt)
 	local dat,err=http.request("http://asie.pl/drama.php?plain")
 	return dat or "Error "..err
-end)
+end,{
+	desc="asie's drama generator",
+	group="misc",
+})
 
 hook.new({"command_lines"},function(user,chan,txt)
 	local count
@@ -583,5 +716,8 @@ hook.new({"command_lines"},function(user,chan,txt)
 		return t
 	end
 	return count(lfs.currentdir())
-end)
+end,{
+	desc="counts total lines of lua in the bot",
+	group="misc",
+})
 

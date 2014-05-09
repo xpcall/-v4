@@ -57,4 +57,7 @@ exit]])
 	else
 		return "No updates"
 	end
-end)
+end,{
+	desc="compiles and pushes openprograms site",
+	group="help",
+})

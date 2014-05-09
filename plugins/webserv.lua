@@ -2,8 +2,8 @@ local sv=assert(socket.bind("*",80))
 sv:settimeout(0)
 hook.newsocket(sv)
 local cli={}
+
 local function close(cl)
-	print("close")
 	cl:close()
 	cli[cl]=nil
 	hook.remsocket(cl)
@@ -12,12 +12,15 @@ end
 function urlencode(txt)
 	return txt:gsub("\r?\n","\r\n"):gsub("[^%w ]",function(t) return string.format("%%%02X",t:byte()) end):gsub(" ","+")
 end
+
 function urldecode(txt)
 	return txt:gsub("+"," "):gsub("%%(%x%x)",function(t) return string.char(tonumber("0x"..t)) end)
 end
+
 function htmlencode(txt)
 	return txt:gsub("&","&amp;"):gsub("<","&lt;"):gsub(">","&gt;"):gsub("\"","&quot;"):gsub("'","&apos;"):gsub("\r?\n","<br>")
 end
+
 function parseurl(url)
 	local out={}
 	for var,dat in url:gmatch("([^&]+)=([^&]+)") do
@@ -25,12 +28,14 @@ function parseurl(url)
 	end
 	return out
 end
+
 local ctype={
 	["html"]="text/html",
 	["css"]="text/css",
 	["png"]="image/png",
 	["txt"]="text/plain",
 }
+
 local base="www"
 local function req(cl)
 	local cldat=cli[cl]
@@ -118,7 +123,6 @@ local function req(cl)
 	res.headers["Connection"]="close"
 	local o="HTTP/1.1 "..res.code
 	for k,v in pairs(res.headers) do
-		print(k..": "..v)
 		o=o.."\r\n"..k..": "..v
 	end
 	cl:send(o.."\r\n\r\n")
@@ -143,7 +147,6 @@ hook.new("select",function()
 		else
 			local s,e=cl:receive(tonumber(cldat.post and cldat.headers["Content-Length"]))
 			if s then
-				print("> "..s)
 				if cldat.post then
 					cldat.post=s
 					req(cl)
@@ -166,4 +169,39 @@ hook.new("select",function()
 			end
 		end
 	end
+end)
+
+hook.new("init",function()
+	local alias={}
+	local funcs={}
+	local unlisted={}
+	for k,v in pairs(hook.hooks) do
+		local cmd=k:match("^command_(.*)")
+		if cmd then
+			local meta=hook.meta[k]
+			if meta then
+				alias[v[1]]=alias[v[1]] or {}
+				table.insert(alias[v[1]],"."..cmd)
+				funcs[v[1]]=meta
+			else
+				table.insert(unlisted,"."..cmd)
+			end
+		end
+	end
+	local groups={}
+	for k,v in pairs(alias) do
+		local meta=funcs[k]
+		groups[meta.group]=groups[meta.group] or {}
+		v.desc=meta.desc
+		table.insert(groups[meta.group],v)
+	end
+	local file=io.open("www/help.html","w")
+	for k,v in pairs(groups) do
+		file:write("<h2>"..k.."</h2>")
+		for n,l in pairs(v) do
+			file:write(table.concat(l," ").." : "..l.desc.."<br>")
+		end
+	end
+	file:write("<br>Unlisted (probably broken): "..table.concat(unlisted," "))
+	file:close()
 end)

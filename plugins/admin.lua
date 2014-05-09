@@ -56,7 +56,10 @@ do
 			save()
 			return "Ignored "..txt
 		end
-	end)
+	end,{
+		desc="prevents a user that matches from using a command",
+		group="admin",
+	})
 	hook.new("command_unignore",function(user,chan,txt)
 		if admin.perms[txt] then
 			local u=false
@@ -80,7 +83,10 @@ do
 				return "Ignore unchanged."
 			end
 		end
-	end)
+	end,{
+		desc="unignore all users that match",
+		group="admin",
+	})
 end
 
 hook.new("raw",function(txt)
@@ -146,7 +152,7 @@ hook.new("raw",function(txt)
 		perms.op=perms.op or {}
 		perms.voice=perms.voice or {}
 		perms.host=host
-		perms.ip=socket.dns.toip(host)
+		perms.ip=socket.dns.toip(host) or host
 		perms.nick=nick
 		perms.username=username
 		hook.queue("join",nick,chan)
@@ -181,19 +187,17 @@ hook.new("raw",function(txt)
 		end
 		admin.perms[nick]=nil
 	end)
-	txt:gsub("^:([^%s!]+)![^%s@]+@%S+ KICK (%S+) :(%S+)",function(fnick,chan,nick)
+	txt:gsub("^:([^%s!]+)![^%s@]+@%S+ KICK (%S+) (%S+) :.*",function(fnick,chan,nick)
 		admin.chans[chan][nick]=nil
 		if nick==cnick then
 			admin.chans[chan]=nil
 		end
-		hook.queue("kick",chan,nick)
+		hook.queue("kick",chan,nick,fnick)
 		for k,v in pairs(admin.chans) do
 			if v[nick] then
 				return
 			end
 		end
-		admin.perms[nick]=nil
-		hook.queue("kick",chan,nick,fnick)
 		admin.perms[nick]=nil
 	end)
 	txt:gsub("^:([^%s!]+)![^%s@]+@%S+ NICK :(.+)",function(nick,tonick)
@@ -292,21 +296,30 @@ hook.new("command_account",function(user,chan,txt)
 		return (admin.perms[user.nick] or {}).account or "none"
 	end
 	return (admin.perms[txt] or {}).account or "none"
-end)
+end,{
+	desc="gets the account of a user",
+	group="misc",
+})
 
 hook.new({"command_ip"},function(user,chan,txt)
 	if txt=="" then
 		return (admin.perms[user.nick] or {}).ip or "none"
 	end
 	return (admin.perms[txt] or {}).ip or "none"
-end)
+end,{
+	desc="gets the ip of a user",
+	group="misc",
+})
 
 hook.new({"command_host"},function(user,chan,txt)
 	if txt=="" then
 		return (admin.perms[user.nick] or {}).host or "none"
 	end
 	return (admin.perms[txt] or {}).host or "none"
-end)
+end,{
+	desc="gets the hostname of a user",
+	group="misc",
+})
 
 hook.new({"command_find"},function(user,chan,txt)
 	local a,b=txt:match("^(%S+) (.+)")
@@ -317,7 +330,10 @@ hook.new({"command_find"},function(user,chan,txt)
 		end
 	end
 	return limitoutput(table.concat(o,","))
-end)
+end,{
+	desc="lists users that match ie .find ip 71.238.153.166",
+	group="misc",
+})
 
 hook.new({"command_pfind"},function(user,chan,txt)
 	local a,b=txt:match("^(%S+) (.+)")
@@ -328,4 +344,7 @@ hook.new({"command_pfind"},function(user,chan,txt)
 		end
 	end
 	return limitoutput(table.concat(o,","))
-end)
+end,{
+	desc="lists users that match a pattern",
+	group="misc",
+})

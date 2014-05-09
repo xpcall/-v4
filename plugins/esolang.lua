@@ -24,7 +24,10 @@ hook.new({"command_geneso","command_genesolang"},function(user,chan,txt)
 		o=o.."brainfuck derivitive "
 	end
 	return o:sub(1,-2)
-end)
+end,{
+	desc="fail esolang generator",
+	group="fun",
+})
 
 function brainfuck(txt)
 	return loadstring(
@@ -55,31 +58,10 @@ hook.new({"command_bf","command_brainfuck"},function(user,chan,txt)
 	debug.sethook(func,function() error("Time limit exeeded.",0) end,"",100000)
 	local err,res=coroutine.resume(func)
 	return res or "nil"
-end)
-
-hook.new({"command_ff","command_failfuck"},function(user,chan,txt)
-	local func,err=loadstring(
-		"local s,p,o={},0,\"\""..txt
-		:gsub("[^%[%]%+%-+.%,<>]","")
-		:gsub("%]","\nend")
-		:gsub(",","\nerror(\"Input not supported.\")")
-		:gsub("%[","\nfor l1=1,1000 do if s[p]==0 then break end")
-		:gsub("[%+%-]+",function(txt)
-			return "\ns[p]=((s[p] or 0)"..txt:sub(1,1)..#txt..")%256"
-		end)
-		:gsub("[<>]+",function(txt)
-			return "\np=p"..(txt:sub(1,1)==">" and "+" or "-")..#txt
-		end)
-		:gsub("%.","\no=o..string.char(s[p] or 0)")
-	.." return o","=brainfuck")
-	if not func then
-		return err
-	end
-	local func=coroutine.create(setfenv(func,_G))
-	debug.sethook(func,function() error("Time limit exeeded.",0) end,"",100000)
-	local err,res=coroutine.resume(func)
-	return res or "nil"
-end)
+end,{
+	desc="http://esolangs.org/wiki/Brainfuck",
+	group="esolangs",
+})
 
 hook.new({"command_cf","command_clusterfuck"},function(user,chan,txt)
 	local source="local s,px,py,o=setmetatable({},{__index=function(s,n) local a=setmetatable({},{__index=function() return 0 end}) s[n]=a return a end}),0,0,\"\"\n"..txt
@@ -108,7 +90,10 @@ hook.new({"command_cf","command_clusterfuck"},function(user,chan,txt)
 	debug.sethook(func,function() error("Time limit exeeded.",0) end,"",100000)
 	local err,res=coroutine.resume(func)
 	return res or "nil"
-end)
+end,{
+	desc="http://esolangs.org/wiki/Clusterfuck",
+	group="esolangs",
+})
 
 function base(n,c,tf)
 	if not c then
@@ -242,7 +227,10 @@ hook.new({"command_gendfuck","command_gendumbfuck"},function(user,chan,txt)
 		c=cu
 		return out..","
 	end)
-end)
+end,{
+	desc="text to dumbfuck generator",
+	group="esolangs",
+})
 
 hook.new({"command_dfuck","command_dumbfuck"},function(user,chan,txt)
 	local o=""
@@ -267,7 +255,10 @@ hook.new({"command_dfuck","command_dumbfuck"},function(user,chan,txt)
 		ip=ip+1
 	end
 	return o
-end)
+end,{
+	desc="http://esolangs.org/wiki/Dumbf*ck",
+	group="esolangs",
+})
 
 do
 	local agony={
@@ -278,7 +269,10 @@ do
 			t=t:byte() 
 			return agony[math.floor(t/16)]..agony[t%16]
 		end)
-	end)
+	end,{
+		desc="text to agony generator",
+		group="esolangs",
+	})
 end
 
 hook.new({"command_ag","command_agony"},function(user,chan,txt)
@@ -386,7 +380,10 @@ hook.new({"command_ag","command_agony"},function(user,chan,txt)
 			return "Time limit exeeded."
 		end
 	end
-end)
+end,{
+	desc="http://esolangs.org/wiki/Agony",
+	group="esolangs",
+})
 
 local enc={
 	57 ,109,60 ,46 ,84 ,86 ,97 ,99 ,96 ,117,89 ,42 ,77 ,75 ,39 ,88 ,126,120,68 ,
@@ -442,7 +439,10 @@ local function unmb(txt)
 end
 hook.new({"command_unmb"},function(user,chan,txt)
 	return unmb(txt)
-end)
+end,{
+	desc="encodes normalized malbolge",
+	group="esolangs",
+})
 hook.new({"command_rnmb"},function(user,chan,txt)
 	local conv={
 		[4]="i",
@@ -459,57 +459,10 @@ hook.new({"command_rnmb"},function(user,chan,txt)
 		out=out..(conv[(string.byte(txt,l1,l1)+(l1-1))%94] or "0")
 	end
 	return out
-end)
-hook.new({"command_genmb"},function(user,chan,txt)
-	local c=""
-	for char in txt:match(".") do
-		local t={1}
-		while true do
-			if hook.queue("command_mb",user,chan,unmb(c)) then
-				
-			end
-		end
-	end
-end)
-do
-	hook.new({"command_genmb"},function(user,chan,txt)
-		local a=0
-		local c=0
-		for char in txt:gmatch(".") do
-			local t={1}
-			while true do
-				local sa=a
-				local sc=c
-				for l1=1,#t do
-					local d=sc
-					if t[l1]==1 then
-						sa=(((d+39)%3)*3^9)+math.floor((d+39)/3)
-					elseif t[l1]==2 then
-						sa=crz(d+62,sa)
-					end
-					sc=sc+1
-				end
-				local o=""
-				for k,v in pairs(t) do
-					o=o..(v==1 and "*" or (v==2 and "p" or "o"))
-				end
-				print(o,sa%256)
-				if sa%256==char:byte() then
-					c=sc
-					a=sa
-					return o
-				end
-				t[1]=t[1]+1
-				local n=1
-				while t[n]>3 do
-					t[n]=1
-					t[n+1]=(t[n+1] or 0)+1
-					n=n+1
-				end
-			end
-		end
-	end)
-end
+end,{
+	desc="normalizes malbolge",
+	group="esolangs",
+})
 hook.new({"command_mb","command_malbolge"},function(user,chan,txt,dbg)
 	if #txt<2 then
 		return "Minimum program is 2 chars."
@@ -571,11 +524,17 @@ hook.new({"command_mb","command_malbolge"},function(user,chan,txt,dbg)
 			return "Time limit exeeded."..dbo
 		end
 	end
-end)
+end,{
+	desc="http://esolangs.org/wiki/Malbolge",
+	group="esolangs",
+})
 hook.new({"command_mbdbg","command_malbolgedbg"},function(user,chan,txt)
 	return hook.queue("command_mb",user,chan,txt,true)
-end)
-hook.new({"command_["},function(user,chan,txt)
+end,{
+	desc="debug malbolge",
+	group="esolangs",
+})
+hook.new({"command_]"},function(user,chan,txt)
 	txt=txt:gsub("[^%(%)<>{}%[%]]","")
 	local ptr=1
 	local stk={}
@@ -646,7 +605,10 @@ hook.new({"command_["},function(user,chan,txt)
 		o=o..(stk[l1] and '"' or "'")
 	end
 	return o
-end)
+end,{
+	desc="http://esolangs.org/wiki/Right_bracket",
+	group="esolangs",
+})
 
 hook.new({"command_ssbpl"},function(user,chan,txt)
 	local stack=setmetatable({},{__index=function() return 0 end})
@@ -717,7 +679,10 @@ hook.new({"command_ssbpl"},function(user,chan,txt)
 		end
 	end
 	return o
-end)
+end,{
+	desc="incomplete http://esolangs.org/wiki/SSBPL",
+	group="esolangs",
+})
 do
 	local conv=dofile("barely_conversion.lua")
 	hook.new("command_encbarely",function(user,chan,txt)
@@ -728,7 +693,10 @@ do
 			last=t
 			return o
 		end):reverse().."~"
-	end)
+	end,{
+		desc="text to barely generator",
+		group="esolangs",
+	})
 end
 hook.new("command_barely",function(user,chan,txt)
 	local stdin=txt:match("~(.*)")
@@ -799,7 +767,10 @@ hook.new("command_barely",function(user,chan,txt)
 		end
 	end
 	return o
-end)
+end,{
+	desc="http://esolangs.org/wiki/Barely",
+	group="esolangs",
+})
 
 hook.new({"command_sstack"},function(user,chan,txt)
 	txt=txt.." "
@@ -950,9 +921,12 @@ hook.new({"command_sstack"},function(user,chan,txt)
 	debug.sethook(func,function() error("Time limit exeeded.",0) end,"",100000)
 	local err,res=coroutine.resume(func)
 	return res or "nil"
-end)
+end,{
+	desc="http://esolangs.org/wiki/Super_Stack!",
+	group="esolangs",
+})
 
-hook.new("command_repnotate",function(user,chan,txt)
+hook.new({"command_rle","command_repnotate"},function(user,chan,txt)
 	local o=""
 	while #txt>0 do
 		local n=txt:match("^"..pescape(txt:sub(1,1)).."+")
@@ -964,7 +938,10 @@ hook.new("command_repnotate",function(user,chan,txt)
 		txt=txt:sub(#n+1)
 	end
 	return o
-end)
+end,{
+	desc="rle encodes aaaaabbbb -> a5b4",
+	group="misc",
+})
 
 hook.new({"command_df","command_deadfish"},function(user,chan,txt)
 	local o=""
@@ -979,33 +956,15 @@ hook.new({"command_df","command_deadfish"},function(user,chan,txt)
 		elseif ins=="s" then
 			ac=ac^2
 		elseif ins=="o" then
-			o=o..string.char(ac)
+			o=o..string.char(ac%256)
 		end
-		ac=(ac>=256 or ac<=-1) and 0 or ac
+		ac=ac==256 and 0 or ac
 	end)
 	return o
-end)
-
-hook.new({"command_fishstacks"},function(user,chan,txt)
-	local o=""
-	local ac=0
-	txt:gsub("(.)(%d+)",function(char,cnt)
-		return char:rep(tonumber(cnt))
-	end):gsub(".",function(ins)
-		if ins=="i" then
-			ac=ac+1
-		elseif ins=="d" then
-			ac=ac-1
-		elseif ins=="s" then
-			ac=ac^2
-		elseif ins=="p" then
-			o=o..string.char(ac)
-			ac=0
-		end
-		ac=(ac>=256 or ac<=-1) and 0 or ac
-	end)
-	return o:sub(1,-3)
-end)
+end,{
+	desc="http://esolangs.org/wiki/Deadfish",
+	group="esolangs",
+})
 
 do
 	local sqr={[0]={0,0},{0,0}}
@@ -1027,8 +986,35 @@ do
 	end
 	hook.new({"command_fishencode"},function(user,chan,txt)
 		return txt:gsub(".",function(t) return o[t].."p" end).."ppp"
-	end)
+	end,{
+		desc="text to fishstacks generator",
+		group="esolangs",
+	})
 end
+
+hook.new({"command_fishstacks"},function(user,chan,txt)
+	local o=""
+	local ac=0
+	txt:gsub("(.)(%d+)",function(char,cnt)
+		return char:rep(tonumber(cnt))
+	end):gsub(".",function(ins)
+		if ins=="i" then
+			ac=ac+1
+		elseif ins=="d" then
+			ac=ac-1
+		elseif ins=="s" then
+			ac=ac^2
+		elseif ins=="p" then
+			o=o..string.char(ac)
+			ac=0
+		end
+		ac=(ac>=256 or ac<=-1) and 0 or ac
+	end)
+	return o:sub(1,-3)
+end,{
+	desc="http://esolangs.org/wiki/Fishstacks",
+	group="esolangs",
+})
 
 function ntob64(n)
 	local o=""
@@ -1334,4 +1320,7 @@ hook.new({"command_rl"},function(user,chan,txt)
 		end
 	end
 	return o
-end)
+end,{
+	desc="outdated Gopher's robot bytecode",
+	group="esolangs",
+})

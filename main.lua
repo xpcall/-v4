@@ -193,6 +193,8 @@ do
 	end
 end
 
+hook.queue("init")
+
 send("WHOIS "..cnick)
 sv:settimeout(0)
 hook.newsocket(sv)
