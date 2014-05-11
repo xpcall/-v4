@@ -15,9 +15,23 @@ function crypt.rot13(txt)
 	end)
 	return txt
 end
+function crypt.rot47(txt)
+	txt=txt:gsub(".",function(c)
+		if c:byte()<127 and c:byte()>32 then
+			return string.char((((c:byte()-33)+47)%94)+33)
+		end
+	end)
+	return txt
+end
 hook.new("command_rot13",function(user,chan,txt)
 	return crypt.rot13(txt)
 end,{
 	desc="most secure encryption ever made",
+	group="fun",
+})
+hook.new("command_rot47",function(user,chan,txt)
+	return crypt.rot47(txt)
+end,{
+	desc="second most secure encryption ever made",
 	group="fun",
 })

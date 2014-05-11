@@ -1,3 +1,46 @@
+local function parsedate(txt)
+	local day,month,year,time=txt:match("^%S+%s+(%S+)%s+(%S+)%s+(%S+)%s+(%S+:%S+)")
+	if not day then
+		day,month,year,time=txt:match("^%S+%s+(%S-)%-(%S-)%-(%S-)%s+(%S+:%S+)")
+		if year then
+			year=1900+tonumber(year)
+		end
+	end
+	if not day then
+		month,day,time,year=txt:match("^%S+%s+(%S+)%s+(%S+)%s+(%S+:%S+)%s+(%S+)")
+	end
+	if not day then
+		return nil,txt
+	end
+	local hour,minute,second=time:match("(%d+):(%d+):(%d+)")
+	if not hour then
+		return nil,txt
+	end
+	local months={
+		"jan","feb","mar","apr",
+		"may","jun","jul","aug",
+		"sep","oct","nov","dec",
+	}
+	for k,v in pairs(months) do
+		months[v]=k
+	end
+	month=tostring(months[month:lower()])
+	return ("0"):rep(4-#year)..year..("0"):rep(2-#month)..month..("0"):rep(2-#day)..day..("0"):rep(2-#hour)..hour..("0"):rep(2-#minute)..minute..("0"):rep(2-#second)..second
+end
+
+local function cmpdate(a,b)
+	for l1=1,14 do
+		local ca=tonumber(a:sub(l1,l1))
+		local cb=tonumber(b:sub(l1,l1))
+		if ca>cb then
+			return -1
+		elseif ca<cb then
+			return 1
+		end
+	end
+	return 0
+end
+
 local sv=assert(socket.bind("*",80))
 sv:settimeout(0)
 hook.newsocket(sv)
@@ -39,20 +82,30 @@ local ctype={
 local function form(cl,res)
 	local cldat=cli[cl]
 	local headers=res.headers or {}
-	local code=code or "200 Found"
+	local code=res.code or "200 Found"
+	headers["ETag"]=cldat.headers["ETag"]
 	headers["Server"]="Less fail lua webserver"
 	headers["Content-Length"]=headers["Content-Length"] or #(res.data or "")
+	if headers["Content-Length"]==0 or cldat.method=="HEAD" then
+		headers["Content-Length"]=nil
+	end
 	headers["Content-Type"]=headers["Content-Type"] or res.type or "text/html"
 	headers["Connection"]=(headers["Connection"] or "Keep-Alive"):lower()
 	local o="HTTP/1.1 "..code
 	for k,v in pairs(headers) do
-		o=o.."\r\n"..k..": "..v
+		if v~="" then
+			o=o.."\r\n"..k..": "..v
+		end
+	end
+	o=o.."\r\n\r\n"
+	if headers["Content-Length"] then
+		o=o..res.data
 	end
 	async.new(function()
-		async.socket(cl).send(o.."\r\n\r\n"..res.data)
-		if headers["Connection"]=="keep-alive" then
+		local res,err=async.socket(cl).send(o)
+		if res and headers["Connection"]=="keep-alive" then
 			for k,v in pairs(cldat) do
-				if k~=ip then
+				if k~="ip" then
 					cldat[k]=nil
 				end
 			end
@@ -104,8 +157,8 @@ local function req(cl)
 				local bse=fs.combine(base,url):gsub("/$","")
 				local ext=url:match(".+%.(.-)$") or ""
 				res.type=ctype[ext]
-				local data=fs.read(bse)
 				if ext=="lua" then
+					local data=fs.read(bse)
 					local func,err=loadstring(data,"="..url)
 					if not func then
 						res.data=err:gsub("\n","<br>")
@@ -136,7 +189,13 @@ local function req(cl)
 						end
 					end
 				else
-					res.data=data
+					res.headers={["Last-Modified"]=fs.modified(bse)}
+					local parsed=parsedate(cldat.headers["If-Modified-Since"] or "")
+					if parsed and cmpdate(parsed,parsedate(res.headers["Last-Modified"]))<1 then
+						res.code="304 Not Modified"
+					else
+						res.data=fs.read(bse)
+					end
 				end
 			end
 		end
@@ -166,7 +225,7 @@ hook.new("select",function()
 				elseif s=="" then
 					if cldat.method=="POST" then
 						cldat.post=""
-					elseif cldat.method=="GET" then
+					elseif cldat.method=="GET" or cldat.method=="HEAD" then
 						req(cl)
 					else
 						form(cl,{
@@ -188,39 +247,4 @@ hook.new("select",function()
 			end
 		end
 	end
-end)
-
-hook.new("init",function()
-	local alias={}
-	local funcs={}
-	local unlisted={}
-	for k,v in pairs(hook.hooks) do
-		local cmd=k:match("^command_(.*)")
-		if cmd then
-			local meta=hook.meta[k]
-			if meta then
-				alias[v[1]]=alias[v[1]] or {}
-				table.insert(alias[v[1]],"."..cmd)
-				funcs[v[1]]=meta
-			else
-				table.insert(unlisted,"."..cmd)
-			end
-		end
-	end
-	local groups={}
-	for k,v in pairs(alias) do
-		local meta=funcs[k]
-		groups[meta.group]=groups[meta.group] or {}
-		v.desc=meta.desc
-		table.insert(groups[meta.group],v)
-	end
-	local file=io.open("www/help.html","w")
-	for k,v in pairs(groups) do
-		file:write("<h2>"..k.."</h2>")
-		for n,l in pairs(v) do
-			file:write(table.concat(l," ").." : "..l.desc.."<br>")
-		end
-	end
-	file:write("<br>Unlisted (probably broken): "..table.concat(unlisted," "))
-	file:close()
 end)

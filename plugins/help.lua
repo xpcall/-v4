@@ -283,4 +283,37 @@ do
 	})
 end
 
-
+hook.new("init",function()
+	local alias={}
+	local funcs={}
+	local unlisted={}
+	for k,v in pairs(hook.hooks) do
+		local cmd=k:match("^command_(.*)")
+		if cmd then
+			local meta=hook.meta[k]
+			if meta then
+				alias[v[1]]=alias[v[1]] or {}
+				table.insert(alias[v[1]],"."..cmd)
+				funcs[v[1]]=meta
+			else
+				table.insert(unlisted,"."..cmd)
+			end
+		end
+	end
+	local groups={}
+	for k,v in pairs(alias) do
+		local meta=funcs[k]
+		groups[meta.group]=groups[meta.group] or {}
+		v.desc=meta.desc
+		table.insert(groups[meta.group],v)
+	end
+	local file=io.open("www/help.html","w")
+	for k,v in pairs(groups) do
+		file:write("<h2>"..k.."</h2>")
+		for n,l in pairs(v) do
+			file:write(table.concat(l," ").." : "..l.desc.."<br>")
+		end
+	end
+	file:write("<br>Unlisted (probably broken): "..table.concat(unlisted," "))
+	file:close()
+end)

@@ -43,25 +43,23 @@ function async.socket(sk,err)
 			return txt,err
 		end,
 		send=function(txt)
-			for l1=1,#txt,8192 do
-				while true do
-					local t,err=sk:send(txt,l1,l1+8191)
-					if not t then
-						if err~="timeout" then
-							return false,err
-						end
-						hook.newrsocket(sk)
-						local a,b=async.pull("select")
-						hook.remrsocket(sk)
-						for k,v in pairs(b) do
-							if v==sk then
-								break
-							end
-						end
-					else
-						break
-					end
+			local ind=1
+			local _,l=sk:getstats()
+			local bse=l
+			while true do
+				local t,err,c=sk:send(txt,ind)
+				if not t and err~="timeout" then
+					return false,err
 				end
+				if not c then
+					break
+				end
+				local _,sl=sk:getstats()
+				ind=ind+(sl-l)
+				l=sl
+				hook.newrsocket(sk)
+				async.pull("select")
+				hook.remrsocket(sk)
 			end
 			return true
 		end,

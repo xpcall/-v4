@@ -16,6 +16,7 @@ do
 	local list={}
 	local rd={}
 	local last={}
+	local modified={}
 	local function update(tbl,ind)
 		local tme=socket.gettime()
 		local dt=tme-(last[tbl] or tme)
@@ -29,7 +30,7 @@ do
 		return (tbl[ind] or {}).value
 	end
 	local function set(tbl,ind,val)
-		tbl[ind]={time=5,value=val}
+		tbl[ind]={time=10,value=val}
 		return val
 	end
 	fs={
@@ -112,10 +113,22 @@ do
 			if res~=nil then
 				return res
 			end
-			return set(rd,file,io.open(file,"rb"):read("*a"))
+			local data=io.open(file,"rb"):read("*a")
+			if (rd[file] or {}).data~=data then
+				modified[file]=os.date()
+			end
+			return set(rd,file,data)
 		end,
+		modified=function(file)
+			local res=modified[file]
+			if not res then
+				fs.read(file)
+			end
+			return modified[file]
+		end
 	}
 end
+
 function timestamp()
 	local date=os.date("!*t")
 	return date.month.."/"..date.day.." "..date.hour..":"..("0"):rep(2-#tostring(date.min))..date.min

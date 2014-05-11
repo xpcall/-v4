@@ -232,18 +232,27 @@ hook.new("raw",function(txt)
 		end
 		user.op=(user.op or {})[chan]==true
 		user.voice=(user.voice or {})[chan]==true
-		hook.callback=function(st,dat)
-			if st==true then
-				print("responding with "..tostring(dat))
-				respond(user,tostring(dat))
-			elseif st then
-				print("responding with "..tostring(st))
-				respond(user,user.nick..", "..tostring(st))
-			end
-		end
 		if ctcp and ctcp:sub(1,7)~="ACTION " and chan==cnick then
-			hook.queue("ctcp",user,chan,ctcp)
+			local ct,st=ctcp:match("^(%S+) ?(%S*)$")
+			local cb=function(txt)
+				if txt then
+					send("NOTICE "..nick.." :\1"..ct.." "..txt.."\1")
+				end
+			end
+			hook.callback=cb
+			hook.queue("ctcp",user,ct,st)
+			hook.callback=cb
+			hook.queue("ctcp_"..ct,user,st)
 		else
+			hook.callback=function(st,dat)
+				if st==true then
+					print("responding with "..tostring(dat))
+					respond(user,tostring(dat))
+				elseif st then
+					print("responding with "..tostring(st))
+					respond(user,user.nick..", "..tostring(st))
+				end
+			end
 			if ctcp and ctcp:sub(1,7)=="ACTION " then
 				hook.queue("msg",user,chan,txt:sub(9,-2),true)
 			else
