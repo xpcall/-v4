@@ -258,7 +258,7 @@ do
 					return sbox
 				end
 				local res=getfenv(func)
-				if res==_G then
+				if res==_G or res==getfenv(0) or ((res or {}).io or {}).open then
 					return sbox
 				end
 				return res

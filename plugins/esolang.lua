@@ -99,14 +99,15 @@ function base(n,c,tf)
 	if not c then
 		return string.format("%X",n)
 	end
+	n=bc.add(0,n)
 	local str=""
 	local tbl={}
     repeat
-        local d=(n%(#c))+1
-        n=math.floor(n/(#c))
-		str=string.sub(c,d,d)..str
+        local d=tonumber(tostring((n%(#c))+1))
+        n=n/#c
+		str=c:sub(d,d)..str
 		table.insert(tbl,1,d)
-    until n==0
+    until tostring(n)=="0"
 	if tf then
 		return tbl
 	end
@@ -121,6 +122,23 @@ function unbase(str,nc)
 	str=tostring(str):reverse()
 	for strnum=1,#str do
 		n=n+(c[str:sub(strnum,strnum)]*((#nc)^(strnum-1)))
+	end
+	return n
+end
+function bunbase(str,nc)
+	local c={}
+	local base=#nc
+	for l1=1,base do
+		c[nc:sub(l1,l1)]=l1-1
+	end
+	local n=0
+	str=tostring(str):reverse()
+	for strnum=1,#str do
+		local ch=c[str:sub(strnum,strnum)]
+		if not ch then
+			error("invalid char: \""..str:sub(strnum,strnum).."\"")
+		end
+		n=n+(ch*(bc.pow(base,strnum-1)))
 	end
 	return n
 end

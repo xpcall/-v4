@@ -31,8 +31,8 @@ hook.new({"command_ip2num"},function(user,chan,txt)
 end)
 
 hook.new({"command_num2ip"},function(user,chan,txt)
-	local ip=txt:tmatch("%d+")
-	return tostring((ip[1]*16777216)+(ip[2]*65536)+(ip[3]*256)+ip[4])
+	local num=tonumber(txt) or 0
+	return math.floor(num/16777216).."."..(math.floor(num/65536)%256).."."..(math.floor(num/256)%256).."."..(num%256)
 end)
 
 hook.new({"command_derp"},function()
