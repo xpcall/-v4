@@ -721,3 +721,19 @@ end,{
 	group="misc",
 })
 
+hook.new({"command_!"},function(user,chan,txt)
+	return txt..("!"):rep(math.random(10,20)):gsub("!",function()
+		if math.random(1,5)==1 then
+			return 1
+		elseif math.random(1,10)==1 then
+			return "one"
+		end
+	end):gsub("11",function()
+		if math.random(1,5)==1 then
+			return "eleven"
+		end
+	end)
+end,{
+	desc="epic!!!!1!!!1!!!!1!!1!one",
+	group="fun",
+})

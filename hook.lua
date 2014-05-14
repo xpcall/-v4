@@ -15,6 +15,19 @@ local function nxt(tbl)
 	end
 	return n
 end
+local function tpairs(tbl)
+	local s={}
+	local c=1
+	for k,v in pairs(tbl) do
+		s[c]=k
+		c=c+1
+	end
+	c=0
+	return function()
+		c=c+1
+		return s[c],tbl[s[c]]
+	end
+end
 local ed
 function hook.stop()
 	ed=true

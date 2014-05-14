@@ -170,17 +170,18 @@ function tobase(str,nc,toc,flen)
 	local n={0}
 	str=tostring(str):reverse()
 	for strnum=1,#str do
-		n[1]=n[1]+(c[str:sub(strnum,strnum)]*((#nc)^(strnum-1)))
+		n[1]=n[1]+(c[str:sub(strnum,strnum)]*bc.pow(#nc,strnum-1))
 		local sn=1
-		while (n[sn] or 0)>=#toc do
-			n[sn+1]=(n[sn+1] or 0)+math.floor(n[sn]/#toc)
+		while bc.compare(n[sn] or 0,#toc)>-1 do
+			n[sn+1]=(n[sn+1] or 0)+n[sn]/#toc
 			n[sn]=n[sn]%#toc
 			sn=sn+1
 		end
 	end
 	local o=""
 	for l1=1,#n do
-		o=toc:sub(n[l1]+1,n[l1]+1)..o
+		local i=tonumber(tostring(n[l1]+1))
+		o=toc:sub(i,i)..o
 	end
 	return toc:sub(1,1):rep(math.max(0,flen-#o))..o
 end

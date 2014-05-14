@@ -258,7 +258,7 @@ do
 					return sbox
 				end
 				local res=getfenv(func)
-				if res==_G or res==getfenv(0) or ((res or {}).io or {}).open then
+				if res==_G or res==getfenv(0) or (res or {}).io==io then
 					return sbox
 				end
 				return res
@@ -328,7 +328,7 @@ do
 					if not hook.hooks["command_"..(cmd or txt)] then
 						return false,"No such command."
 					end
-					return hook.queue("command_"..(cmd or txt),usr,usr.chan,tx or "")
+					return ({hook.queue("command_"..(cmd or txt),usr,usr.chan,tx or "")})[1]
 				end,
 				exit=function()
 					error()
