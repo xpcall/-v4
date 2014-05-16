@@ -7,6 +7,7 @@ local bit=require("bit")
 local bc=require("bc")
 local lanes=require("lanes")
 local json=require("dkjson")
+local sqlite=require("lsqlite3")
 math.randomseed(socket.gettime())
 cnick="^v"
 do
@@ -231,6 +232,7 @@ local plenv=setmetatable({
 	bc=bc,
 	json=json,
 	lanes=lanes,
+	sqlite=sqlite,
 },{__index=_G,__newindex=_G})
 plenv._G=plenv
 

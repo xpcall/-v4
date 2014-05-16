@@ -15,19 +15,6 @@ local function nxt(tbl)
 	end
 	return n
 end
-local function tpairs(tbl)
-	local s={}
-	local c=1
-	for k,v in pairs(tbl) do
-		s[c]=k
-		c=c+1
-	end
-	c=0
-	return function()
-		c=c+1
-		return s[c],tbl[s[c]]
-	end
-end
 local ed
 function hook.stop()
 	ed=true
@@ -122,9 +109,9 @@ function hook.del(name)
 	for _,nme in pairs(name) do
 		if type(nme)=="function" then
 			for k,v in pairs(hooks) do
-				for n,l in pairs(v) do
+				for n,l in tpairs(v) do
 					if l==nme then
-						hooks[k][n]=nil
+						v[n]=nil
 					end
 				end
 			end

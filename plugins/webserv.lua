@@ -117,6 +117,7 @@ local function form(cl,res)
 end
 
 local base="www"
+local scripts={}
 local function req(cl)
 	local cldat=cli[cl]
 	local url=cldat.url
@@ -126,6 +127,7 @@ local function req(cl)
 	end
 	url=fs.resolve(url:match("(.-)%?.+") or url)
 	local res=hook.queue("page_"..url,cldat)
+	print("\""..url.."\"")
 	url=fs.split(url)
 	local file=url[#url] or ""
 	url=table.concat(url,"/")
@@ -158,10 +160,15 @@ local function req(cl)
 				local ext=url:match(".+%.(.-)$") or ""
 				res.type=ctype[ext]
 				if ext=="lua" then
-					local data=fs.read(bse)
-					local func,err=loadstring(data,"="..url)
+					local func,err
+					if scripts[bse] and scripts[bse].modified==fs.modified(bse) then
+						func=scripts[bse].func
+					else
+						local data=fs.read(bse)
+						func,err=loadstring(data,"="..url)
+					end
 					if not func then
-						res.data=err:gsub("\n","<br>")
+						res.data=htmlencode(err)
 						res.code="500 Internal Server Error"
 						res.type="text/raw"
 					else
@@ -176,16 +183,21 @@ local function req(cl)
 							postdata=cldat.postdata,
 							urldata=cldat.urldata,
 							cl=cldat,
+							res=res,
 						},{__index=_G})
 						local err,out=xpcall(setfenv(func,e),debug.traceback)
+						if type(out)=="function" then
+							scripts[bse]={modified=parsedate(fs.modified(bse)),func=out}
+							err,out=xpcall(setfenv(out,e),debug.traceback)
+						end
 						if not err then
-							res.data=out
+							res.data=htmlencode(out)
 							res.code="500 Internal Server Error"
 							res.type="text/raw"
 						else
 							res.data=o
 							res.code=e.code or "200 Found"
-							res.type="text/html"
+							res.type=res.type or "text/html"
 						end
 					end
 				else
