@@ -76,6 +76,8 @@ local ctype={
 	["html"]="text/html",
 	["css"]="text/css",
 	["png"]="image/png",
+	["jpg"]="image/jpeg",
+	["jpeg"]="image/jpeg",
 	["txt"]="text/plain",
 }
 

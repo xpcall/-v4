@@ -23,7 +23,7 @@ function sql.new(dir)
 					table.insert(w,k.."==:"..k)
 				end
 			end
-			local sn=db:prepare("select "..table.concat(vals,",").." from "..name..(where and " where " or "")..table.concat(w,","))
+			local sn=db:prepare("select "..table.concat(vals,",").." from "..name..(where and " where " or "")..table.concat(w," and "))
 			if where then
 				sn:bind_names(where)
 				sn:step()
@@ -46,18 +46,23 @@ function sql.new(dir)
 				end
 			end
 			local vl={}
-			for k,v in pairs(vals) do
+			for k,v in tpairs(vals) do
 				table.insert(vl,k.."=:u"..k)
-				where["w"..k]=v
-				where[k]=nil
+				vals["u"..k]=v
+				vals[k]=nil
 			end
-			local sn=db:prepare("update "..name.." set "..table.concat(vl," ")..(where and " where " or "")..table.concat(w,","))
+			local sta="update "..name.." set "..table.concat(vl," ")..(where and " where " or "")..table.concat(w," and ")
+			local sn=db:prepare(sta)
+			if not sn then
+				return "ERROR "..sta
+			end
 			if where then
 				sn:bind_names(where)
 			end
 			sn:bind_names(vals)
 			sn:step()
 			sn:finalize()
+			return sta,serialize(where),serialize(vals)
 		end,
 		insert=function(name,vals)
 			local keys={}
@@ -79,6 +84,8 @@ function sql.new(dir)
 		dbs[dir]=nil
 		db:close()
 	end})
-	dbs[dir]=out
+	if dir then
+		dbs[dir]=out
+	end
 	return out
 end

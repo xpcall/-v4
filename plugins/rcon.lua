@@ -6,7 +6,7 @@ do
 	local str_len=string.len
 	local str_sub=string.sub
 	local m_floor=math.floor
-	function conv(txt)
+	function conv(txt,err)
 		local s={str_byte(txt,1,4)}
 		return s[1]+(s[2]*256)+(s[3]*65536)+(s[4]*16777216)
 	end
