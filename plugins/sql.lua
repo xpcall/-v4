@@ -11,7 +11,24 @@ function sql.new(dir)
 	out=setmetatable({
 		db=db,
 		new=function(name,...)
-			return db:exec("create table if not exists "..name.." ("..table.concat({...},",")..")")
+			db:exec("create table if not exists "..name.." ("..table.concat({...},",")..")")
+			return {
+				pselect=function(...)
+					return out.pselect(name,...)
+				end,
+				select=function(...)
+					return out.select(name,...)
+				end,
+				update=function(...)
+					return out.update(name,...)
+				end,
+				insert=function(...)
+					return out.insert(name,...)
+				end,
+				delete=function(...)
+					return out.delete(name,...)
+				end,
+			}
 		end,
 		pselect=function(name,where,vals)
 			if not vals then
@@ -31,38 +48,29 @@ function sql.new(dir)
 			end
 			return sn:nrows()
 		end,
-		select=function(name,vals,where)
-			for row in out.pselect(name,vals,where) do
+		select=function(name,where,vals)
+			for row in out.pselect(name,where,vals) do
 				return row
 			end
 		end,
 		update=function(name,where,vals)
+			local bind={}
 			local w={}
 			if where then
-				for k,v in tpairs(where) do
+				for k,v in pairs(where) do
 					table.insert(w,k.."==:w"..k)
-					where["w"..k]=v
-					where[k]=nil
+					bind["w"..k]=v
 				end
 			end
 			local vl={}
-			for k,v in tpairs(vals) do
+			for k,v in pairs(vals) do
 				table.insert(vl,k.."=:u"..k)
-				vals["u"..k]=v
-				vals[k]=nil
+				bind["u"..k]=v
 			end
-			local sta="update "..name.." set "..table.concat(vl," ")..(where and " where " or "")..table.concat(w," and ")
-			local sn=db:prepare(sta)
-			if not sn then
-				return "ERROR "..sta
-			end
-			if where then
-				sn:bind_names(where)
-			end
-			sn:bind_names(vals)
+			local sn=db:prepare("update "..name.." set "..table.concat(vl," ")..(where and " where " or "")..table.concat(w," and "))
+			sn:bind_names(bind)
 			sn:step()
 			sn:finalize()
-			return sta,serialize(where),serialize(vals)
 		end,
 		insert=function(name,vals)
 			local keys={}
@@ -73,10 +81,20 @@ function sql.new(dir)
 			for l1=1,#keys do
 				vl[l1]=":"..keys[l1]
 			end
-			print("executing ".."insert into "..name.." ("..table.concat(keys,",")..") values ("..table.concat(vl,",")..")")
-			local sn=assert(db:prepare("insert into "..name.." ("..table.concat(keys,",")..") values ("..table.concat(vl,",")..")"))
-			print("where "..serialize(vals))
+			local sn=db:prepare("insert into "..name.." ("..table.concat(keys,",")..") values ("..table.concat(vl,",")..")")
 			sn:bind_names(vals)
+			sn:step()
+			sn:finalize()
+		end,
+		delete=function(name,where)
+			local bind={}
+			local w={}
+			for k,v in pairs(where) do
+				table.insert(w,k.."==:"..k)
+				bind["w"..k]=v
+			end
+			local sn=db:prepare("delete from "..name.." where "..table.concat(w," and "))
+			sn:bind_names(where)
 			sn:step()
 			sn:finalize()
 		end,
