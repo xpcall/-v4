@@ -26,7 +26,7 @@ function async.socket(sk,err)
 	assert(sk,err)
 	return setmetatable({
 		receive=function(len,timeout)
-			if len and len<1 then
+			if tonumber(len) and len<1 then
 				return "",nil
 			end
 			hook.newsocket(sk)
@@ -37,17 +37,23 @@ function async.socket(sk,err)
 					nd=true
 				end)
 			end
+			local t,txt,err
 			hook.new("select",function()
 				if nd then
-					resume(nil,timeout)
+					t,txt,err=true,nil,"timeout"
+					resume()
+					hook.stop()
 				end
-				local txt,err=sk:receive(len)
+				txt,err=sk:receive(len)
 				if err~="timeout" then
-					resume(txt,err)
+					t=true
+					resume()
 					hook.stop()
 				end
 			end)
-			local txt,err=coroutine.yield()
+			while not t do
+				coroutine.yield()
+			end
 			hook.remsocket(sk)
 			return txt,err
 		end,

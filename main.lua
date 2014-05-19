@@ -126,7 +126,18 @@ do
 				fs.read(file)
 			end
 			return modified[file]
-		end
+		end,
+		delete=function(file)
+			os.remove(file)
+		end,
+		move=function(file,tofile)
+			local fl=io.open(file,"rb")
+			local tofl=io.open(file,"wb")
+			tofl:write(fl:read("*a"))
+			fl:close()
+			tofl:close()
+			os.remove(file)
+		end,
 	}
 end
 
@@ -146,6 +157,14 @@ function tpairs(tbl)
 		c=c+1
 		return s[c],tbl[s[c]]
 	end
+end
+function table.mean(...)
+	local p={...}
+	local n=0
+	for l1=1,#p do
+		n=n+p[l1]
+	end
+	return n/#p
 end
 function string.tmatch(str,...)
 	local o={}

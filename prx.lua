@@ -77,7 +77,9 @@ while true do
 			log(nick.." is now known as "..tonick)
 		end
 		print(">"..s)
-		assert(cl:send(s.."\n"))
+		cl:settimeout(5)
+		cl:send(s.."\n")
+		cl:settimeout(0)
 		local pong=s:match("^PING (.+)$")
 		if pong then
 			assert(sv:send("PONG "..pong.."\n"))
