@@ -94,7 +94,7 @@ hook.new({"command_l","command_lua"},function(user,chan,txt)
 	local file=io.open("sbox.tmp","w")
 	file:write(txt)
 	file:close()
-	local fi=io.popen("lua52.exe sbox.lua")
+	local fi=io.popen("./lua52 sbox.lua")
 	return limitoutput(fi:read("*a"))
 end,{
 	desc="executes lua 5.2 code",
@@ -108,33 +108,11 @@ hook.new({"command_l53","command_lua53"},function(user,chan,txt)
 	local file=io.open("sbox.tmp","w")
 	file:write(txt)
 	file:close()
-	local fi=io.popen("lua53.exe sbox.lua")
+	local fi=io.popen("./lua53 sbox.lua")
 	return limitoutput(fi:read("*a"))
 end,{
 	desc="executes lua 5.3 code",
 	group="help",
-})
-
-hook.new({"command_l32","command_lua32"},function(user,chan,txt)
-	if admin.auth(user) then
-		if txt:sub(1,1)=="\27" then
-			return "Nope."
-		end
-		local file=io.open("sbox.tmp","w")
-		file:write(txt)
-		file:close()
-		local fi=io.popen("lua32.exe sbox32.lua")
-		local o={}
-		local line=fi:read("*l")
-		while line do
-			table.insert(o,line)
-			line=fi:read("*l")
-		end
-		return limitoutput(table.concat(o," | "))
-	end
-end,{
-	desc="executes lua 3.2 code",
-	group="admin",
 })
 
 hook.new({"command_ips"},function(user,chan,txt)

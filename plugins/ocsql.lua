@@ -24,7 +24,7 @@ function ocsql.new(file)
 		return function()
 			local out=""
 			while out=="" do
-				if c==-m then
+				if c==-m and buff=="" then
 					print("break")
 					break
 				end
@@ -46,6 +46,7 @@ function ocsql.new(file)
 	wr=io.open(file,"ab")
 	local out
 	out={
+		rlines=rlines,
 		get=function(name)
 			for k,v in rlines() do
 				if k==name then

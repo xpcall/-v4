@@ -1,4 +1,4 @@
-local tcpnet=socket.connect("71.238.153.166",25476)
+--[[local tcpnet=socket.connect("71.238.153.166",25476)
 if tcpnet then
 	local file=io.open("tcpnetpassword.txt","r")
 	local port=file:read("*a"):gsub("[\r\n]","")
@@ -27,6 +27,26 @@ if tcpnet then
 				port=port,
 				data="\194\1677"..(act and ("* "..user.nick.." ") or ("<"..user.nick.."> ")).."\194\167f"..txt
 			}).."\n")
+		end
+	end)
+end]]
+if tcpnet then
+	local file=io.open("tcpnetpassword.txt","r")
+	local pass=file:read("*a"):gsub("[\r\n]","")
+	file:close()
+	tcpnet.open(pass)
+	hook.new("tcpnet_message",function(port,dat)
+		if port==pass then
+			if dat[4]:match("^/me ?%S*.-$") then
+				irc.say("#ocbots",mc2irc("*"..dat[3]..dat[4]:match("^/me(.+)")))
+			elseif dat[4]:match("^[^/]") then
+				irc.say("#ocbots",mc2irc("<"..dat[3].."> "..dat[4]))
+			end
+		end
+	end)
+	hook.new("msg",function(user,chan,txt,act)
+		if chan=="#ocbots" then
+			tcpnet.send(pass,irc2mc("<"..user.nick.."> "..txt))
 		end
 	end)
 end

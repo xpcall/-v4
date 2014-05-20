@@ -14,7 +14,8 @@ hook.new("select",function(a)
 		local cl=k:accept()
 		if cl then
 			async.new(function()
-				server[k](async.socket(cl))
+				assert(cl.settimeout)
+				v(async.socket(cl))
 			end)
 		end
 	end

@@ -61,8 +61,7 @@ end
 function hook.remrsocket(sk)
 	for k,v in pairs(hook.rsel) do
 		if v==sk then
-			table.remove(hook.rsel,k)
-			return
+			return table.remove(hook.rsel,k)
 		end
 	end
 end

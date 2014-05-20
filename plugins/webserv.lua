@@ -41,7 +41,7 @@ local function cmpdate(a,b)
 	return 0
 end
 
-local sv=assert(socket.bind("*",80))
+local sv=assert(socket.bind("*",8080))
 sv:settimeout(0)
 hook.newsocket(sv)
 local cli={}

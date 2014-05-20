@@ -8,22 +8,17 @@ function crypt.xor(a,b)
 	return o
 end
 function crypt.rot13(txt)
-	txt=txt:gsub("%l",function(c)
-		return string.char((((c:byte()-97)+13)%26)+97)
+	return txt:gsub("%l",function(c)
+		return string.char(((c:byte()-84)%26)+97)
 	end):gsub("%u",function(c)
-		return string.char((((c:byte()-65)+13)%26)+65)
+		return string.char(((c:byte()-52)%26)+65)
 	end)
-	return txt
 end
 function crypt.rot47(txt)
-	txt=txt:gsub(".",function(c)
-		if c:byte()<127 and c:byte()>32 then
-			return string.char((((c:byte()-33)+47)%94)+33)
-		end
-	end)
+	txt=txt:gsub(".",function(c) if c:byte()<127 and c:byte()>32 then return string.char((((c:byte()-33)+47)%94)+33) end end)
 	return txt
 end
-hook.new("command_rot13",function(user,chan,txt)
+hook.new("commanyd_rot13",function(user,chan,txt)
 	return crypt.rot13(txt)
 end,{
 	desc="most secure encryption ever made",

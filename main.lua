@@ -8,7 +8,7 @@ local bc=require("bc")
 local lanes=require("lanes")
 local json=require("dkjson")
 local sqlite=require("lsqlite3")
-math.randomseed(socket.gettime())
+math.randomseed(socket.gettime()*1000)
 cnick="^v"
 do
 	local exists={}
@@ -158,7 +158,7 @@ function tpairs(tbl)
 		return s[c],tbl[s[c]]
 	end
 end
-function table.mean(...)
+function mean(...)
 	local p={...}
 	local n=0
 	for l1=1,#p do

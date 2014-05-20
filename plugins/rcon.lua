@@ -1,3 +1,5 @@
+reqplugin("async.lua")
+
 rcon={}
 local conv,uconv
 do
