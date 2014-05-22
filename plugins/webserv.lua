@@ -150,7 +150,7 @@ local function req(cl)
 					end
 				end
 				if not gt then
-					local o=""
+					local o="<a href=\"..\">..</a><br>"
 					for k,v in pairs(fs.list(bse)) do
 						o=o.."<a href=\""..fs.combine(url,v):gsub("^/","").."\">"..htmlencode(v).."</a><br>"
 					end

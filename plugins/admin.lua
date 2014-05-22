@@ -4,10 +4,11 @@ admin.chans={}
 admin.cmd={}
 
 function admin.match(user,txt)
-	local pfx,mt=txt:match("^$([ar]):(.+)")
+	local pfx,mt=txt:match("^$([arc]):(.+)")
 	mt="^"..pescape(mt or txt):gsub("%%%*",".-").."$"
 	return (pfx=="a" and user.account:match(mt)~=nil)
 		or (pfx=="r" and user.realname:match(mt)~=nil)
+		or (pfx=="c" and (user.chan or ""):match(mt)~=nil)
 		or (not pfx and (user.nick.."!"..user.username.."@"..user.host):match(mt)~=nil)
 end
 
@@ -42,7 +43,7 @@ do
 	end
 	local function save()
 		local file=io.open("db/ignore","w")
-		file:write(serialize(ignore))
+		file:write(serialize(admin.ignore))
 		file:close()
 	end
 	hook.new("command_ignore",function(user,chan,txt)
@@ -348,6 +349,9 @@ hook.new({"command_pfind"},function(user,chan,txt)
 	local a,b=txt:match("^(%S+) (.+)")
 	local o={}
 	for k,v in pairs(admin.perms) do
+		if not v[a] then
+			return "user "..k.." doesnt have a "..a
+		end
 		if v[a]:match(b) then
 			table.insert(o,k)
 		end

@@ -233,9 +233,6 @@ hook.new("raw",function(txt)
 		send("JOIN #ocbots")
 		send("JOIN #OpenPrograms")
 	end)
-	txt:gsub("^PING (.+)",function(pong)
-		sv:send("PONG "..pong.."\n")
-	end)
 end)
 local plenv=setmetatable({
 	socket=socket,

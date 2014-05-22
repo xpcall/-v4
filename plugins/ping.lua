@@ -18,3 +18,16 @@ hook.new("raw",function(txt)
 		send(png[1].." :Ping reply from "..png[3].." "..math.round(socket.gettime()-png[2],2).."s")
 	end
 end)
+local last=socket.gettime()
+hook.new("raw",function()
+	
+end)
+async.new(function()
+	while true do
+		async.wait(20)
+		if socket.gettime()-last>20 then
+			send("PING POTATO"..math.random(100000,999999))
+		end
+	end
+end)
+

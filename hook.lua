@@ -15,6 +15,21 @@ local function nxt(tbl)
 	end
 	return n
 end
+
+function tpairs(tbl)
+	local s={}
+	local c=1
+	for k,v in pairs(tbl) do
+		s[c]=k
+		c=c+1
+	end
+	c=0
+	return function()
+		c=c+1
+		return s[c],tbl[s[c]]
+	end
+end
+
 local ed
 function hook.stop()
 	ed=true
@@ -61,7 +76,8 @@ end
 function hook.remrsocket(sk)
 	for k,v in pairs(hook.rsel) do
 		if v==sk then
-			return table.remove(hook.rsel,k)
+			table.remove(hook.rsel,k)
+			return
 		end
 	end
 end
@@ -78,22 +94,23 @@ function hook.new(name,func,meta)
 end
 function hook.timer(tme)
 	local n=nxt(timers)
-	timers[n]=tme
+	timers[n]={tme,tme}
 	hook.interval=math.min(tme,hook.interval or tme)
-	return n
+	return "timer_"..n
 end
 local lst=socket.gettime()
 hook.new("select",function()
 	local dt=socket.gettime()-lst
 	local mn
 	for num,tme in tpairs(timers) do
-		timers[num]=timers[num]-dt
-		if timers[num]<=0 then
-			hook.queue("timer_"..num)
-			hook.del("timer_"..num)
-			timers[num]=nil
+		timers[num][1]=timers[num][1]-dt
+		if timers[num][1]<=0 then
+			timers[num][1]=hook.queue("timer_"..num) and timers[num][2] or nil
+			if not timers[num][1] then
+				timers[num]=nil
+			end
 		else
-			mn=math.min(mn or timers[num],mn or math.huge)
+			mn=math.min(mn or timers[num][1],mn or math.huge)
 		end
 	end
 	if mn and mn+1>mn then
@@ -108,9 +125,9 @@ function hook.del(name)
 	for _,nme in pairs(name) do
 		if type(nme)=="function" then
 			for k,v in pairs(hooks) do
-				for n,l in tpairs(v) do
+				for n,l in pairs(v) do
 					if l==nme then
-						v[n]=nil
+						hooks[k][n]=nil
 					end
 				end
 			end

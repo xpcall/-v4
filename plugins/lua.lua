@@ -206,6 +206,7 @@ hook.new({"command_calc"},function(user,chan,txt)
 		return setmetatable({val=t},meta)
 	end}))
 	debug.sethook(func,function() error("Time limit exeeded.",0) end,"",10000000)
+	bc.digits(10)
 	local res={coroutine.resume(func)}
 	local o=""
 	for l1=2,#res do
