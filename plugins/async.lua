@@ -1,21 +1,23 @@
 async={}
 local resume
-function async.new(func)
+function async.new(func,err)
 	local co=coroutine.create(func)
 	local sfunc
 	function sfunc(...)
 		resume=sfunc
 		hook.del(sfunc)
 		local p={coroutine.resume(co,...)}
-		assert(p[1],(p[2] or "").."\n"..debug.traceback(co))
+		if not p[1] then
+			err((p[2] or "").."\n"..debug.traceback(co))
+		end
 		return unpack(p,2)
 	end
 	resume=sfunc
 	assert(coroutine.resume(co))
 	return sfunc
 end
-function async.pull(name)
-	hook.new(name,resume)
+function async.pull(...)
+	hook.new({...},resume)
 	return coroutine.yield()
 end
 function async.wait(n)
@@ -99,5 +101,4 @@ function async.socket(sk,err)
 		sk:close()
 	end})
 	return out
-	
 end

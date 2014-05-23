@@ -25,14 +25,24 @@ hook.new({"command_>"},function(user,chan,txt)
 				return err
 			end
 		end
-		local func=coroutine.create(setfenv(func,_G))
+		local out=""
+		local func=coroutine.create(setfenv(func,setmetatable({
+			print=function(...)
+				for k,v in pairs({...}) do
+					out=out..v.."\n"
+				end
+			end,
+			write=function(...)
+				out=out..table.concat({...}," ")
+			end
+		},{__index=_G,__newindex=_G})))
 		debug.sethook(func,function() error("Time limit exeeded.",0) end,"",1000000)
 		local res={coroutine.resume(func)}
-		local o
-		for l1=2,maxval(res) do
-			o=(o or "")..tostring(res[l1]).."\n"
+		local o=out
+		for l1=2,math.max(maxval(res),2) do
+			o=o..tostring(res[l1]).."\n"
 		end
-		return limitoutput(o or "nil")
+		return limitoutput(o)
 	end
 end,{
 	desc="admin lua",
