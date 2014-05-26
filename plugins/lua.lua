@@ -38,6 +38,9 @@ hook.new({"command_>"},function(user,chan,txt)
 		},{__index=_G,__newindex=_G})))
 		debug.sethook(func,function() error("Time limit exeeded.",0) end,"",1000000)
 		local res={coroutine.resume(func)}
+		if not res[1] then
+			res[3]=debug.traceback(func)
+		end
 		local o=out
 		for l1=2,math.max(maxval(res),2) do
 			o=o..tostring(res[l1]).."\n"

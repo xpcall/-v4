@@ -8,6 +8,9 @@ local bc=require("bc")
 local lanes=require("lanes")
 local json=require("dkjson")
 local sqlite=require("lsqlite3")
+local im=require("imlua")
+local cd=require("cdlua")
+require("cdluaim")
 math.randomseed(socket.gettime()*1000)
 cnick="^v"
 do
@@ -204,6 +207,30 @@ function table.reverse(tbl)
 	end
 	return tbl
 end
+function string.min(...)
+	local p={...}
+	local n
+	local o
+	for k,v in pairs(p) do
+		if not n or #v<n then
+			n=#v
+			o=v
+		end
+	end
+	return o
+end
+function string.max(...)
+	local p={...}
+	local n
+	local o
+	for k,v in pairs(p) do
+		if not n or #v>n then
+			n=#v
+			o=v
+		end
+	end
+	return o
+end
 function pescape(txt)
 	local o=txt:gsub("[%.%[%]%(%)%%%*%+%-%?%^%$]","%%%1"):gsub("%z","%%z")
 	return o
@@ -249,6 +276,8 @@ local plenv=setmetatable({
 	json=json,
 	lanes=lanes,
 	sqlite=sqlite,
+	im=im,
+	cd=cd,
 },{__index=_G,__newindex=_G})
 plenv._G=plenv
 

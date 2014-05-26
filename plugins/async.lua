@@ -7,7 +7,7 @@ function async.new(func,err)
 		resume=sfunc
 		hook.del(sfunc)
 		local p={coroutine.resume(co,...)}
-		if not p[1] then
+		if coroutine.status(co)~="dead" and err and not p[1] then
 			err((p[2] or "").."\n"..debug.traceback(co))
 		end
 		return unpack(p,2)
@@ -28,8 +28,8 @@ function async.socket(sk,err)
 	assert(sk,err)
 	local out
 	out=setmetatable({
-		receive=function(len,tmo)
-			tmo=tmo or out.timeout
+		receive=function(len,pfx)
+			local tmo=out.timeout
 			if type(len)=="number" and len<1 then
 				return "",nil
 			elseif type(tmo)=="number" and tmo<=0 then
@@ -57,7 +57,7 @@ function async.socket(sk,err)
 			end)
 			local txt,err=coroutine.yield()
 			hook.remsocket(sk)
-			return txt,err
+			return (pfx or "")..txt,err
 		end,
 		send=function(txt)
 			local ind=1
@@ -92,12 +92,12 @@ function async.socket(sk,err)
 			end
 		end,
 		close=function()
-			hook.remsocket(sk)
+			while hook.remsocket(sk) do end
 			sk:close()
 		end,
 		sk=sk,
 	},{__gc=function()
-		hook.remsocket(sk)
+		while hook.remsocket(sk) do end
 		sk:close()
 	end})
 	return out

@@ -213,8 +213,8 @@ hook.new("raw",function(txt)
 			hook.queue("nick",nick,tonick)
 		end
 	end)
-	txt:gsub("^:([^%s!]+)![^%s@]+@(%S+) QUIT :.*",function(nick)
-		hook.queue("quit",nick)
+	txt:gsub("^:([^%s!]+)![^%s@]+@(%S+) QUIT :(.*)",function(nick,reason)
+		hook.queue("quit",nick,reason)
 		admin.perms[nick]=nil
 		for k,v in pairs(admin.chans) do
 			v[nick]=nil
@@ -273,29 +273,26 @@ hook.new("msg",function(user,chan,txt)
 		txt=txt:gsub("%s+$","")
 		if txt:sub(1,1)=="." then
 			async.new(function()
-				local err,res=xpcall(function()
-					print(user.nick.." used "..txt)
-					local cb=function(st,dat)
-						if st==true then
-							print("responding with "..tostring(dat))
-							respond(user,tostring(dat))
-						elseif st then
-							print("responding with "..tostring(st))
-							respond(user,user.nick..", "..tostring(st))
-						end
+				print(user.nick.." used "..txt)
+				local cb=function(st,dat)
+					if st==true then
+						print("responding with "..tostring(dat))
+						respond(user,tostring(dat))
+					elseif st then
+						print("responding with "..tostring(st))
+						respond(user,user.nick..", "..tostring(st))
 					end
-					hook.callback=cb
-					hook.queue("command",user,chan,txt:sub(2))
-					local cmd,param=txt:match("^%.(%S+) ?(.*)")
-					if cmd then
-						hook.callback=cb
-						hook.queue("command_"..cmd,user,chan,param)
-					end
-				end,debug.traceback)
-				if not err then
-					print(res)
-					respond(user,"Oh noes! "..paste(res))
 				end
+				hook.callback=cb
+				hook.queue("command",user,chan,txt:sub(2))
+				local cmd,param=txt:match("^%.(%S+) ?(.*)")
+				if cmd then
+					hook.callback=cb
+					hook.queue("command_"..cmd,user,chan,param)
+				end
+			end,function(err)
+				print(err)
+				respond(user,"Oh noes! "..paste(err))
 			end)
 		end
 	end

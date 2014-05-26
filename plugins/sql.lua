@@ -13,6 +13,8 @@ function sql.new(dir)
 		new=function(name,...)
 			db:exec("create table if not exists "..name.." ("..table.concat({...},",")..")")
 			return {
+				db=db,
+				parent=out,
 				pselect=function(...)
 					return out.pselect(name,...)
 				end,

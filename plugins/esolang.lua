@@ -1,3 +1,44 @@
+function agonyasm(txt)
+	out=txt:gsub("%S+",function(ins)
+		if ins:match("^[%+%-]") and tonumber(ins:sub(2)) then
+			local n=tonumber(ins:sub(2))
+			return (n>0 and "+" or "-"):rep(math.abs(n))
+		elseif ins:match("^[{}]") and tonumber(ins:sub(2):match("^%+*(.+)")) then
+			local n=tonumber(ins:sub(2):match("^%+*(.+)"))
+			return (ins:sub(1,1) and "{" or "")..(n>0 and "@" or "~"):rep(math.abs(n))
+		elseif tonumber(ins) then
+			local a=math.floor(ins/16)
+			local b=ins%16
+			return ">"..string.min(("@"):rep(a),("~"):rep(16-a)).."}"..string.min(("~"):rep(16-b),("@"):rep(b)).."{"
+		elseif ins=="POP" then
+			return "[-]<"
+		elseif ins=="DUP" then
+			return "[->+<*+*]*>"
+		elseif ins=="SWP" then
+			return "*<*>*"
+		elseif ins=="ADD" then
+			return "[-<+>]<"
+		elseif ins=="MUL" then
+			return "<[>>>+<<<-]>>>[<<[<+>>+<-]>[<+>-]>-]<<[-]<"
+		elseif ins=="SUB" then
+			return "[-<->]<"
+		elseif ins=="OUT" then
+			return "."
+		elseif ins=="IF" then
+			return "[>+<]>["
+		elseif ins=="FI" then
+			return "-]<"
+		elseif ins=="REP" then
+			return "["
+		elseif ins=="END" then
+			return "]"
+		elseif ins=="NOT" then
+			return "-[*-*-]*[*+*]*"			
+		end
+	end)
+	return out
+end
+
 hook.new({"command_geneso","command_genesolang"},function(user,chan,txt)
 	local bits=2^math.random(1,6)
 	local o=bits.." bit "
@@ -47,6 +88,23 @@ function brainfuck(txt)
 		:gsub("%."," o=o..string.char(s[p] or 0)")
 		:gsub(","," error(\"Input not supported.\")")
 	.." return o","=brainfuck")
+end
+
+do
+	reqplugin("sql.lua")
+	local bfconv=sql.new("bfconv").new("conv","x","y","o")
+	hook.new({"command_encbf","command_encbrainfuck"},function(user,chan,txt)
+		local l=0
+		return txt:gsub(".",function(char)
+			char=char:byte()
+			local o=bfconv.select({x=l,y=char}).o
+			l=char
+			return o.."."
+		end)
+	end,{
+		desc="text to brainfuck generator",
+		group="esolangs",
+	})
 end
 
 hook.new({"command_bf","command_brainfuck"},function(user,chan,txt)
@@ -304,6 +362,7 @@ hook.new({"command_ag","command_agony"},function(user,chan,txt)
 	}
 	local mxval=0
 	local mnval=0
+	local buff={}
 	local mem=setmetatable({},{
 		__newindex=function(s,n,d)
 			mxval=math.max(mxval,n)
@@ -321,7 +380,7 @@ hook.new({"command_ag","command_agony"},function(user,chan,txt)
 	local eip=0
 	local ptr=#txt+1
 	local function lc(dt,a,b,cmp,tf)
-		local mrm=(mem[ptr-1]*16)+mem[ptr]
+		local mrm=(mem[ptr]*16)+mem[ptr+1]
 		if tf then
 			mrm=mem[ptr]
 		end
@@ -363,15 +422,15 @@ hook.new({"command_ag","command_agony"},function(user,chan,txt)
 		elseif ins==6 then
 			mem[ptr]=(mem[ptr]-1)%16
 		elseif ins==7 then
-			mem[ptr]=mem[ptr]+1
-			mem[ptr-1]=(mem[ptr-1]+math.floor(mem[ptr]/16))%16
-			mem[ptr]=mem[ptr]%16
+			mem[ptr+1]=mem[ptr+1]+1
+			mem[ptr]=(mem[ptr]+math.floor(mem[ptr+1]/16))%16
+			mem[ptr+1]=mem[ptr+1]%16
 		elseif ins==8 then
-			mem[ptr]=mem[ptr]-1
-			mem[ptr-1]=(mem[ptr-1]+math.floor(mem[ptr]/16))%16
-			mem[ptr]=mem[ptr]%16
+			mem[ptr+1]=mem[ptr+1]-1
+			mem[ptr]=(mem[ptr]+math.floor(mem[ptr+1]/16))%16
+			mem[ptr+1]=mem[ptr+1]%16
 		elseif ins==9 then
-			o=o..string.char((mem[ptr-1]*16)+mem[ptr])
+			o=o..string.char((mem[ptr]*16)+mem[ptr+1])
 		elseif ins==10 then
 			return "Input not supported."
 		elseif ins==11 then
@@ -391,7 +450,7 @@ hook.new({"command_ag","command_agony"},function(user,chan,txt)
 				return "err\n"..o
 			end
 		elseif ins==15 then
-			mem[ptr-1],mem[ptr],buff[1],buff[2]=buff[1],buff[2],mem[ptr-1],mem[ptr]
+			mem[ptr],mem[ptr+1],buff[1],buff[2]=buff[1],buff[2],mem[ptr],mem[ptr+1]
 		end
 		eip=eip+1
 		insnum=insnum+1
@@ -1343,3 +1402,4 @@ end,{
 	desc="outdated Gopher's robot bytecode",
 	group="esolangs",
 })
+

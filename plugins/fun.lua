@@ -689,6 +689,10 @@ end,{
 	group="misc",
 })
 
+hook.new({"command_bytes"},function(user,chan,txt)
+	return table.concat({txt:byte(1,-1)}," ")
+end)
+
 hook.new({"command_drama"},function(user,chan,txt)
 	local dat,err=http.request("http://asie.pl/drama.php?plain")
 	return dat or "Error "..err

@@ -1,7 +1,7 @@
 /www/paste/*
-/db
 /*.exe
 /*.dll
+/db/tells
 /derplogs
 /potato
 /test.lua
@@ -12,3 +12,7 @@
 /*.bat
 /sbox.tmp
 /log.txt
+/lua52
+/lua53
+/luac52
+/luac53
