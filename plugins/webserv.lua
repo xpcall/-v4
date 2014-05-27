@@ -41,7 +41,8 @@ local function cmpdate(a,b)
 	return 0
 end
 
-local sv=assert(socket.bind("*",8080))
+local sv=assert(socket.bind("*",(config or {}).port or 8080))
+print("Listening on port "..((config or {}).port or 8080))
 sv:settimeout(0)
 hook.newsocket(sv)
 local cli={}
@@ -75,10 +76,13 @@ end
 local ctype={
 	["html"]="text/html",
 	["css"]="text/css",
+	["ico"]="image/ico",
 	["png"]="image/png",
 	["jpg"]="image/jpeg",
 	["jpeg"]="image/jpeg",
 	["txt"]="text/plain",
+	["zip"]="application/octet-stream",
+	["jar"]="application/octet-stream",
 }
 
 local function form(cl,res)
@@ -123,13 +127,13 @@ local scripts={}
 local function req(cl)
 	local cldat=cli[cl]
 	local url=cldat.url
-	cldat.urldata=parseurl(url:match(".-%?(.+)") or "")
+	print(cldat.ip.." : "..url)
+	cldat.urldata=parseurl(url:match(".-%?(.*)") or "")
 	if cldat.post then
 		cldat.postdata=parseurl(cldat.post)
 	end
 	url=fs.resolve(url:match("(.-)%?.+") or url)
 	local res=hook.queue("page_"..url,cldat)
-	print("\""..url.."\"")
 	url=fs.split(url)
 	local file=url[#url] or ""
 	url=table.concat(url,"/")
@@ -150,9 +154,9 @@ local function req(cl)
 					end
 				end
 				if not gt then
-					local o="<a href=\"..\">..</a><br>"
+					local o="<a href=\"/"..fs.resolve(url.."/../").."\">..</a><br>"
 					for k,v in pairs(fs.list(bse)) do
-						o=o.."<a href=\""..fs.combine(url,v):gsub("^/","").."\">"..htmlencode(v).."</a><br>"
+						o=o.."<a href=\"/"..fs.combine(url,v):gsub("^/","").."\">"..htmlencode(v).."</a><br>"
 					end
 					res.data=o
 				end
@@ -223,7 +227,9 @@ hook.new("select",function()
 		hook.newsocket(cl)
 		cl:settimeout(0)
 		cli[cl]={headers={},ip=cl:getpeername()}
-		print("got client "..cli[cl].ip.." "..hook.queue("command_find",nil,nil,"ip "..cli[cl].ip))
+		if (config or {logging=true}).logging then
+			print("got client "..cli[cl].ip.." "..(hook.queue("command_find",nil,nil,"ip "..cli[cl].ip) or ""))
+		end
 		cl=sv:accept()
 	end
 	for cl,cldat in pairs(cli) do

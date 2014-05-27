@@ -30,3 +30,43 @@ end,{
 	desc="second most secure encryption ever made",
 	group="fun",
 })
+function crypt.space(txt)
+	return tobase(txt,nil,"01234567")
+		:gsub("0","\226\128\139")
+		:gsub("1","\226\128\138")
+		:gsub("2","\226\128\137")
+		:gsub("3","\226\128\136")
+		:gsub("4","\194\160")
+		:gsub("5","\226\128\128")
+		:gsub("6","\226\128\175")
+		:gsub("7","\226\129\159")
+end
+function crypt.unspace(txt)
+	return tobase(txt
+		:gsub("\226\128\139","0")
+		:gsub("\226\128\138","1")
+		:gsub("\226\128\137","2")
+		:gsub("\226\128\136","3")
+		:gsub("\194\160","4")
+		:gsub("\226\128\128","5")
+		:gsub("\226\128\175","6")
+		:gsub("\226\129\159","7")
+	,"01234567")
+end
+function crypt.color(txt,cl)
+	cl=tobase(cl,nil,"0123456789ABCDEF")
+	return txt:gsub("%S",function(char)
+		if cl~="" then
+			local o="\3"..tobase(cl:sub(1,1),"0123456789ABCDEF","0123456789",2)..char
+			cl=cl:sub(2)
+			return o..(#cl==0 and "\15" or "")
+		end
+	end)
+end
+function crypt.decolor(txt)
+	local o=""
+	for cl in txt:gmatch("\3(%d%d)") do
+		o=o..string.format("%X",tonumber(cl))
+	end
+	return tobase(o,"0123456789ABCDEF")
+end

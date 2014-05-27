@@ -278,6 +278,7 @@ local plenv=setmetatable({
 	sqlite=sqlite,
 	im=im,
 	cd=cd,
+	fann=fann,
 },{__index=_G,__newindex=_G})
 plenv._G=plenv
 

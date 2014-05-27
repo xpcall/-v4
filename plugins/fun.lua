@@ -741,3 +741,37 @@ end,{
 	desc="epic!!!!1!!!1!!!!1!!1!one",
 	group="fun",
 })
+
+hook.new({"command_mcdown","command_mcstats","command_mcstat","command_mc"},function(user,chan,txt)
+	local res,err=http.request("http://status.mojang.com/check")
+	if err~=200 then
+		return "Error "..err
+	end
+	local dat=json.decode(res)
+	if not dat then
+		return "Errror parsing"
+	end
+	local col={
+		["red"]="\2\0034",
+		["yellow"]="\2\0038",
+		["green"]="\0039",
+	}
+	local nm={
+		["minecraft.net"]="minecraft.net",
+		["session.minecraft.net"]="sessions",
+		["account.mojang.com"]="account",
+		["auth.mojang.com"]="auth",
+		["skins.minecraft.net"]="skins",
+		["authserver.mojang.com"]="authserver",
+		["sessionserver.mojang.com"]="sessionserver",
+		["api.mojang.com"]="api",
+		["textures.minecraft.net"]="textures",
+	}
+	local o={}
+	for l1=1,#dat do
+		for k,v in pairs(dat[l1]) do
+			table.insert(o,col[v]..nm[k].."\15")
+		end
+	end
+	return table.concat(o," ")
+end)

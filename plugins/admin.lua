@@ -2,6 +2,7 @@ admin={}
 admin.perms={}
 admin.chans={}
 admin.cmd={}
+admin.db=sql.new("admin").new("perms","name","group","perms")
 
 function admin.match(user,txt)
 	local pfx,mt=txt:match("^$([arc]):(.+)")
@@ -213,7 +214,7 @@ hook.new("raw",function(txt)
 			hook.queue("nick",nick,tonick)
 		end
 	end)
-	txt:gsub("^:([^%s!]+)![^%s@]+@(%S+) QUIT :(.*)",function(nick,reason)
+	txt:gsub("^:([^%s!]+)![^%s@]+@%S+ QUIT :(.*)",function(nick,reason)
 		hook.queue("quit",nick,reason)
 		admin.perms[nick]=nil
 		for k,v in pairs(admin.chans) do
