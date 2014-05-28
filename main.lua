@@ -259,6 +259,8 @@ hook.new("raw",function(txt)
 		send("JOIN #oc")
 		send("JOIN #ocbots")
 		send("JOIN #OpenPrograms")
+		send("JOIN #pastamen")
+		send("JOIN #ccjam")
 	end)
 end)
 local plenv=setmetatable({

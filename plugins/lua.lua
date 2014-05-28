@@ -207,7 +207,7 @@ hook.new({"command_calc"},function(user,chan,txt)
 		end,
 		__pow=function(a,b)
 			if bc.compare(b.val,1000)==1 then
-				error("exponent too big "..b.val)
+				error("exponent too big")
 			end
 			return setmetatable({val=bc.pow(a.val,b.val)},meta)
 		end,
