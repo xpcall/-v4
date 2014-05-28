@@ -230,6 +230,9 @@ do
 		twikinames[v]=true
 	end
 	hook.new({"command_wiki","command_w","command_help","command_h"},function(user,chan,txt)
+		if chan=="#ccjam" then
+			return "http://ccjam.ml/"
+		end
 		txt=txt:lower()
 		local b="https://github.com/MightyPirates/OpenComputers/wiki/"
 		if txt=="" then

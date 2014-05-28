@@ -1,5 +1,30 @@
+function repl(txt)
+	local out=""
+	local rules={}
+	while txt~="" do
+		local i=txt:find("/") or #txt+1
+		local o=txt:sub(1,i-1)
+		for k,v in pairs(rules) do
+			o=o:gsub(k,v)
+		end
+		out=out..o
+		local a,b,ntxt=txt:match("/(.-)/(.-)/(.-)")
+		if a then
+			txt=ntxt
+			if b:match("^function(.-) end$") then
+				rules[a]=assert(loadstring("return "..b))()
+			else
+				rules[a]=b
+			end
+		else
+			txt=txt:sub(i+1)
+		end
+	end
+	return out
+end
+
 function agonyasm(txt)
-	out=txt:gsub("%S+",function(ins)
+	local out=txt:gsub("%S+",function(ins)
 		if ins:match("^[%+%-]") and tonumber(ins:sub(2)) then
 			local n=tonumber(ins:sub(2))
 			return (n>0 and "+" or "-"):rep(math.abs(n))
@@ -25,15 +50,15 @@ function agonyasm(txt)
 		elseif ins=="OUT" then
 			return "."
 		elseif ins=="IF" then
-			return "[>+<]>["
+			return "["
 		elseif ins=="FI" then
-			return "-]<"
+			return "[-]]<"
 		elseif ins=="REP" then
 			return "["
 		elseif ins=="END" then
 			return "]"
 		elseif ins=="NOT" then
-			return "-[*-*-]*[*+*]*"			
+			return "-[*-*-]*[*+*-]*"			
 		end
 	end)
 	return out

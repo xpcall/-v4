@@ -417,6 +417,35 @@ end,{
 	group="misc",
 })
 
+hook.new({"command_acronym"},function(user,chan,txt)
+	local o={}
+	local file=io.open("log.txt","r")
+	local line=file:read("*l")
+	local used={}
+	while line do
+		for word in line:gmatch("%w+") do
+			word=word:lower()
+			if not used[word] then
+				used[word]=true
+				local b=word:sub(1,1)
+				o[b]=o[b] or {}
+				table.insert(o[b],word)
+			end
+		end
+		line=file:read("*l")
+	end
+	file:close()
+	local ot={}
+	for letter in txt:gmatch("%S") do
+		local c=o[letter:lower()] or {letter}
+		table.insert(ot,c[math.random(1,#c)])
+	end
+	return table.concat(ot," ")
+end,{
+	desc="generates words for acronyms",
+	group="misc",
+})
+
 function shorturl(url)
 	url='{"longUrl": "'..url..'"}'
 	local res={}
