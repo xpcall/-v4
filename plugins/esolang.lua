@@ -23,6 +23,57 @@ function repl(txt)
 	return out
 end
 
+function optimize(txt)
+	local iter=true
+	local n=0
+	local function ite()
+		iter=true
+		n=n+1
+	end
+	while iter do
+		iter=false
+		txt=txt:gsub("><",function()
+			ite()
+			return ""
+		end)
+		txt=txt:gsub("<>",function()
+			ite()
+			return ""
+		end)
+		txt=txt:gsub("{}",function()
+			ite()
+			return ""
+		end)
+		txt=txt:gsub("}{",function()
+			ite()
+			return ""
+		end)
+		txt=txt:gsub("}}",function()
+			ite()
+			return ">"
+		end)
+		txt=txt:gsub("{{",function()
+			ite()
+			return "<"
+		end)
+		txt=txt:gsub("%[(%[[^%[%]]%])%]",function(txt)
+			ite()
+			return txt
+		end)
+		txt=txt:gsub("%+%-",function()
+			ite()
+			return ""
+		end)
+		txt=txt:gsub("%-%+",function()
+			ite()
+			return ""
+		end)
+	end
+
+	
+	return txt,n
+end
+
 function agonyasm(txt)
 	local out=txt:gsub("%S+",function(ins)
 		if ins:match("^[%+%-]") and tonumber(ins:sub(2)) then
@@ -58,7 +109,10 @@ function agonyasm(txt)
 		elseif ins=="END" then
 			return "]"
 		elseif ins=="NOT" then
-			return "-[*-*-]*[*+*-]*"			
+			return "-[*-*-]*[*+*-]*"
+		elseif ins:match("^PULL%d+$") then
+			local n=tonumber(ins:match("^PULL(%d+)$"))
+			return ("<"):rep(n).."[-"..(">"):rep(n).."+"..("<"):rep(n).."]"..(">"):rep(n)
 		end
 	end)
 	return out

@@ -99,7 +99,6 @@ hook.new("raw",function(txt)
 		end
 	end)
 	txt:gsub("^:%S+ 353 "..cnick.." . (%S+) :(.+)",function(chan,txt)
-		print("ulist "..chan.." , "..txt)
 		for user in txt:gmatch("%S+") do
 			local pfx,nick=user:match("^([@%+]?)(.+)$")
 			admin.perms[nick]=admin.perms[nick] or {op={},voice={}}

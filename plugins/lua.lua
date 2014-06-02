@@ -225,7 +225,7 @@ hook.new({"command_calc"},function(user,chan,txt)
 	for l1=2,#res do
 		o=o..tostring(res[l1]).."\n"
 	end
-	return limitoutput(erro or o)
+	return limitoutput(erro or o:gsub("0+$",""):gsub("%.$",""))
 end,{
 	desc="calculates large numbers",
 	group="help",
