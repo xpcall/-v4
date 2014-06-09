@@ -1,5 +1,5 @@
 local socket=require("socket")
-local sv=socket.connect("localhost",1337)
+local sv=assert(socket.connect("localhost",1337))
 local https=require("ssl.https")
 local http=require("socket.http")
 local lfs=require("lfs")
@@ -10,14 +10,18 @@ local json=require("dkjson")
 local sqlite=require("lsqlite3")
 local im=require("imlua")
 local cd=require("cdlua")
+local crypto=require("crypto")
 require("cdluaim")
 math.randomseed(socket.gettime()*1000)
 cnick="^v"
+local mainlinda=lanes.linda()
 do
 	local exists={}
 	local isdir={}
 	local isfile={}
 	local list={}
+	local size={}
+	local hash={}
 	local rd={}
 	local last={}
 	local modified={}
@@ -51,6 +55,21 @@ do
 				return nil
 			end
 			return set(isdir,file,dat.mode=="directory")
+		end,
+		size=function(file)
+			print("tstartsize '"..file.."'")
+			local res=update(size,file)
+			if res then
+				print("endsize")
+				return res
+			end
+			print("startsize '"..file.."'")
+			local dat=lfs.attributes(file)
+			print("endsize")
+			if not dat then
+				return nil
+			end
+			return set(size,file,dat.size)
 		end,
 		isFile=function(file)
 			local res=update(isfile,file)
@@ -121,6 +140,7 @@ do
 			if (rd[file] or {}).data~=data then
 				modified[file]=os.date()
 			end
+			hash[file]=crypto.digest("sha1",data)
 			return set(rd,file,data)
 		end,
 		modified=function(file)
@@ -129,6 +149,9 @@ do
 				fs.read(file)
 			end
 			return modified[file]
+		end,
+		hash=function(file)
+			return hash[file]
 		end,
 		delete=function(file)
 			os.remove(file)
@@ -304,6 +327,35 @@ hook.queue("init")
 send("WHOIS "..cnick)
 sv:settimeout(0)
 hook.newsocket(sv)
+
+local sel=assert(lanes.gen("*",function(recv,sendt,timeout)
+	local socket=require("socket")
+	-- remake sockets
+	local crecv={}
+	for k,v in pairs(recv) do
+		crecv[k]=socket.client(v)
+	end
+	local csendt={}
+	for k,v in pairs(sendt) do
+		csendt[k]=socket.client(v)
+	end
+	local orecv,osendt,err=socket.select(crecv,csendt,timeout)
+	if not orecv then
+		return nil,nil,err
+	end
+	local out={"select",{},{},err}
+	-- put them back into number form
+	for k,v in ipairs(orecv) do
+		table.insert(out[2],v:getfd())
+		v:setfd(-1) -- set socket to invalid so it wont close on GC
+	end
+	for k,v in ipairs(osendt) do
+		table.insert(out[3],v:getfd())
+		v:setfd(-1)
+	end
+	mainlinda:send("event",out)
+end))
+
 while true do
 	local s,e=sv:receive()
 	if s then
@@ -313,5 +365,15 @@ while true do
 			error(e)
 		end
 	end
-	hook.queue("select",socket.select(hook.sel,hook.rsel,math.min(10,hook.interval or 10)))
+	hook.queue(
+		"select",
+		socket.select(
+			hook.sel,
+			hook.rsel,
+			math.min(
+				10,
+				hook.interval or 10
+			)
+		)
+	)
 end

@@ -177,7 +177,7 @@ end,{
 })
 
 hook.new({"command_wobbo","command_dubstep"},function(user,chan,txt)
-	return string.rep("Wobbo",math.random(5,15)):gsub("o",function() return ("o"):rep(math.random(1,10)) end)
+	return string.rep("Wobbo",math.random(5,10)):gsub("o",function() return ("o"):rep(math.random(1,10)) end)
 end,{
 	desc="WooooooobboooooWobboooooooooooooo",
 	group="fun",

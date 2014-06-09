@@ -286,6 +286,22 @@ do
 	})
 end
 
+do
+	local man={
+		["https://github.com/MightyPirates/OpenComputers/wiki/"]={"","oc"},
+		["http://www.lua.org/manual/5.2/"]={"lua","5.3"},
+	}
+	for k,v in tpairs(man) do
+		for n,l in pairs(v) do
+			man[l]=k
+		end
+		man[k]=nil
+	end
+	hook.new({"command_rtfm","command_man"},function(user,chan,txt)
+		return man[txt:lower()] or "Not found."
+	end)
+end
+
 hook.new("init",function()
 	local alias={}
 	local funcs={}

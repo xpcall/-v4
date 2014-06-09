@@ -70,3 +70,16 @@ function crypt.decolor(txt)
 	end
 	return tobase(o,"0123456789ABCDEF")
 end
+crypt.hash={}
+for k,v in pairs(crypto.list("digests")) do
+	hook.new({"command_"..v},function(user,chan,txt)
+		return crypto.digest(v,txt)
+	end)
+	crypt.hash[k]=function(txt)
+		return crypto.digest(v,txt)
+	end
+end
+hook.new({"command_hash","command_digest"},function(user,chan,txt)
+	local err,res=pcall(crypto.digest,txt:match("^(%S+) ?(.*)$"))
+	return res
+end)

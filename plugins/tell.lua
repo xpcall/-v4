@@ -24,6 +24,10 @@ hook.new("command_tell",function(user,chan,txt)
 	tells[meta]=tells[meta] or {}
 	table.insert(tells[meta],"From "..user.nick..": "..txt)
 	update()
+	if user.account=="gamax92" then
+		return "Will send the message over irc the next time they talk and then remove it from my list of message that i need to send to people who talk."
+	end
+	return "Message queued."
 end)
 local function get(usr,o)
 	if tells[usr] then

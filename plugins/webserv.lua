@@ -50,7 +50,7 @@ local cli={}
 local function close(cl)
 	cl:close()
 	cli[cl]=nil
-	hook.remsocket(cl)
+	while hook.remsocket(cl) do end
 end
 
 function urlencode(txt)
@@ -85,19 +85,102 @@ local ctype={
 	["jar"]="application/octet-stream",
 }
 
-local function form(cl,res)
-	local cldat=cli[cl]
-	local headers=res.headers or {}
-	local code=res.code or "200 Found"
-	headers["ETag"]=cldat.headers["ETag"]
+local function defheaders(res,cldat)
+	res.headers=res.headers or {}
+	local headers=res.headers
+	res.code=res.code or "200 Found"
 	headers["Server"]="Less fail lua webserver"
 	headers["Content-Length"]=headers["Content-Length"] or #(res.data or "")
+	headers["Content-Type"]=headers["Content-Type"] or res.type or "text/html"
+	headers["Connection"]=(headers["Connection"] or "Keep-Alive"):lower()
 	if headers["Content-Length"]==0 or cldat.method=="HEAD" then
 		headers["Content-Length"]=nil
 	end
-	headers["Content-Type"]=headers["Content-Type"] or res.type or "text/html"
-	headers["Connection"]=(headers["Connection"] or "Keep-Alive"):lower()
-	local o="HTTP/1.1 "..code
+	return headers
+end
+
+local function enddata(cl,headers)
+	if res and headers["Connection"]=="keep-alive" then
+		for k,v in pairs(cldat) do
+			if k~="ip" then
+				cldat[k]=nil
+			end
+		end
+		cldat.headers={}
+	else
+		close(cl)
+	end
+end
+
+local trs={}
+local function formlarge(cl,res,fl)
+	local cldat=cli[cl]
+	local headers=defheaders(res,cldat)
+	headers["Transfer-Encoding"]=headers["Content-Length"] and "chunked" or nil
+	local o="HTTP/1.1 "..res.code
+	for k,v in pairs(headers) do
+		if v~="" then
+			o=o.."\r\n"..k..": "..v
+		end
+	end
+	o=o.."\r\n\r\n"
+	print("wat")
+	if cldat.method=="HEAD" then
+		async.new(function()
+			local res,err=async.socket(cl).send(o)
+		end)
+		enddata(cl,headers)
+		return
+	end
+	print("watwat")
+	if trs[fl] then
+		table.insert(trs[fl],async.socket(cl))
+	else
+		print("waaaaaaat")
+		trs[fl]={async.socket(cl)}
+		async.new(function()
+			-- this will serve multiple clients at once
+			-- for scalability
+			print("start")
+			async.wait(0.5) -- todo: configurable
+			local clts=trs[fl]
+			trs[fl]=nil
+			for k,cl in tpairs(clts) do
+				cl.send(o)
+			end
+			print("waht")
+			print("wahtwaht")
+			local sizeleft=fs.size(file)
+			print("derp "..sizeleft)
+			local file=io.open(fl,"r")
+			local hash=crypto.digest.new("sha1")
+			local amt,err,res,data
+			while sizeleft>0 do
+				amt=math.min(8192,sizeleft) -- todo: configurable
+				data=file:read(amt)
+				print("sending chunk")
+				hash:update(data)
+				for k,cl in tpairs(clts) do
+					err,res=cl.send(amt.."\r\n"..data.."\r\n")
+					if not err then
+						close(cl.sk)
+						trs[fl][k]=nil
+					end
+				end
+				sizeleft=sizeleft-amt
+			end
+			for k,cl in pairs(clts) do
+				cl.send("\r\nEtag: \""..evp:digest().."\"")
+				enddata()
+			end
+		end)
+	end
+end
+
+local function form(cl,res)
+	local cldat=cli[cl]
+	local headers=defheaders(res,cldat)
+	local o="HTTP/1.1 "..res.code
 	for k,v in pairs(headers) do
 		if v~="" then
 			o=o.."\r\n"..k..": "..v
@@ -109,16 +192,7 @@ local function form(cl,res)
 	end
 	async.new(function()
 		local res,err=async.socket(cl).send(o)
-		if res and headers["Connection"]=="keep-alive" then
-			for k,v in pairs(cldat) do
-				if k~="ip" then
-					cldat[k]=nil
-				end
-			end
-			cldat.headers={}
-		else
-			close(cl)
-		end
+		enddata(cl,headers)
 	end)
 end
 
@@ -212,7 +286,12 @@ local function req(cl)
 					if parsed and cmpdate(parsed,parsedate(res.headers["Last-Modified"]))<1 then
 						res.code="304 Not Modified"
 					else
-						res.data=fs.read(bse)
+						if false and fs.size(bse)>8192 then -- TODO: configurable
+							formlarge(cl,res,bse)
+							return
+						else
+							res.data=fs.read(bse)
+						end
 					end
 				end
 			end

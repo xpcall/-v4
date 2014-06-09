@@ -14,49 +14,16 @@ if file then
 		last={}
 	end
 end
+local prgdir="/home/nadine/openprograms.github.io/"
 hook.new("command_openprg",function(user,chan,txt)
-	local repos=git.get("https://api.github.com/orgs/OpenPrograms/repos")
-	local updated={}
-	local update=false
-	for k,v in pairs(repos) do
-		local commits=git.get(v.commits_url:match("[^{]+"))
-		local tupdate=false
-		for n,l in pairs(commits) do
-			if tupdate or l.sha==last[v.name] then
-				break
-			end
-			local commit=git.get(v.commits_url:gsub("{/sha}","/"..l.sha))
-			for c,f in pairs(commit.files) do
-				if f.filename=="programs.yaml" or (v.name=="openprograms.github.io" and f.filename=="repos.yaml") then
-					table.insert(updated,v.name)
-					update=true
-					tupdate=true
-					break
-				end
-			end
-		end
-		last[v.name]=commits[1].sha
-	end
-	local file=io.open("db/openprg","w")
-	file:write(serialize(last))
-	file:close()
-	if update then
-		local file=io.open("openprograms.bat","w")
-		file:write([[cd C:\Users\Kevin\Documents\GitHub\openprograms.github.io
-git pull
-lua C:\Users\Kevin\Documents\GitHub\openprograms.github.io\generate.lua
-git commit
-git add index.html
-git add style.css
-git commit -m "Auto compile"
-git push
-exit]])
-		file:close()
-		os.execute("openprograms.bat")
-		return "Updated "..table.concat(updated,", ")
-	else
-		return "No updates"
-	end
+	local out=""
+	out=out..io.popen("git --git-dir="..prgdir..".git --work-tree="..prgdir.." pull"):read("*a").."\n"
+	out=out..io.popen("lua "..prgdir.."generate.lua "..prgdir):read("*a").."\n"
+	out=out..io.popen("git --git-dir="..prgdir..".git --work-tree="..prgdir.." add index.html"):read("*a").."\n"
+	out=out..io.popen("git --git-dir="..prgdir..".git --work-tree="..prgdir.." add style.css"):read("*a").."\n"
+	out=out..io.popen("git --git-dir="..prgdir..".git --work-tree="..prgdir.." commit -m \"Auto compile\""):read("*a").."\n"
+	out=out..io.popen("git --git-dir="..prgdir..".git --work-tree="..prgdir.." push"):read("*a")
+	return paste(out)
 end,{
 	desc="compiles and pushes openprograms site",
 	group="help",
