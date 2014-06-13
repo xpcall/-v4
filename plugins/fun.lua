@@ -1,4 +1,10 @@
+hook.new({"command_computronics_oc13","command_computronics13","command_computronics_oc1.3","command_computronics1.3"},function()
+	return "http://oc.cil.li/index.php?/topic/14-mc-164-oc-122-computronics-015/#entry422"
+end)
 
+hook.new({"command_alot","command_ALOT"},function(user,chan,txt)
+	return "http://hyperboleandahalf.blogspot.no/2010/04/alot-is-better-than-you-at-everything.html"
+end)
 
 function antiping(name)
 	local f=true
@@ -447,6 +453,9 @@ end,{
 })
 
 function shorturl(url)
+	if not url then
+		return "Error url nil"
+	end
 	url='{"longUrl": "'..url..'"}'
 	local res={}
 	local scc,err=https.request({

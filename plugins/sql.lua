@@ -43,6 +43,9 @@ function sql.new(dir)
 				end
 			end
 			local sn=db:prepare("select "..table.concat(vals,",").." from "..name..(where and " where " or "")..table.concat(w," and "))
+			if not sn then
+				error(db:errmsg())
+			end
 			if where then
 				sn:bind_names(where)
 				sn:step()
@@ -70,6 +73,9 @@ function sql.new(dir)
 				bind["u"..k]=v
 			end
 			local sn=db:prepare("update "..name.." set "..table.concat(vl," ")..(where and " where " or "")..table.concat(w," and "))
+			if not sn then
+				error(db:errmsg())
+			end
 			sn:bind_names(bind)
 			sn:step()
 			sn:finalize()
@@ -84,6 +90,9 @@ function sql.new(dir)
 				vl[l1]=":"..keys[l1]
 			end
 			local sn=db:prepare("insert into "..name.." ("..table.concat(keys,",")..") values ("..table.concat(vl,",")..")")
+			if not sn then
+				error(db:errmsg())
+			end
 			sn:bind_names(vals)
 			sn:step()
 			sn:finalize()
@@ -96,6 +105,9 @@ function sql.new(dir)
 				bind["w"..k]=v
 			end
 			local sn=db:prepare("delete from "..name.." where "..table.concat(w," and "))
+			if not sn then
+				error(db:errmsg())
+			end
 			sn:bind_names(where)
 			sn:step()
 			sn:finalize()

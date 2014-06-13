@@ -1,46 +1,3 @@
-local function parsedate(txt)
-	local day,month,year,time=txt:match("^%S+%s+(%S+)%s+(%S+)%s+(%S+)%s+(%S+:%S+)")
-	if not day then
-		day,month,year,time=txt:match("^%S+%s+(%S-)%-(%S-)%-(%S-)%s+(%S+:%S+)")
-		if year then
-			year=1900+tonumber(year)
-		end
-	end
-	if not day then
-		month,day,time,year=txt:match("^%S+%s+(%S+)%s+(%S+)%s+(%S+:%S+)%s+(%S+)")
-	end
-	if not day then
-		return nil,txt
-	end
-	local hour,minute,second=time:match("(%d+):(%d+):(%d+)")
-	if not hour then
-		return nil,txt
-	end
-	local months={
-		"jan","feb","mar","apr",
-		"may","jun","jul","aug",
-		"sep","oct","nov","dec",
-	}
-	for k,v in pairs(months) do
-		months[v]=k
-	end
-	month=tostring(months[month:lower()])
-	return ("0"):rep(4-#year)..year..("0"):rep(2-#month)..month..("0"):rep(2-#day)..day..("0"):rep(2-#hour)..hour..("0"):rep(2-#minute)..minute..("0"):rep(2-#second)..second
-end
-
-local function cmpdate(a,b)
-	for l1=1,14 do
-		local ca=tonumber(a:sub(l1,l1))
-		local cb=tonumber(b:sub(l1,l1))
-		if ca>cb then
-			return -1
-		elseif ca<cb then
-			return 1
-		end
-	end
-	return 0
-end
-
 local sv=assert(socket.bind("*",(config or {}).port or 8080))
 print("Listening on port "..((config or {}).port or 8080))
 sv:settimeout(0)
@@ -100,7 +57,8 @@ local function defheaders(res,cldat)
 end
 
 local function enddata(cl,headers)
-	if res and headers["Connection"]=="keep-alive" then
+	local cldat=cli[cl]
+	if headers["Connection"]=="keep-alive" then
 		for k,v in pairs(cldat) do
 			if k~="ip" then
 				cldat[k]=nil
@@ -114,9 +72,14 @@ end
 
 local trs={}
 local function formlarge(cl,res,fl)
-	local cldat=cli[cl]
+	local cldat=assert(cli[cl])
+	res.headers=res.headers or {}
+	res.headers["Content-Length"]=sizeleft
+	res.headers["Transfer-Encoding"]="chunked"
+	res.headers["Trailer"]="ETag"
+	res.headers["Derp"]="true"
 	local headers=defheaders(res,cldat)
-	headers["Transfer-Encoding"]=headers["Content-Length"] and "chunked" or nil
+	local sizeleft=fs.size(fl)
 	local o="HTTP/1.1 "..res.code
 	for k,v in pairs(headers) do
 		if v~="" then
@@ -124,7 +87,6 @@ local function formlarge(cl,res,fl)
 		end
 	end
 	o=o.."\r\n\r\n"
-	print("wat")
 	if cldat.method=="HEAD" then
 		async.new(function()
 			local res,err=async.socket(cl).send(o)
@@ -132,48 +94,40 @@ local function formlarge(cl,res,fl)
 		enddata(cl,headers)
 		return
 	end
-	print("watwat")
 	if trs[fl] then
 		table.insert(trs[fl],async.socket(cl))
 	else
-		print("waaaaaaat")
 		trs[fl]={async.socket(cl)}
 		async.new(function()
 			-- this will serve multiple clients at once
-			-- for scalability
-			print("start")
 			async.wait(0.5) -- todo: configurable
 			local clts=trs[fl]
 			trs[fl]=nil
 			for k,cl in tpairs(clts) do
 				cl.send(o)
 			end
-			print("waht")
-			print("wahtwaht")
-			local sizeleft=fs.size(file)
-			print("derp "..sizeleft)
 			local file=io.open(fl,"r")
 			local hash=crypto.digest.new("sha1")
 			local amt,err,res,data
 			while sizeleft>0 do
-				amt=math.min(8192,sizeleft) -- todo: configurable
+				amt=math.min(16384,sizeleft) -- todo: configurable
 				data=file:read(amt)
-				print("sending chunk")
 				hash:update(data)
 				for k,cl in tpairs(clts) do
-					err,res=cl.send(amt.."\r\n"..data.."\r\n")
+					err,res=cl.send(string.format("%X",amt).."\r\n"..data.."\r\n")
 					if not err then
-						close(cl.sk)
-						trs[fl][k]=nil
+						clts[k]=nil
 					end
 				end
 				sizeleft=sizeleft-amt
 			end
+			local digest=hash:final()
+			fs.sethash(fl,digest)
 			for k,cl in pairs(clts) do
-				cl.send("\r\nEtag: \""..evp:digest().."\"")
-				enddata()
+				cl.send("0\r\nETag: "..digest.."\r\n\r\n")
+				enddata(cl.sk,headers)
 			end
-		end)
+		end,print)
 	end
 end
 
@@ -193,7 +147,7 @@ local function form(cl,res)
 	async.new(function()
 		local res,err=async.socket(cl).send(o)
 		enddata(cl,headers)
-	end)
+	end,print)
 end
 
 local base="www"
@@ -201,7 +155,7 @@ local scripts={}
 local function req(cl)
 	local cldat=cli[cl]
 	local url=cldat.url
-	print(cldat.ip.." : "..url)
+	print("request "..cldat.ip.." : "..url)
 	cldat.urldata=parseurl(url:match(".-%?(.*)") or "")
 	if cldat.post then
 		cldat.postdata=parseurl(cldat.post)
@@ -248,45 +202,62 @@ local function req(cl)
 						func,err=loadstring(data,"="..url)
 					end
 					if not func then
-						res.data=htmlencode(err)
+						res.data="<html>"..htmlencode(err).."</html>"
+						print(err)
 						res.code="500 Internal Server Error"
-						res.type="text/raw"
 					else
+						res.headers={}
 						local o=""
-						local e=setmetatable({
+						local e
+						e=setmetatable({
 							print=function(...)
 								o=o..table.concat({...}," ").."\r\n"
 							end,
 							write=function(...)
 								o=o..table.concat({...}," ")
 							end,
+							loadfile=function(file)
+								local func,err=loadfile(file)
+								if not func then
+									return func,err
+								end
+								return setfenv(func,e)
+							end,
+							dofile=function(file)
+								local func,err=loadfile(file)
+								if not func then
+									return func,err
+								end
+								return setfenv(func,e)()
+							end,
 							postdata=cldat.postdata,
 							urldata=cldat.urldata,
 							cl=cldat,
 							res=res,
 						},{__index=_G})
+						e._G=e
+						e._G2=_G
 						local err,out=xpcall(setfenv(func,e),debug.traceback)
 						if type(out)=="function" then
-							scripts[bse]={modified=parsedate(fs.modified(bse)),func=out}
+							scripts[bse]={modified=fs.modified(bse),func=out}
 							err,out=xpcall(setfenv(out,e),debug.traceback)
 						end
 						if not err then
-							res.data=htmlencode(out)
+							res.data="<html>"..htmlencode(out).."</html>"
+							print(out)
 							res.code="500 Internal Server Error"
-							res.type="text/raw"
 						else
 							res.data=o
-							res.code=e.code or "200 Found"
+							res.code=res.code or "200 Found"
 							res.type=res.type or "text/html"
 						end
 					end
 				else
-					res.headers={["Last-Modified"]=fs.modified(bse)}
-					local parsed=parsedate(cldat.headers["If-Modified-Since"] or "")
-					if parsed and cmpdate(parsed,parsedate(res.headers["Last-Modified"]))<1 then
+					if cldat.headers["If-None-Match"] and cldat.headers["If-None-Match"]==fs.hash(bse) then
+						print("304")
 						res.code="304 Not Modified"
 					else
-						if false and fs.size(bse)>8192 then -- TODO: configurable
+						if fs.size(bse)>16384 then -- TODO: configurable
 							formlarge(cl,res,bse)
 							return
 						else
@@ -314,6 +285,7 @@ hook.new("select",function()
 	for cl,cldat in pairs(cli) do
 		local s,e=cl:receive(0)
 		if not s and e=="closed" then
+			print("closed "..cldat.ip)
 			close(cl)
 		else
 			local s,e=cl:receive(tonumber(cldat.post and cldat.headers["Content-Length"]))

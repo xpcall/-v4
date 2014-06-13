@@ -336,3 +336,15 @@ hook.new("init",function()
 	file:write("<br>Unlisted (probably broken): "..table.concat(unlisted," "))
 	file:close()
 end)
+
+hook.new({"command_forge","command_froge"},function(user,chan,txt)
+	local res,err=http.request("http://files.minecraftforge.net")
+	if not res then
+		return "Error: "..err
+	end
+	local u16=res:match('<a href="(http://files%.minecraftforge%.net/maven/net/minecraftforge/forge/1%.6[^"]+universal%.jar)">')
+	local i16=res:match('<a href="(http://files%.minecraftforge%.net/maven/net/minecraftforge/forge/1%.6[^"]+installer%.jar)">')
+	local u17=res:match('<a href="(http://files%.minecraftforge%.net/maven/net/minecraftforge/forge/1%.7[^"]+universal%.jar)">')
+	local i17=res:match('<a href="(http://files%.minecraftforge%.net/maven/net/minecraftforge/forge/1%.7[^"]+installer%.jar)">')
+	return "1.6: installer "..shorturl(i16).." | univeral "..shorturl(u16).." 1.7: installer "..shorturl(i17).." | univeral "..shorturl(u17)
+end)

@@ -29,7 +29,7 @@ hook.new({"command_>"},function(user,chan,txt)
 		local func=coroutine.create(setfenv(func,setmetatable({
 			print=function(...)
 				for k,v in pairs({...}) do
-					out=out..v.."\n"
+					out=out..tostring(v).."\n"
 				end
 			end,
 			write=function(...)

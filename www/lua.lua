@@ -1,5 +1,6 @@
 postdata=postdata or {}
 if postdata.text then
+	print("used "..postdata.text)
 	print(({htmlencode(hook.queue("command_lua53",nil,nil,postdata.text))})[1])
 end
 print([[<!doctype html>

@@ -7,13 +7,16 @@ function async.new(func,err)
 		resume=sfunc
 		hook.del(sfunc)
 		local p={coroutine.resume(co,...)}
-		if coroutine.status(co)~="dead" and err and not p[1] then
-			err((p[2] or "").."\n"..debug.traceback(co))
+		if not p[1] then
+			(err or error)((p[2] or "").."\n"..debug.traceback(co))
 		end
 		return unpack(p,2)
 	end
 	resume=sfunc
-	assert(coroutine.resume(co))
+	local p={coroutine.resume(co)}
+	if not p[1] then
+		(err or error)((p[2] or "").."\n"..debug.traceback(co))
+	end
 	return sfunc
 end
 function async.pull(...)

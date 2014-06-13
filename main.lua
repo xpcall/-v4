@@ -11,6 +11,10 @@ local sqlite=require("lsqlite3")
 local im=require("imlua")
 local cd=require("cdlua")
 local crypto=require("crypto")
+local posix=require("posix")
+local lpeg=require("lpeg")
+local re=require("re")
+
 require("cdluaim")
 math.randomseed(socket.gettime()*1000)
 cnick="^v"
@@ -57,15 +61,11 @@ do
 			return set(isdir,file,dat.mode=="directory")
 		end,
 		size=function(file)
-			print("tstartsize '"..file.."'")
 			local res=update(size,file)
 			if res then
-				print("endsize")
 				return res
 			end
-			print("startsize '"..file.."'")
 			local dat=lfs.attributes(file)
-			print("endsize")
 			if not dat then
 				return nil
 			end
@@ -151,7 +151,24 @@ do
 			return modified[file]
 		end,
 		hash=function(file)
-			return hash[file]
+			local out=hash[file]
+			if not out then
+				out=crypto.digest.new("sha1")
+				local file=io.open(file,"r")
+				if not file then
+					return
+				end
+				local chunk=file:read(16384)
+				while chunk do
+					out:update(line)
+					chunk=file:read(16384)
+				end
+				return out:final()
+			end
+			return out
+		end,
+		sethash=function(file,txt)
+			hash[file]=txt
 		end,
 		delete=function(file)
 			os.remove(file)
@@ -165,6 +182,7 @@ do
 			os.remove(file)
 		end,
 	}
+	print(fs.size)
 end
 
 function timestamp()
@@ -284,6 +302,7 @@ hook.new("raw",function(txt)
 		send("JOIN #OpenPrograms")
 		send("JOIN #pastamen")
 		send("JOIN #ccjam")
+		send("JOIN #EpicnessTwo")
 	end)
 end)
 local plenv=setmetatable({
@@ -304,6 +323,9 @@ local plenv=setmetatable({
 	im=im,
 	cd=cd,
 	fann=fann,
+	posix=posix,
+	re=re,
+	lpeg=lpeg,
 },{__index=_G,__newindex=_G})
 plenv._G=plenv
 
@@ -372,7 +394,7 @@ while true do
 			hook.rsel,
 			math.min(
 				10,
-				hook.interval or 10
+				hook.interval or 1
 			)
 		)
 	)

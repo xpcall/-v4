@@ -111,8 +111,10 @@ hook.new("raw",function(txt)
 	end)
 	txt:gsub("^:([^%s!]+)![^%s@]+@%S+ MODE (%S+) (.)(%a) (.+)",function(nick,chan,pm,mode,user)
 		if mode=="o" then
+			hook.queue(pm=="+" and "op" or "deop",nick,chan,user)
 			admin.perms[user].op[chan]=pm=="+" or nil
 		elseif mode=="v" then
+			hook.queue(pm=="+" and "voice" or "devoice",nick,chan,user)
 			admin.perms[user].voice[chan]=pm=="+" or nil
 		end
 	end)
