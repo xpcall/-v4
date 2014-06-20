@@ -1,20 +1,30 @@
+local svname="irc.esper.net"
 local socket=require("socket")
 local sv
 local scl=socket.bind("*",1337)
-local logfile=io.open("log.txt","a")
-local function log(txt)
-	txt="["..(math.floor(socket.gettime()-1394214999)).."] "..txt
-	logfile:write(txt.."\n")
-	logfile:flush()
-	print(txt)
+local logfile={}
+local function log(chan,txt)
+	if chan then
+		local fn="logs/"..chan..".txt"
+		if not logfile[fn] then
+			logfile[fn]=io.open(fn,"a")
+		end
+		logfile[fn]:write("["..(math.floor(socket.gettime()-1394214999)).."] "..txt.."\n")
+		logfile[fn]:flush()
+	else
+		for k,v in pairs(logfile) do
+			v:write("["..(math.floor(socket.gettime()-1394214999)).."] "..txt.."\n")
+			v:flush()
+		end
+	end
 end
 local function connect()
-	sv=socket.connect("irc.esper.net",6667)
+	sv=socket.connect(svname,6667)
 	while not sv do
 		print("failed")
 		socket.sleep(5)
 		print("retrying")
-		sv=socket.connect("irc.esper.net",6667)
+		sv=socket.connect(svname,6667)
 	end
 	assert(sv:send("NICK ^v\n"))
 	assert(sv:send("USER ping ~ ~ :ping's bot\n"))
@@ -42,39 +52,39 @@ while true do
 	end
 	local s,e=cl:receive()
 	if s then
-		local txt=s:match("^PRIVMSG #oc :(.*)$")
+		local chan,txt=s:match("^PRIVMSG (%S+) :(.*)$")
 		if txt then
-			log("<^v> "..txt)
+			log(chan,"<^v> "..txt)
 		end
 		print("<"..s)
 		assert(sv:send(s.."\n"))
 	end
 	local s,e=sv:receive()
 	if s then
-		local nick,txt=s:match("^:([^!]+)![^@]+@%S+ PRIVMSG #oc :(.*)$")
+		local nick,chan,txt=s:match("^:([^!]+)![^@]+@%S+ PRIVMSG (%S+) :(.*)$")
 		if nick then
 			local action=txt:match("^\1ACTION (.-)\1?$")
 			if action then
-				log("* "..nick.." "..action)
+				log(chan,"* "..nick.." "..action)
 			else
-				log("<"..nick.."> "..txt)
+				log(chan,"<"..nick.."> "..txt)
 			end
 		end
-		local nick,ident=s:match("^:([^!]+)!([^@]+@%S+) JOIN #oc$")
+		local nick,ident,chan=s:match("^:([^!]+)!([^@]+@%S+) JOIN (%S+)$")
 		if nick then
-			log(nick.." ("..ident..") has joined")
+			log(chan,nick.." ("..ident..") has joined")
 		end
-		local nick,reason=s:match("^:([^!]+)![^@]+@%S+ PART #oc ?:?(.*)$")
+		local nick,chan,reason=s:match("^:([^!]+)![^@]+@%S+ PART (%S+) ?:?(.*)$")
 		if nick then
-			log(nick.." has left ("..reason..")")
+			log(chan,nick.." has left ("..reason..")")
 		end
 		local nick,reason=s:match("^:([^!]+)![^@]+@%S+ QUIT :(.*)$")
 		if nick then
-			log(nick.." has quit ("..reason..")")
+			log(nil,nick.." has quit ("..reason..")")
 		end
 		local nick,tonick=s:match("^:([^!]+)![^@]+@%S+ NICK :(.*)$")
 		if nick then
-			log(nick.." is now known as "..tonick)
+			log(nil,nick.." is now known as "..tonick)
 		end
 		print(">"..s)
 		cl:settimeout(5)

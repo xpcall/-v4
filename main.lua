@@ -14,8 +14,8 @@ local crypto=require("crypto")
 local posix=require("posix")
 local lpeg=require("lpeg")
 local re=require("re")
-
 require("cdluaim")
+
 math.randomseed(socket.gettime()*1000)
 cnick="^v"
 local mainlinda=lanes.linda()
@@ -185,10 +185,15 @@ do
 	print(fs.size)
 end
 
+function bc.abs(a)
+	return bc.isneg(a) and -a or a
+end
+
 function timestamp()
 	local date=os.date("!*t")
 	return date.month.."/"..date.day.." "..date.hour..":"..("0"):rep(2-#tostring(date.min))..date.min
 end
+
 function tpairs(tbl)
 	local s={}
 	local c=1
@@ -349,6 +354,8 @@ hook.queue("init")
 send("WHOIS "..cnick)
 sv:settimeout(0)
 hook.newsocket(sv)
+
+send("JOIN #testlol")
 
 local sel=assert(lanes.gen("*",function(recv,sendt,timeout)
 	local socket=require("socket")

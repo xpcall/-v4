@@ -328,7 +328,7 @@ end,{
 	group="fun",
 })
 
-hook.new({"command_stats","command_messages"},function(user,chan,txt)
+--[[hook.new({"command_stats","command_messages"},function(user,chan,txt)
 	local o={}
 	local file=io.open("log.txt","r")
 	local line=file:read("*l")
@@ -387,7 +387,7 @@ hook.new({"command_stats","command_messages"},function(user,chan,txt)
 end,{
 	desc="channel stats",
 	group="misc",
-})
+})]]
 
 hook.new({"command_freq"},function(user,chan,txt)
 	local o={}
@@ -452,7 +452,38 @@ end,{
 	group="misc",
 })
 
-function shorturl(url)
+local magic8={
+	"It is certain",
+	"It is decidedly so",
+	"Without a doubt",
+	"Yes definitely",
+	"You may rely on it",
+	"As I see it, yes",
+	"Most likely",
+	"Outlook good",
+	"Yes",
+	"Signs point to yes",
+	"Reply hazy try again",
+	"Ask again later",
+	"Better not tell you now",
+	"Cannot predict now",
+	"Concentrate and ask again",
+	"Don't count on it",
+	"My reply is no",
+	"My sources say no",
+	"Outlook not so good",
+	"Very doubtful",
+}
+hook.new("msg",function(user,chan,txt)
+	local question=txt:match("^"..cnick.."[,:] (.+)")
+	if question then
+		local ch=question:match("%s+$")
+		local range=(ch==" " and {1,10}) or (ch=="  " and {16,20}) or (ch=="   " and {11,15}) or {1,20}
+		return magic8[math.random(range[1],range[2])]
+	end
+end)
+
+--[[function shorturl(url)
 	if not url then
 		return "Error url nil"
 	end
@@ -477,6 +508,20 @@ function shorturl(url)
 		return "Error parsing."
 	end
 	return out
+end]]
+
+local pass=fs.read("bitlytoken.txt"):gsub("%X","")
+function shorturl(url)
+	local res,err=https.request("https://api-ssl.bitly.com/v3/shorten?access_token="..pass.."&uri="..urlencode(url))
+	print("getting ".."https://api-ssl.bitly.com/v3/shorten?access_token="..pass.."&uri="..urlencode(url))
+	if not res then
+		return "Error "..url
+	end
+	local out=json.decode(res)
+	if out.status_code~=200 then
+		return "Error "..(out.status_txt or out.status_code)
+	end
+	return out.data.url
 end
 
 hook.new({"command_len"},function(user,chan,txt)
@@ -812,4 +857,8 @@ hook.new({"command_mcdown","command_mcstats","command_mcstat","command_mc"},func
 		end
 	end
 	return table.concat(o," ")
+end)
+
+hook.new({"command_steal","command_wouldsteal"},function(user,chan,txt)
+	return "https://www.youtube.com/watch?v=zhKdH8MT6j0"
 end)

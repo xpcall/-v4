@@ -107,8 +107,14 @@ hook.new({"command_l","command_lua"},function(user,chan,txt)
 	local file=io.open("sbox.tmp","w")
 	file:write(txt)
 	file:close()
-	local fi=io.popen("./lua52 sbox.lua")
-	return limitoutput(fi:read("*a"))
+	local fi=io.popen("timelimit -t 0.5 ./lua52 sbox.lua")
+	local out=fi:read("*a")
+	if out:match("Program done%.\n$") then
+		out=out:gsub("Program done%.\n$","")
+	else
+		out=out.."Time limit exeeded."
+	end
+	return limitoutput(out)
 end,{
 	desc="executes lua 5.2 code",
 	group="help",
@@ -121,8 +127,14 @@ hook.new({"command_l53","command_lua53"},function(user,chan,txt)
 	local file=io.open("sbox.tmp","w")
 	file:write(txt)
 	file:close()
-	local fi=io.popen("./lua53 sbox.lua")
-	return limitoutput(fi:read("*a"))
+	local fi=io.popen("timelimit -t 0.5 ./lua53 sbox.lua")
+	local out=fi:read("*a")
+	if out:match("Program done%.\n$") then
+		out=out:gsub("Program done%.\n$","")
+	else
+		out=out.."Time limit exeeded."
+	end
+	return limitoutput(out)
 end,{
 	desc="executes lua 5.3 code",
 	group="help",
@@ -171,7 +183,7 @@ end,{
 	group="admin",
 })
 
-hook.new({"command_calc"},function(user,chan,txt)
+--[[hook.new({"command_calc"},function(user,chan,txt)
 	local erro
 	txt=txt:gsub("[^%s%.%/%+%-%^%*%%%(%)%d]+",function(t)
 		erro="Unexpected "..t
@@ -225,7 +237,24 @@ hook.new({"command_calc"},function(user,chan,txt)
 	for l1=2,#res do
 		o=o..tostring(res[l1]).."\n"
 	end
-	return limitoutput(erro or o:gsub("0+$",""):gsub("%.$",""))
+	return limitoutput((erro or o):gsub("%.0+\n$",""))
+end,{
+	desc="calculates large numbers",
+	group="help",
+})]]
+
+hook.new({"command_calc","command_bc"},function(user,chan,txt)
+	local file=io.open("sbox.tmp","w")
+	file:write(txt.."\nquit")
+	file:close()
+	local fi=io.popen("timelimit -t 0.5 lua bcsbox.lua")
+	local out=fi:read("*a")
+	if out:match("Program done%.\n$") then
+		out=out:gsub("Program done%.\n$","")
+	else
+		out=out.."Time limit exeeded."
+	end
+	return limitoutput(out)
 end,{
 	desc="calculates large numbers",
 	group="help",
@@ -414,3 +443,14 @@ do
 		group="help",
 	})
 end
+
+if tcpnet then
+	tcpnet.open(1338)
+end
+hook.new("command_oc",function(user,chan,txt)
+	if not tcpnet then
+		return "tcpnet not running."
+	end
+	tcpnet.send(1337,txt)
+	async.pull()
+end)

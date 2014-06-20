@@ -3,6 +3,7 @@ local sapis={
 	string=string,
 	bit32=bit32,
 	table=table,
+	coroutine=coroutine,
 }
 math.randomseed(os.time())
 local sbox
@@ -99,16 +100,18 @@ end
 
 function unserialize(data)
 	assert(type(data)=="string")
-	local result, reason = loadstring("return " .. data, "=data")
+	local result, reason = load("return " .. data,"=unserialize","t",{math={huge=math.huge}})
 	if not result then
 		return nil, reason
 	end
-	local ok, output = pcall(setfenv(result,{math={huge=math.huge}}))
+	local ok, output = pcall(result)
 	if not ok then
 		return nil, output
 	end
 	return output
 end
+
+local fmtb=setmetatable({},{__mode="v"})
 
 sbox={
 	serialize=serialize,
@@ -117,7 +120,12 @@ sbox={
 	assert=assert,
 	collectgarbage=collectgarbage,
 	error=error,
-	getmetatable=getmetatable,
+	getmetatable=function(tbl)
+		if fmtb[tbl] then
+			local rl=fmtb[tbl].real
+			return rl.__metatable or rl
+		end
+	end,
 	ipairs=ipairs,
 	load=function(ld,source,env)
 		return load(ld,source,"t",env or sbox)
@@ -151,29 +159,6 @@ sbox={
 			out=out..table.concat({...})
 		end,
 	},
-	coroutine={
-		create=function(func)
-			local n=coroutine.create(func)
-			debug.sethook(n,function()
-				step=step+1
-				if step>100 then
-					debug.sethook(n)
-					debug.sethook(n,function()
-						error("Time limit exeeded.",0)
-					end,"",1)
-					error("Time limit exeeded.",0)
-				end
-			end,"",1000)
-		end,
-		resume=coroutine.resume,
-		running=coroutine.running,
-		status=coroutine.status,
-		wrap=function(func)
-			local n=sbox.coroutine.create(func)
-			return function(...) coroutine.resume(n,...) end
-		end,
-		yield=coroutine.yield,
-	},
 }
 sbox._G=sbox
 for k,v in pairs(sapis) do
@@ -194,17 +179,8 @@ if not func then
 		return
 	end
 end
-local func=coroutine.create(func)
-debug.sethook(func,function()
-	step=step+1
-	if step>100 then
-		debug.sethook(func)
-		debug.sethook(func,function()
-			error("Time limit exeeded.",0)
-		end,"",1)
-		error("Time limit exeeded.",0)
-	end
-end,"",1000)
+local res={pcall(func)}
+local o
 local function maxval(tbl)
 	local mx=0
 	for k,v in pairs(tbl) do
@@ -214,11 +190,10 @@ local function maxval(tbl)
 	end
 	return mx
 end
-local res={coroutine.resume(func)}
-local o
-for l1=2,maxval(res) do
+for l1=2,math.max(2,maxval(res)) do
 	o=(o or "")..tostring(res[l1]).."\n"
 end
 o=(out..(o or "nil")):gsub("^[\r\n]+",""):gsub("[\r\n]+$",""):gsub("[\r\n]+"," | ")
 :gsub("[%z\2\4\5\6\7\8\9\10\11\12\13\14\16\17\18\19\20\21\22\23\24\25\26\27\28\29\30\31]","")
 print(o)
+print("Program done.")

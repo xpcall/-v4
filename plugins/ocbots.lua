@@ -10,6 +10,13 @@ hook.new("op",function(user,chan,suser)
 	end
 end)
 
+hook.new("nick",function(onick,cnick)
+	cnick=cnick:lower()
+	if (admin.perms[cnick] or {}).account~="ping" and (cnick=="ping" or cnick=="pong" or cnick=="v^" or cnick=="version") then
+		send("PRIVMSG NickServ :ghost "..cnick)
+	end
+end)
+
 --[==[
 	hook.new("msg",function(user,chan,txt,act)
 	if chan=="#ocbots" and txt:match(":%-?[%)%>3%]]") then

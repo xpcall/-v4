@@ -1,5 +1,5 @@
 local pings={}
-hook.new("command_ping",function(user,chan,txt)
+hook.new({"command_ping","command_v^","command_p"},function(user,chan,txt)
 	local un=txt
 	if not admin.perms[txt] then
 		un=user.nick

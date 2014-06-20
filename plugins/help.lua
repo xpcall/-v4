@@ -80,7 +80,7 @@ hook.new({"command_j","command_build","command_beta"},function(user,chan,txt)
 			end
 		end
 		url=url or dat.artifacts[1].relativePath
-		return "Last sucessful build for "..jenkins[txt][2]..": "..shorturl(dat.url.."artifact/"..url).." "..days..hours..minutes.."ago"
+		return "Build #"..dat.number.." for "..jenkins[txt][2]..": "..shorturl(dat.url.."artifact/"..url).." "..days..hours..minutes.."ago"
 	end
 end,{
 	desc="links downloads for jenkins",
@@ -160,7 +160,7 @@ do
 		["api-computer"]={"computer","computer api"},
 		["api-event"]={"event","events","event api","events api"},
 		["api-filesystem"]={"fs","filesystem","fs api","filesystem api"},
-		["api-internet"]={"internet api","tcp","socket","sockets","http","http api"},
+		["api-internet"]={"internet","internet api","tcp","socket","sockets","http","http api"},
 		["api-keyboard"]={"keyboard","keys","keyboard api","keys api"},
 		["api-robot"]={"robot","robots","robot api","robots api","turtle","turtle api"},
 		["api-serialization"]={"serialize","serialization","serial","serializer"},
@@ -194,7 +194,7 @@ do
 		["nonstandardlualibs"]={"non standard lua libs","non standard","nonstandard","sandbox"},
 		["signals"]={"signal","signals"},
 		["tutorial-basiccomputer"]={"tutorial1","tutorial basic","tutorial basic computer","tutorial computer"},
-		["tutorial-harddrives"]={"tutorial2","tutorial hdd","tutorial hdds","tutorial filesystem","tutorial fs"},
+		["tutorial-harddrives"]={"tutorial hardrives","tutorial2","tutorial hdd","tutorial hdds","tutorial filesystem","tutorial fs"},
 		["tutorial-writingcode"]={"tutorial3","tutorial code","tutorial coding"},
 		["tutorials"]={"tutorials","help","tutorial"},
 		[":http://www.lua.org/manual/5.2/manual.html#6.8"]={"io","io api"},
@@ -215,6 +215,19 @@ do
 		[":http://en.wikipedia.org/wiki/Wii_U"]={"ds","ds84182"},
 		[":http://ci.cil.li/"]={"jenkins","build","builds","beta"},
 	}
+	local words={}
+	for k,v in pairs(wikinames) do
+		local sh=string.min(unpack(v))
+		for n,w in pairs(v) do
+			words[w]={k,sh}
+			for word in w:gmatch("%S+") do
+				words[word]={k,sh}
+			end
+		end
+	end
+	words["component"]=nil
+	words["api"]=nil
+	words["list"]=nil
 	owikinames=wikinames
 	do
 		local o={}
@@ -250,7 +263,14 @@ do
 		elseif help[txt] then
 			return help[txt]
 		else
-			return "Not found."
+			local f={}
+			for k,v in pairs(words) do
+				table.insert(f,{v[2],strdist(k,txt)})
+			end
+			table.sort(f,function(a,b)
+				return a[2]<b[2]
+			end)
+			return "Not found. did you want \""..f[1][1].."\"?"
 		end
 	end,{
 		desc="lists help for functions/wiki pages",

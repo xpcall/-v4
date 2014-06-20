@@ -1,5 +1,18 @@
 sql={}
 local dbs=setmetatable({},{__mode="v"})
+local function start(db)
+	if not db.transaction then
+		db.db:execute("BEGIN TRANSACTION")
+		db.transaction=true
+		async.new(function()
+			async.wait(1)
+			if db.transaction then
+				db.db:execute("COMMIT")
+				db.transaction=nil
+			end
+		end)
+	end
+end
 function sql.new(dir)
 	local db
 	if not dir then
@@ -11,6 +24,7 @@ function sql.new(dir)
 	out=setmetatable({
 		db=db,
 		new=function(name,...)
+			start(out)
 			db:exec("create table if not exists "..name.." ("..table.concat({...},",")..")")
 			return {
 				db=db,
@@ -42,6 +56,7 @@ function sql.new(dir)
 					table.insert(w,k.."==:"..k)
 				end
 			end
+			start(out)
 			local sn=db:prepare("select "..table.concat(vals,",").." from "..name..(where and " where " or "")..table.concat(w," and "))
 			if not sn then
 				error(db:errmsg())
@@ -72,9 +87,10 @@ function sql.new(dir)
 				table.insert(vl,k.."=:u"..k)
 				bind["u"..k]=v
 			end
+			start(out)
 			local sn=db:prepare("update "..name.." set "..table.concat(vl," ")..(where and " where " or "")..table.concat(w," and "))
 			if not sn then
-				error(db:errmsg())
+				error(db:errmsg().." statement: "..serialize("update "..name.." set "..table.concat(vl," ")..(where and " where " or "")..table.concat(w," and ")))
 			end
 			sn:bind_names(bind)
 			sn:step()
@@ -89,6 +105,7 @@ function sql.new(dir)
 			for l1=1,#keys do
 				vl[l1]=":"..keys[l1]
 			end
+			start(out)
 			local sn=db:prepare("insert into "..name.." ("..table.concat(keys,",")..") values ("..table.concat(vl,",")..")")
 			if not sn then
 				error(db:errmsg())
@@ -98,19 +115,24 @@ function sql.new(dir)
 			sn:finalize()
 		end,
 		delete=function(name,where)
-			local bind={}
-			local w={}
-			for k,v in pairs(where) do
-				table.insert(w,k.."==:"..k)
-				bind["w"..k]=v
+			if not where then
+				db:exec("delete from "..name)
+			else
+				local bind={}
+				local w={}
+				for k,v in pairs(where) do
+					table.insert(w,k.."==:"..k)
+					bind["w"..k]=v
+				end
+				start(out)
+				local sn=db:prepare("delete from "..name.." where "..table.concat(w," and "))
+				if not sn then
+					error(db:errmsg())
+				end
+				sn:bind_names(where)
+				sn:step()
+				sn:finalize()
 			end
-			local sn=db:prepare("delete from "..name.." where "..table.concat(w," and "))
-			if not sn then
-				error(db:errmsg())
-			end
-			sn:bind_names(where)
-			sn:step()
-			sn:finalize()
 		end,
 	},{__gc=function()
 		dbs[dir]=nil

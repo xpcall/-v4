@@ -138,6 +138,9 @@ end
 -- *{ pointer pointer left
 -- *> copy current pointer to the pointer current byte spaces right
 -- *< copy current pointer to the pointer current byte spaces left
+-- *@ push byte to stack
+-- *~ pop byte on stack
+
 
 function agony2()
 	txt=txt:gsub("[^%$}{><@~%+%-%.,%(%)%[%]%*]","")
@@ -415,6 +418,7 @@ function rgsub(str,from,to)
 	return str
 end
 function tobase(str,nc,toc,flen)
+	bc.digits(0)
 	flen=flen or 0
 	if not nc then
 		nc=""

@@ -9,6 +9,12 @@ function img.new(w,h)
 	local out
 	out={
 		image=image,
+		width=function()
+			return image:Width()
+		end,
+		height=function()
+			return image:Height()
+		end,
 		shader=function(func)
 			local w,h=image:Width(),image:Height()
 			for y=0,h-1 do

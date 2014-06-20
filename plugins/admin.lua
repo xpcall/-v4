@@ -4,12 +4,19 @@ admin.chans={}
 admin.cmd={}
 admin.db=sql.new("admin").new("perms","name","group","perms")
 
-function admin.match(user,txt)
-	local pfx,mt=txt:match("^$([arc]):(.+)")
+function admin.match(user,txt,chan)
+	local pfx,mt=txt:match("^$([arcl]):(.*)")
 	mt="^"..pescape(mt or txt):gsub("%%%*",".-").."$"
 	return (pfx=="a" and user.account:match(mt)~=nil)
 		or (pfx=="r" and user.realname:match(mt)~=nil)
-		or (pfx=="c" and (user.chan or ""):match(mt)~=nil)
+		or (pfx=="c" and (user.chan or chan or ""):match(mt)~=nil)
+		or (pfx=="l" and setfenv(assert(loadstring(({txt:match(":(.*)"):gsub("^=","return ")})[1])),{
+			nick=user.nick,
+			username=user.username,
+			host=user.host,
+			account=user.account,
+			chan=user.chan or chan,
+		})())
 		or (not pfx and (user.nick.."!"..user.username.."@"..user.host):match(mt)~=nil)
 end
 
@@ -38,7 +45,7 @@ do
 	local file=io.open("db/ignore","r")
 	if file then
 		admin.ignore=unserialize(file:read("*a"))
-		if not ignore then
+		if not admin.ignore then
 			admin.ignore={}
 		end
 	end
@@ -66,12 +73,13 @@ do
 		if admin.perms[txt] then
 			local u=false
 			for k,v in tpairs(admin.ignore) do
-				if admin.match(admin.perms[txt],k) then
+				if admin.match(admin.perms[txt],k,chan) then
 					admin.ignore[k]=nil
 					u=true
 				end
 			end
 			if u then
+				save()
 				return "Unignored."
 			else
 				return "Ignore unchanged."
@@ -204,6 +212,9 @@ hook.new("raw",function(txt)
 		admin.perms[nick]=nil
 	end)
 	txt:gsub("^:([^%s!]+)![^%s@]+@%S+ NICK :(.+)",function(nick,tonick)
+		if nick==cnick then
+			cnick=tonick
+		end
 		if admin.perms[nick] then
 			for k,v in pairs(admin.chans) do
 				v[tonick]=v[nick]
@@ -222,9 +233,17 @@ hook.new("raw",function(txt)
 			v[nick]=nil
 		end
 	end)
-end)
-
-hook.new("raw",function(txt)
+	local function queuemsg(user,chan,txt,me,callback)
+		hook.callback=callback
+		hook.queue("rawmsg",user,chan,txt,me)
+		for k,v in pairs(admin.ignore) do
+			if v and admin.match(user,k) then
+				return
+			end
+		end
+		hook.callback=callback
+		hook.queue("msg",user,chan,txt)
+	end
 	txt:gsub("^:([^!]+)!([^@]+)@(%S+) PRIVMSG (%S+) :(.+)",function(nick,real,host,chan,txt)
 		local ctcp=txt:match("^\1(.-)\1?$")
 		local user={txt=txt,chan=chan,nick=nick,real=real,host=host}
@@ -247,7 +266,7 @@ hook.new("raw",function(txt)
 			hook.callback=cb
 			hook.queue("ctcp_"..ct,user,st)
 		else
-			hook.callback=function(st,dat)
+			local function callback(st,dat)
 				if st==true then
 					print("responding with "..tostring(dat))
 					respond(user,tostring(dat))
@@ -257,46 +276,39 @@ hook.new("raw",function(txt)
 				end
 			end
 			if ctcp and ctcp:sub(1,7)=="ACTION " then
-				hook.queue("msg",user,chan,txt:sub(9,-2),true)
+				queuemsg(user,chan,txt:sub(9,-2),true,callback)
 			else
-				hook.queue("msg",user,chan,txt)
+				queuemsg(user,chan,txt,false,callback)
 			end
 		end
 	end)
 end)
 
 hook.new("msg",function(user,chan,txt)
-	for k,v in pairs(admin.ignore) do
-		if v and admin.match(user,k) then
-			return
-		end
-	end
-	if chan~="#computercraft" then -- no bawts allowed
-		txt=txt:gsub("%s+$","")
-		if txt:sub(1,1)=="." then
-			async.new(function()
-				print(user.nick.." used "..txt)
-				local cb=function(st,dat)
-					if st==true then
-						print("responding with "..tostring(dat))
-						respond(user,tostring(dat))
-					elseif st then
-						print("responding with "..tostring(st))
-						respond(user,user.nick..", "..tostring(st))
-					end
+	txt=txt:gsub("%s+$","")
+	if txt:sub(1,1)=="." then
+		async.new(function()
+			print(user.nick.." used "..txt)
+			local cb=function(st,dat)
+				if st==true then
+					print("responding with "..tostring(dat))
+					respond(user,tostring(dat))
+				elseif st then
+					print("responding with "..tostring(st))
+					respond(user,user.nick..", "..tostring(st))
 				end
+			end
+			hook.callback=cb
+			hook.queue("command",user,chan,txt:sub(2))
+			local cmd,param=txt:match("^%.(%S+) ?(.*)")
+			if cmd then
 				hook.callback=cb
-				hook.queue("command",user,chan,txt:sub(2))
-				local cmd,param=txt:match("^%.(%S+) ?(.*)")
-				if cmd then
-					hook.callback=cb
-					hook.queue("command_"..cmd,user,chan,param)
-				end
-			end,function(err)
-				print(err)
-				respond(user,"Oh noes! "..paste(err))
-			end)
-		end
+				hook.queue("command_"..cmd,user,chan,param)
+			end
+		end,function(err)
+			print(err)
+			respond(user,"Oh noes! "..paste(err))
+		end)
 	end
 end)
 

@@ -14,61 +14,87 @@ function frombits(t)
 	return o
 end
 
+local b='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
+
+-- encoding
+function failtob64(data)
+    return ((data:gsub('.', function(x) 
+        local r,b='',x:byte()
+        for i=8,1,-1 do r=r..(b%2^i-b%2^(i-1)>0 and '1' or '0') end
+        return r;
+    end)..'0000'):gsub('%d%d%d?%d?%d?%d?', function(x)
+        if (#x < 6) then return '' end
+        local c=0
+        for i=1,6 do c=c+(x:sub(i,i)=='1' and 2^(6-i) or 0) end
+        return b:sub(c+1,c+1)
+    end)..({ '', '==', '=' })[#data%3+1])
+end
+
+-- decoding
+function failunb64(data)
+    data = string.gsub(data, '[^'..b..'=]', '')
+    return (data:gsub('.', function(x)
+        if (x == '=') then return '' end
+        local r,f='',(b:find(x)-1)
+        for i=6,1,-1 do r=r..(f%2^i-f%2^(i-1)>0 and '1' or '0') end
+        return r;
+    end):gsub('%d%d%d?%d?%d?%d?%d?%d?', function(x)
+        if (#x ~= 8) then return '' end
+        local c=0
+        for i=1,8 do c=c+(x:sub(i,i)=='1' and 2^(8-i) or 0) end
+        return string.char(c)
+    end))
+end
+
 db={}
-_tob64={
+local _tob64={
 	[0]="A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z",
 	"a","b","c","d","e","f","g","h","i","j","k","l","m","n","o","p","q","r","s","t","u","v","w","x","y","z",
 	"0","1","2","3","4","5","6","7","8","9","+","/"
 }
-function tob64(stxt)
-	local txt=tostring(stxt)
-	if not txt then
-		error("string expected, got "..type(stxt),2)
-	end
-	local d,o,d1,d2,d3={string.byte(txt,1,#txt)},""
+local floor=math.floor
+local byte=string.byte
+local char=string.char
+local sub=string.sub
+function tob64(txt)
+	local d,o,d1,d2,d3={byte(txt,1,#txt)},""
 	for l1=1,#txt-2,3 do
 		d1,d2,d3=d[l1],d[l1+1],d[l1+2]
-		o=o.._tob64[math.floor(d1/4)].._tob64[((d1%4)*16)+math.floor(d2/16)].._tob64[((d2%16)*4)+math.floor(d3/64)].._tob64[d3%64]
+		o=o.._tob64[floor(d1/4)].._tob64[((d1%4)*16)+floor(d2/16)].._tob64[((d2%16)*4)+floor(d3/64)].._tob64[d3%64]
 	end
 	local m=#txt%3
 	if m==1 then
-		o=o.._tob64[math.floor(d[#txt]/4)].._tob64[((d[#txt]%4)*16)].."=="
+		o=o.._tob64[floor(d[#txt]/4)].._tob64[((d[#txt]%4)*16)].."=="
 	elseif m==2 then
-		o=o.._tob64[math.floor(d[#txt-1]/4)].._tob64[((d[#txt-1]%4)*16)+math.floor(d[#txt]/16)].._tob64[(d[#txt]%16)*4].."="
+		o=o.._tob64[floor(d[#txt-1]/4)].._tob64[((d[#txt-1]%4)*16)+floor(d[#txt]/16)].._tob64[(d[#txt]%16)*4].."="
 	end
 	return o
 end
-_unb64={
+local _unb64={
 	["A"]=0,["B"]=1,["C"]=2,["D"]=3,["E"]=4,["F"]=5,["G"]=6,["H"]=7,["I"]=8,["J"]=9,["K"]=10,["L"]=11,["M"]=12,["N"]=13,
 	["O"]=14,["P"]=15,["Q"]=16,["R"]=17,["S"]=18,["T"]=19,["U"]=20,["V"]=21,["W"]=22,["X"]=23,["Y"]=24,["Z"]=25,
 	["a"]=26,["b"]=27,["c"]=28,["d"]=29,["e"]=30,["f"]=31,["g"]=32,["h"]=33,["i"]=34,["j"]=35,["k"]=36,["l"]=37,["m"]=38,
 	["n"]=39,["o"]=40,["p"]=41,["q"]=42,["r"]=43,["s"]=44,["t"]=45,["u"]=46,["v"]=47,["w"]=48,["x"]=49,["y"]=50,["z"]=51,
 	["0"]=52,["1"]=53,["2"]=54,["3"]=55,["4"]=56,["5"]=57,["6"]=58,["7"]=59,["8"]=60,["9"]=61,["+"]=62,["/"]=63,
 }
-function unb64(stxt)
-	local txt=tostring(stxt)
-	if not txt then
-		error("string expected, got "..type(stxt),2)
-	end
-	txt=txt:gsub("[^%a%d/%+]","")
-	local m=#txt%4
-	if m==1 then
-		error("invalid b64",2)
-	end
+function unb64(txt)
+	txt=txt:gsub("=+$","")
 	local o,d1,d2=""
-	for l1=1,#txt-3,4 do
-		d1,d2=_unb64[txt:sub(l1+1,l1+1)],_unb64[txt:sub(l1+2,l1+2)]
-		o=o..string.char((_unb64[txt:sub(l1,l1)]*4)+math.floor(d1/16),((d1%16)*16)+math.floor(d2/4),((d2%4)*64)+_unb64[txt:sub(l1+3,l1+3)])
+	local ln=#txt
+	local m=ln%4
+	for l1=1,ln-3,4 do
+		d1,d2=_unb64[sub(txt,l1+1,l1+1)],_unb64[sub(txt,l1+2,l1+2)]
+		o=o..char((_unb64[sub(txt,l1,l1)]*4)+floor(d1/16),((d1%16)*16)+floor(d2/4),((d2%4)*64)+_unb64[sub(txt,l1+3,l1+3)])
 	end
 	if m==2 then
-		o=o..string.char((_unb64[txt:sub(-2,-2)]*4)+math.floor(_unb64[txt:sub(-1,-1)]/16))
+		o=o..char((_unb64[sub(txt,-2,-2)]*4)+floor(_unb64[sub(txt,-1,-1)]/16))
 	elseif m==3 then
-		d1=_unb64[txt:sub(-2,-2)]
-		o=o..string.char((_unb64[txt:sub(-3,-3)]*4)+math.floor(d1/16),((d1%16)*16)+math.floor(_unb64[txt:sub(-1,-1)]/4))
+		d1=_unb64[sub(txt,-2,-2)]
+		o=o..char((_unb64[sub(txt,-3,-3)]*4)+floor(d1/16),((d1%16)*16)+floor(_unb64[sub(txt,-1,-1)]/4))
 	end
 	return o
 end
-function serialize(dat,options)
+--[[function serialize(dat,options)
 	options=options or {}
 	local out=""
 	local queue={{dat}}
@@ -176,7 +202,98 @@ function serialize(dat,options)
 		out=out..ot
 	end
 	return out
+end]]
+
+function serialize(value, pretty)
+	local kw = {
+		["and"]=true,["break"]=true, ["do"]=true, ["else"]=true,
+		["elseif"]=true, ["end"]=true, ["false"]=true, ["for"]=true,
+		["function"]=true, ["goto"]=true, ["if"]=true, ["in"]=true,
+		["local"]=true, ["nil"]=true, ["not"]=true, ["or"]=true,
+		["repeat"]=true, ["return"]=true, ["then"]=true, ["true"]=true,
+		["until"]=true, ["while"]=true
+	}
+	local id = "^[%a_][%w_]*$"
+	local ts = {}
+	local function s(v, l)
+		local t = type(v)
+		if t == "nil" then
+			return "nil"
+		elseif t == "boolean" then
+			return v and "true" or "false"
+		elseif t == "number" then
+			if v ~= v then
+				return "0/0"
+			elseif v == math.huge then
+				return "math.huge"
+			elseif v == -math.huge then
+				return "-math.huge"
+			else
+				return tostring(v)
+			end
+		elseif t == "string" then
+			return string.format("%q", v):gsub("\\\n","\\n")
+		elseif t == "table" and pretty and getmetatable(v) and getmetatable(v).__tostring then
+			return tostring(v)
+		elseif t == "table" then
+			if ts[v] then
+				if pretty then
+					return "recursion"
+				else
+					error("tables with cycles are not supported")
+				end
+			end
+			ts[v] = true
+			local i, r = 1, nil
+			local f
+			for k, v in pairs(v) do
+				if r then
+					r = r .. "," .. (pretty and ("\n" .. string.rep(" ", l)) or "")
+				else
+					r = "{"
+				end
+				local tk = type(k)
+				if tk == "number" and k == i then
+					i = i + 1
+					r = r .. s(v, l + 1)
+				else
+					if tk == "string" and not kw[k] and string.match(k, id) then
+						r = r .. k
+					else
+						r = r .. "[" .. s(k, l + 1) .. "]"
+					end
+					r = r .. "=" .. s(v, l + 1)
+				end
+			end
+			ts[v] = nil -- allow writing same table more than once
+			return (r or "{") .. "}"
+		elseif t == "function" then
+			return "func"
+		elseif t == "userdata" then
+			return "userdata"
+		else
+			if pretty then
+				return tostring(t)
+			else
+				error("unsupported type: " .. t)
+			end
+		end
+	end
+	local result = s(value, 1)
+	local limit = type(pretty) == "number" and pretty or 10
+	if pretty then
+		local truncate = 0
+		while limit > 0 and truncate do
+			truncate = string.find(result, "\n", truncate + 1, true)
+			limit = limit - 1
+		end
+		if truncate then
+			return result:sub(1, truncate) .. "..."
+		end
+	end
+	return result
 end
+
 function split(T,func) -- splits a table
 	if func then
 		T=func(T) -- advanced function
