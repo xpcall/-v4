@@ -99,6 +99,8 @@ do
 	})
 end
 
+local whqueue={}
+
 hook.new("raw",function(txt)
 	txt:gsub("^:%S+ 319 "..cnick.." "..cnick.." :(.*)",function(chans)
 		for chan in chans:gmatch("#%S+") do
@@ -117,13 +119,31 @@ hook.new("raw",function(txt)
 			end
 		end
 	end)
-	txt:gsub("^:([^%s!]+)![^%s@]+@%S+ MODE (%S+) (.)(%a) (.+)",function(nick,chan,pm,mode,user)
-		if mode=="o" then
-			hook.queue(pm=="+" and "op" or "deop",nick,chan,user)
-			admin.perms[user].op[chan]=pm=="+" or nil
-		elseif mode=="v" then
-			hook.queue(pm=="+" and "voice" or "devoice",nick,chan,user)
-			admin.perms[user].voice[chan]=pm=="+" or nil
+	txt:gsub("^:([^%s!]+)![^%s@]+@%S+ MODE (%S+) (%S+) (.+)",function(nick,chan,modes,users)
+		local mp={}
+		local cmode="+"
+		for char in modes:gmatch(".") do
+			if char=="-" or char=="+" then
+				cmode=char
+			else
+				table.insert(mp,{cmode,char})
+			end
+		end
+		local c=1
+		for user in users:gmatch("%S+") do
+			if not mp[c] then
+				break
+			end
+			local mode=mp[c][2]
+			local pm=mp[c][1]
+			c=c+1
+			if mode=="o" then
+				hook.queue(pm=="+" and "op" or "deop",nick,chan,user)
+				admin.perms[user].op[chan]=pm=="+" or nil
+			elseif mode=="v" then
+				hook.queue(pm=="+" and "voice" or "devoice",nick,chan,user)
+				admin.perms[user].voice[chan]=pm=="+" or nil
+			end
 		end
 	end)
 	txt:gsub("^:%S+ 354 "..cnick.." (%S+) (%S+) (%S+) (%S+) (%S+) (%S+) (%S+) (%S+) :(.+)",function(chan,username,ip,host,server,nick,modes,account,realname)
@@ -154,18 +174,35 @@ hook.new("raw",function(txt)
 			admin.chans[chan]={}
 			send("WHO "..chan.." %cuihsnfar")
 		else
-			send("WHOIS "..nick)
+			if not admin.perms[nick] then
+				if whqueue[chan] then
+					table.insert(whqueue,nick)
+				else
+					whqueue[chan]={nick}
+					async.new(function()
+						async.wait(0.5)
+						if #whqueue[chan]>5 then
+							send("WHO "..chan.." %cuihsnfar")
+						else
+							for k,v in pairs(whqueue[chan]) do
+								send("WHO "..v.." %cuihsnfar")
+							end
+						end
+						whqueue[chan]=nil
+					end)
+				end
+				admin.perms[nick]={}
+				local perms=admin.perms[nick]
+				perms.op=perms.op or {}
+				perms.voice=perms.voice or {}
+				perms.host=host
+				perms.ip=socket.dns.toip(host) or host
+				perms.nick=nick
+				perms.username=username
+			end
 		end
 		admin.chans[chan]=admin.chans[chan] or {}
 		admin.chans[chan][nick]=admin.chans[chan][nick] or 0
-		admin.perms[nick]=admin.perms[nick] or {}
-		local perms=admin.perms[nick]
-		perms.op=perms.op or {}
-		perms.voice=perms.voice or {}
-		perms.host=host
-		perms.ip=socket.dns.toip(host) or host
-		perms.nick=nick
-		perms.username=username
 		hook.queue("join",nick,chan)
 	end)
 	txt:gsub("^:%S+ 311 "..cnick.." (%S+) .- :(.+)",function(nick,realname)
@@ -282,6 +319,9 @@ hook.new("raw",function(txt)
 			end
 		end
 	end)
+	txt:gsub("^:([^!]+)![^@]+@%S+ ACCOUNT (%S+)",function(nick,newaccount)
+		(admin.perms[nick] or {}).account=newaccount:gsub("^:","")
+	end)
 end)
 
 hook.new("msg",function(user,chan,txt)
@@ -372,3 +412,11 @@ end,{
 	desc="lists users that match a pattern",
 	group="misc",
 })
+
+hook.new("command_sudo",function(user,chan,txt)
+	if admin.auth(user) then
+		local nick,txt=txt:match("^(%S+) (.+)$")
+		local dat=admin.perms[nick]
+		hook.queue("raw",":"..nick.."!"..dat.username.."@"..dat.host.." PRIVMSG "..chan.." :"..txt)
+	end
+end)

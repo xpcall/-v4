@@ -21,8 +21,38 @@ end
 function crypt.tohex(txt)
 	return ({txt:gsub(".",function(c) return string.format("%02x",c:byte()) end)})[1]
 end
+local byte=string.byte
+local fmt=string.format
+local floor=math.floor
+do
+	local ht={}
+	for l1=0,255 do
+		hr[l1]=fmt("%02x",l1)
+	end
+	function tohex(txt)
+		local o=""
+		for l1=1,#txt do
+			o=o..ht[byte(txt,l1,l1)]
+		end
+		return o
+	end
+end
 function crypt.fromhex(txt)
 	return ({txt:gsub("%X",""):gsub("%x%x?",function(c) return string.char(tonumber("0x"..c)) end)})[1]
+end
+do
+	local hf={}
+	for l1=0,255 do
+		hf[fmt("%02x",l1)]=string.char(l1)
+		hf[fmt("%02X",l1)]=string.char(l1)
+	end
+	function unhex(txt)
+		local o=""
+		for l1=1,#txt,2 do
+			o=o..hf[txt:sub(l1,l1+1)]
+		end
+		return o
+	end
 end
 hook.new("command_rot13",function(user,chan,txt)
 	return crypt.rot13(txt)
@@ -184,13 +214,8 @@ do
 			print("darp: "..w[0]..","..w[16])
 			local a,b,c,d,e,f,g,h=ha[0],ha[1],ha[2],ha[3],ha[4],ha[5],ha[6],ha[7]
 			for i=0,63 do
-				local S1=bxor(ror(e,6),ror(e,11),ror(e,25))
-				local ch=bxor(band(e,f),band(bnot(e),g))
-				local temp1=limit(limit(h+S1)+limit(ch+k[i]+w[i]))
-				local S0=bxor(ror(a,2),ror(a,13),ror(a,22))
-				local maj=bxor(band(a,b),band(a,c),band(b,c))
-				local temp2=S0+maj
-				a,b,c,d,e,f,g,h=limit(temp1+temp2),a,b,c,limit(d+temp1),e,f,g
+				local temp1=limit(limit(h+bxor(ror(e,6),ror(e,11),ror(e,25)))+limit(bxor(band(e,f),band(bnot(e),g))+k[i]+w[i]))
+				a,b,c,d,e,f,g,h=limit(temp1+bxor(ror(a,2),ror(a,13),ror(a,22))+bxor(band(a,b),band(a,c),band(b,c))),a,b,c,limit(d+temp1),e,f,g
 			end
 			ha[0],ha[1],ha[2],ha[3],ha[4],ha[5],ha[6],ha[7]=limit(ha[0]+a),limit(ha[1]+b),limit(ha[2]+c),limit(ha[3]+d),limit(ha[4]+e),limit(ha[5]+f),limit(ha[6]+g),limit(ha[7]+h)
 			print("derp: "..ha[0])
@@ -396,8 +421,12 @@ local band=bit64.band
 local bnot=bit64.bnot
 local add=bit64.add
 
-function watcrypt(key,dec)
-	local ha={[0]=
+local function xor()
+	
+end
+
+function watcrypt(key,dec,ha)
+	ha=ha or {[0]=
 		{0x6a09e667,0xf3bcc908},{0xbb67ae85,0x84caa73b},{0x3c6ef372,0xfe94f82b},{0xa54ff53a,0x5f1d36f1},
 		{0x510e527f,0xade682d1},{0x9b05688c,0x2b3e6c1f},{0x1f83d9ab,0xfb41bd6b},{0x5be0cd19,0x137e2179}
 	}
@@ -418,9 +447,13 @@ function watcrypt(key,dec)
 		ha[0],ha[1],ha[2],ha[3],ha[4],ha[5],ha[6],ha[7]=add(ha[0],a),add(ha[1],b),add(ha[2],c),add(ha[3],d),add(ha[4],e),add(ha[5],f),add(ha[6],g),add(ha[7],h)
 	end
 	cpt(key)
-	return function(txt)
+	local state={k="",i="",ha=ha}
+	return function(txt,tdec)
 		local out=""
 		for l1=1,#txt,128 do
+			if #k<128 then
+				
+			end
 			local chunk=txt:sub(l1,l1+127)
 			chunk=chunk..("\0"):rep(128-#chunk)
 			local data=crypt.xor(chunk,
@@ -428,8 +461,8 @@ function watcrypt(key,dec)
 				num2chars64(ha[4])..num2chars64(ha[5])..num2chars64(ha[6])..num2chars64(ha[7])
 			)
 			out=out..data
-			cpt(dec and data or chunk)
+			cpt(((not tdec)==(not dec)) and chunk or data)
 		end
 		return out
-	end
+	end,state
 end

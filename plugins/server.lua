@@ -8,13 +8,13 @@ function server.listen(port,func)
 	servers[sv]=func
 	hook.newsocket(sv)
 	print("registered "..tostring(sv))
+	return true
 end
 hook.new("select",function(a)
 	for k,v in pairs(servers) do
 		local cl=k:accept()
 		if cl then
 			async.new(function()
-				assert(cl.settimeout)
 				v(async.socket(cl))
 			end)
 		end

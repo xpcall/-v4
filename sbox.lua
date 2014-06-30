@@ -176,6 +176,7 @@ if not func then
 	func,err=load(txt,"=lua","t",sbox)
 	if not func then
 		print(err)
+		print("Program done.")
 		return
 	end
 end

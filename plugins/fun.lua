@@ -862,3 +862,18 @@ end)
 hook.new({"command_steal","command_wouldsteal"},function(user,chan,txt)
 	return "https://www.youtube.com/watch?v=zhKdH8MT6j0"
 end)
+
+
+hook.new({"command_lazyupdateoc"},function(user,chan,txt)
+	if not admin.auth(user) then
+		return
+	end
+	local res=hook.queue("command_j",user,chan,"")
+	respond(user,"Downloading...")
+	local data,err=ahttp.get(res:match("http://%S+"))
+	if not data then
+		return err
+	end
+	file["/home/nadine/Desktop/server/mods/oc.jar"]=data
+	return "Updated"
+end)

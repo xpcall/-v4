@@ -1,5 +1,6 @@
 function fancynum(num)
-	num=tostring(num) return num:gsub("%..+",""):reverse():gsub("...","%1,"):reverse():gsub("^,","")..(num:match("%..+") or "")
+	num,neg=tostring(num):gsub("[^%d%.]",""),num:match("^%-") or ""
+	return neg..num:gsub("%..+",""):reverse():gsub("...","%1,"):reverse():gsub("^,","")..(num:match("%..+") or "")
 end
 
 hook.new({"command_forums","command_f"},function(user,chan,txt)
@@ -13,6 +14,13 @@ hook.new({"command_git","command_github"},function(user,chan,txt)
 	return "https://github.com/MightyPirates/OpenComputers/"..txt
 end,{
 	desc="links to the oc github",
+	group="help",
+})
+
+hook.new({"command_rules"},function(user,chan,txt)
+	return "http://oc.cil.li/index.php?/topic/171-oc-channel-rules/"
+end,{
+	desc="links to the channel rules",
 	group="help",
 })
 
@@ -71,7 +79,7 @@ hook.new({"command_j","command_build","command_beta"},function(user,chan,txt)
 		miliseconds=miliseconds~=0 and ((miliseconds%1000).." milliseconds ") or ""
 		seconds=seconds~=0 and ((seconds%60).." seconds ") or ""
 		minutes=minutes~=0 and ((minutes%60).." minutes ") or ""
-		hours=hours~=0 and ((hours%24).." hours ") or ""
+		hours=hours~=0 and ((hours%24).." hour"..(hours%24==1 and "" or "s").." ") or ""
 		days=days~=0 and (days.." days ") or ""
 		local url
 		for k,v in pairs(dat.artifacts) do
@@ -197,6 +205,7 @@ do
 		["tutorial-harddrives"]={"tutorial hardrives","tutorial2","tutorial hdd","tutorial hdds","tutorial filesystem","tutorial fs"},
 		["tutorial-writingcode"]={"tutorial3","tutorial code","tutorial coding"},
 		["tutorials"]={"tutorials","help","tutorial"},
+		["OneThree"]={"onethree","1.3","13"},
 		[":http://www.lua.org/manual/5.2/manual.html#6.8"]={"io","io api"},
 		[":http://www.lua.org/manual/5.2/manual.html#6.7"]={"bit32","bit32 api","bit","bit api"},
 		[":http://www.lua.org/manual/5.2/manual.html#6.6"]={"math","math api"},
@@ -217,11 +226,10 @@ do
 	}
 	local words={}
 	for k,v in pairs(wikinames) do
-		local sh=string.min(unpack(v))
 		for n,w in pairs(v) do
-			words[w]={k,sh}
+			words[w]=w
 			for word in w:gmatch("%S+") do
-				words[word]={k,sh}
+				words[word]=w
 			end
 		end
 	end
@@ -265,7 +273,7 @@ do
 		else
 			local f={}
 			for k,v in pairs(words) do
-				table.insert(f,{v[2],strdist(k,txt)})
+				table.insert(f,{v,strdist(k,txt)})
 			end
 			table.sort(f,function(a,b)
 				return a[2]<b[2]

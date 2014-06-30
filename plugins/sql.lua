@@ -1,5 +1,6 @@
 sql={}
 local dbs=setmetatable({},{__mode="v"})
+reqplugin("async.lua")
 local function start(db)
 	if not db.transaction then
 		db.db:execute("BEGIN TRANSACTION")
@@ -11,6 +12,13 @@ local function start(db)
 				db.transaction=nil
 			end
 		end)
+	end
+end
+function sql.cleanup()
+	for k,v in pairs(dbs) do
+		if not v.nocleanup then
+			v.close()
+		end
 	end
 end
 function sql.new(dir)
@@ -134,9 +142,16 @@ function sql.new(dir)
 				sn:finalize()
 			end
 		end,
+		close=function()
+			dbs[dir]=nil
+			if out.transaction then
+				db:execute("COMMIT")
+				out.transaction=nil
+			end
+			db:close()
+		end,
 	},{__gc=function()
-		dbs[dir]=nil
-		db:close()
+		out.close()
 	end})
 	if dir then
 		dbs[dir]=out

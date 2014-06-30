@@ -182,7 +182,23 @@ do
 			os.remove(file)
 		end,
 	}
-	print(fs.size)
+end
+
+function cxpcall(func,errh,...)
+	local co=coroutine.create(func)
+	local res={coroutine.resume(co,...)}
+	while coroutine.status(co)~="dead" do
+		res={coroutine.resume(co,coroutine.yield(unpack(res,2)))}
+	end
+	if res[1] then
+		return true,unpack(res,2)
+	else
+		return false,errh(res[2])
+	end
+end
+
+function cpcall(func,...)
+	return cxpcall(func,function(err) return err end,...)
 end
 
 function bc.abs(a)
@@ -308,6 +324,7 @@ hook.new("raw",function(txt)
 		send("JOIN #pastamen")
 		send("JOIN #ccjam")
 		send("JOIN #EpicnessTwo")
+		send("CAP REQ account-notify")
 	end)
 end)
 local plenv=setmetatable({
@@ -355,8 +372,6 @@ send("WHOIS "..cnick)
 sv:settimeout(0)
 hook.newsocket(sv)
 
-send("JOIN #testlol")
-
 local sel=assert(lanes.gen("*",function(recv,sendt,timeout)
 	local socket=require("socket")
 	-- remake sockets
@@ -385,24 +400,23 @@ local sel=assert(lanes.gen("*",function(recv,sendt,timeout)
 	mainlinda:send("event",out)
 end))
 
-while true do
-	local s,e=sv:receive()
-	if s then
-		hook.queue("raw",s)
-	else
-		if e=="closed" then
-			error(e)
+local _,err=xpcall(function()
+	local buff=""
+	while true do
+		local s,e,r=sv:receive("*a")
+		if e=="timeout" then
+			buff=buff..r
+			while buff:match("[\r\n]") do
+				hook.queue("raw",buff:match("^[^\r\n]+"))
+				buff=buff:gsub("^[^\r\n]+[\r\n]+","")
+			end
+		else
+			if e=="closed" then
+				error(e)
+			end
 		end
+		hook.queue("select",socket.select(hook.sel,hook.rsel,math.min(10,hook.interval or 1)))
 	end
-	hook.queue(
-		"select",
-		socket.select(
-			hook.sel,
-			hook.rsel,
-			math.min(
-				10,
-				hook.interval or 1
-			)
-		)
-	)
-end
+end,debug.traceback)
+print(err)
+sql.cleanup()

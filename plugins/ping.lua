@@ -1,8 +1,10 @@
 local pings={}
 hook.new({"command_ping","command_v^","command_p"},function(user,chan,txt)
 	local un=txt
-	if not admin.perms[txt] then
+	if txt=="" then
 		un=user.nick
+	elseif not admin.perms[txt] then
+		return "No such user"
 	end
 	send("PRIVMSG "..un.." :\1PING\1")
 	pings[un]={user.chan==cnick and "NOTICE "..user.nick or "PRIVMSG "..user.chan,socket.gettime(),un}
@@ -19,9 +21,6 @@ hook.new("raw",function(txt)
 	end
 end)
 local last=socket.gettime()
-hook.new("raw",function()
-	
-end)
 async.new(function()
 	while true do
 		async.wait(20)

@@ -12,13 +12,21 @@ local function update()
 	file:close()
 end
 hook.new("command_tell",function(user,chan,txt)
-	local usr,txt=txt:match("(%S+) (.+)")
+	local usr,txt=txt:match("(.-) (.+)")
+	
 	if not usr then
 		return "Usage: .tell (<user>|$a:<account>|$h:<host>) <txt>"
 	end
 	local ntype,susr=usr:match("^%$(.):(.+)")
+	if not ntype or ntype=="$n" then
+		usr=usr:gsub("[,:]$","")
+	end
 	if not ntype then
-		ntype,susr="n",usr
+		if admin.perms[usr] and admin.perms[usr].account then
+			ntype,susr="a",admin.perms[usr].account
+		else
+			ntype,susr="n",usr
+		end
 	end
 	local meta="$"..ntype..":"..susr
 	tells[meta]=tells[meta] or {}

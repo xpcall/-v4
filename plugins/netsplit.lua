@@ -11,9 +11,9 @@ hook.new("quit",function(nick,reason)
 					o=o..k..","
 				end
 				irc.say("#oc","Oh noes! "..o:sub(1,-2).." split 3:")
-			end)
+			end,print)
 		else
-			split[(user.server or "error"):match("^(.-)%.")]=true
+			split[(user.server or "error"):match("^(.-)%.") or "error"]=true
 		end
 	end
 end)

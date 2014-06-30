@@ -39,6 +39,7 @@ local cl=scl:accept()
 cl:settimeout(0)
 print("got client")
 connect()
+local svbuff=""
 while true do
 	if scheck(cl) then
 		print("lost client")
@@ -59,41 +60,46 @@ while true do
 		print("<"..s)
 		assert(sv:send(s.."\n"))
 	end
-	local s,e=sv:receive()
-	if s then
-		local nick,chan,txt=s:match("^:([^!]+)![^@]+@%S+ PRIVMSG (%S+) :(.*)$")
-		if nick then
-			local action=txt:match("^\1ACTION (.-)\1?$")
-			if action then
-				log(chan,"* "..nick.." "..action)
-			else
-				log(chan,"<"..nick.."> "..txt)
+	local s,e,r=sv:receive("*a")
+	if e=="timeout" then
+		svbuff=svbuff..r
+		while svbuff:match("[\r\n]") do
+			local s=svbuff:match("^[^\r\n]*")
+			local nick,chan,txt=s:match("^:([^!]+)![^@]+@%S+ PRIVMSG (%S+) :(.*)$")
+			if nick then
+				local action=txt:match("^\1ACTION (.-)\1?$")
+				if action then
+					log(chan,"* "..nick.." "..action)
+				else
+					log(chan,"<"..nick.."> "..txt)
+				end
 			end
-		end
-		local nick,ident,chan=s:match("^:([^!]+)!([^@]+@%S+) JOIN (%S+)$")
-		if nick then
-			log(chan,nick.." ("..ident..") has joined")
-		end
-		local nick,chan,reason=s:match("^:([^!]+)![^@]+@%S+ PART (%S+) ?:?(.*)$")
-		if nick then
-			log(chan,nick.." has left ("..reason..")")
-		end
-		local nick,reason=s:match("^:([^!]+)![^@]+@%S+ QUIT :(.*)$")
-		if nick then
-			log(nil,nick.." has quit ("..reason..")")
-		end
-		local nick,tonick=s:match("^:([^!]+)![^@]+@%S+ NICK :(.*)$")
-		if nick then
-			log(nil,nick.." is now known as "..tonick)
-		end
-		print(">"..s)
-		cl:settimeout(5)
-		cl:send(s.."\n")
-		cl:settimeout(0)
-		local pong=s:match("^PING (.+)$")
-		if pong then
-			assert(sv:send("PONG "..pong.."\n"))
-			print("<PONG "..pong)
+			local nick,ident,chan=s:match("^:([^!]+)!([^@]+@%S+) JOIN (%S+)$")
+			if nick then
+				log(chan,nick.." ("..ident..") has joined")
+			end
+			local nick,chan,reason=s:match("^:([^!]+)![^@]+@%S+ PART (%S+) ?:?(.*)$")
+			if nick then
+				log(chan,nick.." has left ("..reason..")")
+			end
+			local nick,reason=s:match("^:([^!]+)![^@]+@%S+ QUIT :(.*)$")
+			if nick then
+				log(nil,nick.." has quit ("..reason..")")
+			end
+			local nick,tonick=s:match("^:([^!]+)![^@]+@%S+ NICK :(.*)$")
+			if nick then
+				log(nil,nick.." is now known as "..tonick)
+			end
+			print(">"..s)
+			cl:settimeout(5)
+			cl:send(s.."\n")
+			cl:settimeout(0)
+			local pong=s:match("^PING (.+)$")
+			if pong then
+				assert(sv:send("PONG "..pong.."\n"))
+				print("<PONG "..pong)
+			end
+			svbuff=svbuff:gsub("^[^\r\n]+[\r\n]+","")
 		end
 	end
 	socket.select({sv,cl},nil,1)

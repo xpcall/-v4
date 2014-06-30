@@ -13,44 +13,6 @@ function limitoutput(txt)
 	end
 	return txt
 end
-hook.new({"command_>"},function(user,chan,txt)
-	if admin.auth(user) then
-		if txt:sub(1,1)=="\27" then
-			return "Nope."
-		end
-		local func,err=loadstring("return "..txt,"=lua")
-		if not func then
-			func,err=loadstring(txt,"=lua")
-			if not func then
-				return err
-			end
-		end
-		local out=""
-		local func=coroutine.create(setfenv(func,setmetatable({
-			print=function(...)
-				for k,v in pairs({...}) do
-					out=out..tostring(v).."\n"
-				end
-			end,
-			write=function(...)
-				out=out..table.concat({...}," ")
-			end
-		},{__index=_G,__newindex=_G})))
-		debug.sethook(func,function() error("Time limit exeeded.",0) end,"",1000000)
-		local res={coroutine.resume(func)}
-		if not res[1] then
-			res[3]=debug.traceback(func)
-		end
-		local o=out
-		for l1=2,math.max(maxval(res),2) do
-			o=o..tostring(res[l1]).."\n"
-		end
-		return limitoutput(o)
-	end
-end,{
-	desc="admin lua",
-	group="admin",
-})
 
 do
 	local c={}
@@ -75,7 +37,7 @@ do
 	})
 end
 
-hook.new({"command_<"},function(user,chan,txt)
+hook.new({"command_>"},function(user,chan,txt)
 	if admin.auth(user) then
 		if txt:sub(1,1)=="\27" then
 			return "Nope."
@@ -87,8 +49,7 @@ hook.new({"command_<"},function(user,chan,txt)
 				return err
 			end
 		end
-		local func=coroutine.create(setfenv(func,_G))
-		local res={coroutine.resume(func)}
+		local res={cpcall(setfenv(func,_G))}
 		local o
 		for l1=2,maxval(res) do
 			o=(o or "")..tostring(res[l1]).."\n"
@@ -96,7 +57,7 @@ hook.new({"command_<"},function(user,chan,txt)
 		return limitoutput(o or "nil")
 	end
 end,{
-	desc="admin lua with no time limit",
+	desc="admin lua",
 	group="admin",
 })
 
@@ -243,7 +204,7 @@ end,{
 	group="help",
 })]]
 
-hook.new({"command_calc","command_bc"},function(user,chan,txt)
+hook.new({"command_calc","command_bc"},function(user,chan,txt,nolimit)
 	local file=io.open("sbox.tmp","w")
 	file:write(txt.."\nquit")
 	file:close()
@@ -254,19 +215,20 @@ hook.new({"command_calc","command_bc"},function(user,chan,txt)
 	else
 		out=out.."Time limit exeeded."
 	end
+	if nolimit then return out end
 	return limitoutput(out)
 end,{
 	desc="calculates large numbers",
 	group="help",
 })
 
-do
+--[[do
 	local sbox
 	local usr
 	local out
 	local function rst()
 		local str={}
-		for k,v in pairs(string) do
+		for k,v in pairs(getmetatable("")) do
 			str[k]=v
 		end
 		local tsbox={}
@@ -442,7 +404,7 @@ do
 		desc="executes lua 5.1 code",
 		group="help",
 	})
-end
+end]]
 
 if tcpnet then
 	tcpnet.open(1338)

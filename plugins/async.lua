@@ -4,27 +4,26 @@ function async.new(func,err)
 	local co=coroutine.create(func)
 	local sfunc
 	function sfunc(...)
-		resume=sfunc
+		async.current=sfunc
 		hook.del(sfunc)
+		if coroutine.status(co)=="dead" then
+			return
+		end
 		local p={coroutine.resume(co,...)}
 		if not p[1] then
-			(err or error)((p[2] or "").."\n"..debug.traceback(co))
+			(err or error)((p[2] or "").."\npotato\n"..debug.traceback(co))
 		end
 		return unpack(p,2)
 	end
-	resume=sfunc
-	local p={coroutine.resume(co)}
-	if not p[1] then
-		(err or error)((p[2] or "").."\n"..debug.traceback(co))
-	end
+	sfunc()
 	return sfunc
 end
 function async.pull(...)
-	hook.new({...},resume)
+	hook.new({...},async.current)
 	return coroutine.yield()
 end
 function async.wait(n)
-	hook.new(hook.timer(n),resume)
+	hook.new(hook.timer(n),async.current)
 	coroutine.yield()
 end
 function async.socket(sk,err)
@@ -39,7 +38,7 @@ function async.socket(sk,err)
 				return nil,"timeout"
 			end
 			hook.newsocket(sk)
-			local resume=resume
+			local resume=async.current
 			local stop=false
 			if tmo then
 				hook.new(hook.timer(tmo),function()
