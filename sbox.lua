@@ -111,21 +111,63 @@ function unserialize(data)
 	return output
 end
 
+function numstr(num)
+	if num==math.huge then
+		return "inf"
+	elseif num==-math.huge then
+		return "-inf"
+	elseif num~=num then
+		return "nan"
+	end
+	local top=math.floor(num)
+	local stop=""
+	for i=0,100 do
+		local c=math.floor(math.floor(top/(10^i))%10)
+		for l1=0,9 do
+			if tonumber(((c+l1)%10)..stop..".0")==top then
+				stop=((c+l1)%10)..stop
+				break
+			end
+		end
+		if tonumber(stop..".0")==top then
+			break
+		end
+		stop=c..stop
+	end
+	local btm=num-top
+	local sbtm=""
+	for i=1,100 do
+		local c=math.floor((btm*(10^i))%10)
+		for l1=0,9 do
+			if tonumber(stop.."."..sbtm..((c+l1)%10))==num then
+				sbtm=sbtm..((c+l1)%10)
+				break
+			end
+		end
+		if tonumber(stop.."."..sbtm)==num then
+			break
+		end
+		sbtm=sbtm..c
+	end
+	if sbtm=="" then
+		sbtm="0"
+	end
+	if stop=="" then
+		stop="0"
+	end
+	return (stop=="" and "0" or stop).."."..(sbtm=="" and "0" or sbtm)
+end
+
 local fmtb=setmetatable({},{__mode="v"})
 
 sbox={
+	numstr=numstr,
 	serialize=serialize,
 	unserialize=unserialize,
 	_VERSION=_VERSION,
 	assert=assert,
 	collectgarbage=collectgarbage,
 	error=error,
-	getmetatable=function(tbl)
-		if fmtb[tbl] then
-			local rl=fmtb[tbl].real
-			return rl.__metatable or rl
-		end
-	end,
 	ipairs=ipairs,
 	load=function(ld,source,env)
 		return load(ld,source,"t",env or sbox)
@@ -143,7 +185,6 @@ sbox={
 	rawlen=rawlen,
 	rawset=rawset,
 	select=select,
-	setmetatable=setmetatable,
 	tonumber=tonumber,
 	tostring=tostring,
 	type=type,
@@ -159,7 +200,18 @@ sbox={
 			out=out..table.concat({...})
 		end,
 	},
+	debug={
+		traceback=debug.traceback
+	}
 }
+local function no(name)
+	for k,v in pairs(_G[name]) do
+		sbox[name][k]=sbox[name][k] or "no"
+	end
+end
+no("io")
+no("os")
+no("debug")
 sbox._G=sbox
 for k,v in pairs(sapis) do
 	sbox[k]={}
@@ -195,6 +247,6 @@ for l1=2,math.max(2,maxval(res)) do
 	o=(o or "")..tostring(res[l1]).."\n"
 end
 o=(out..(o or "nil")):gsub("^[\r\n]+",""):gsub("[\r\n]+$",""):gsub("[\r\n]+"," | ")
-:gsub("[%z\2\4\5\6\7\8\9\10\11\12\13\14\16\17\18\19\20\21\22\23\24\25\26\27\28\29\30\31]","")
+:gsub("[%z\4\5\6\7\8\9\10\11\12\13\14\16\17\18\19\20\21\22\23\24\25\26\27\28\29\30\31]","")
 print(o)
 print("Program done.")

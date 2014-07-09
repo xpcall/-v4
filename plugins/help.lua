@@ -1,5 +1,5 @@
 function fancynum(num)
-	num,neg=tostring(num):gsub("[^%d%.]",""),num:match("^%-") or ""
+	num,neg=tostring(num):gsub("[^%d%.]",""),tostring(num):match("^%-") or ""
 	return neg..num:gsub("%..+",""):reverse():gsub("...","%1,"):reverse():gsub("^,","")..(num:match("%..+") or "")
 end
 
@@ -41,6 +41,7 @@ end,{
 jenkins={
 	[{"http://ci.cil.li/job/OpenComputers/api/json?depth=1","OpenComputers"}]={"oc","opencomputers","16","164","oc16","oc164"},
 	[{"http://ci.cil.li/job/OpenComputers-MC1.7/api/json?depth=1","OpenComputers 1.7"}]={"opencomputers17","17","172","oc17","oc172"},
+	[{"http://ci.cil.li/job/OpenComputers-MC1.7.10/api/json?depth=1","OpenComputers 1.7.10"}]={"opencomputers1710","1710","oc1710","oc1710"},
 	[{"http://ci.cil.li/job/OpenComponents/api/json?depth=1","OpenComponents"}]={"c","c16","components","opencomponents","ocomponents"},
 	[{"http://ci.cil.li/job/OpenComponents-MC1.7/api/json?depth=1","OpenComponents 1.7"}]={"c17","components17","opencomponents17","ocomponents17"},
 	[{"http://lanteacraft.com/jenkins/job/OpenPrinter/api/json?depth=1","OpenPrinters"}]={"op","op16","printer","printer16","openprinter","openprinters","openprinter16"},
@@ -110,7 +111,7 @@ hook.new({"command_r","command_release","command_releases"},function(user,chan,t
 	end
 	dat=dat[1]
 	local burl="https://github.com/MightyPirates/OpenComputers/releases/download/"..dat.tag_name.."/"
-	return "Latest release: "..dat.name.." Download: 1.6.4 "..shorturl(burl..dat.assets[1].name).." 1.7.2 "..shorturl(burl..dat.assets[2].name)
+	return "Latest release: "..dat.name.." Download: 1.6.4 "..shorturl(burl..dat.assets[1].name).." 1.7.2 "..shorturl(burl..dat.assets[3].name).." 1.7.10 "..shorturl(burl..dat.assets[2].name)
 end,{
 	desc="links downloads for releases",
 	group="help",

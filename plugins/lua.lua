@@ -49,6 +49,39 @@ hook.new({"command_>"},function(user,chan,txt)
 				return err
 			end
 		end
+		local o=""
+		local res={cpcall(setfenv(func,setmetatable({
+			print=function(...)
+				for k,v in pairs({...}) do
+					o=o..tostring(v).."\n"
+				end
+			end
+		},{
+			__index=_G,
+			__newindex=_G
+		})))}
+		for l1=2,math.max(2,maxval(res)) do
+			o=o..tostring(res[l1]).."\n"
+		end
+		return limitoutput(o or "nil")
+	end
+end,{
+	desc="admin lua",
+	group="admin",
+})
+
+hook.new({"command_<"},function(user,chan,txt)
+	if admin.auth(user) then
+		if txt:sub(1,1)=="\27" then
+			return "Nope."
+		end
+		local func,err=loadstring("return "..txt,"=lua")
+		if not func then
+			func,err=loadstring(txt,"=lua")
+			if not func then
+				return err
+			end
+		end
 		local res={cpcall(setfenv(func,_G))}
 		local o
 		for l1=2,maxval(res) do
@@ -69,6 +102,26 @@ hook.new({"command_l","command_lua"},function(user,chan,txt)
 	file:write(txt)
 	file:close()
 	local fi=io.popen("timelimit -t 0.5 ./lua52 sbox.lua")
+	local out=fi:read("*a")
+	if out:match("Program done%.\n$") then
+		out=out:gsub("Program done%.\n$","")
+	else
+		out=out.."Time limit exeeded."
+	end
+	return limitoutput(out)
+end,{
+	desc="executes lua 5.2 code",
+	group="help",
+})
+
+hook.new({"command_lj","command_luaj"},function(user,chan,txt)
+	if txt:sub(1,1)=="\27" then
+		return "Nope."
+	end
+	local file=io.open("sbox.tmp","w")
+	file:write(txt)
+	file:close()
+	local fi=io.popen("timelimit -t 0.5 java -cp luaj-js* lua sbox.lua")
 	local out=fi:read("*a")
 	if out:match("Program done%.\n$") then
 		out=out:gsub("Program done%.\n$","")

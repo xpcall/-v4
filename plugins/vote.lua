@@ -52,7 +52,7 @@ hook.new("command_endvote",function(user,chan,txt)
 	cvote=nil
 	local o="Vote results:"
 	for k,v in pairs(cur) do
-		o=o.." "..k..": "..v
+		o=o.." "..k..": "..tostring(v)
 	end
 	return o
 end)

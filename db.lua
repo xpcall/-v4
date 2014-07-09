@@ -237,11 +237,7 @@ function serialize(value, pretty)
 			return tostring(v)
 		elseif t == "table" then
 			if ts[v] then
-				if pretty then
-					return "recursion"
-				else
-					error("tables with cycles are not supported")
-				end
+				return "recursive"
 			end
 			ts[v] = true
 			local i, r = 1, nil

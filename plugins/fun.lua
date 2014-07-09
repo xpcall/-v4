@@ -31,6 +31,13 @@ end,{
 	group="misc",
 })
 
+hook.new("command_sdate",function(user,chan,txt)
+	return "Sep " .. math.ceil(os.difftime(os.time(),os.time({year=1993,month=9,day=1,hour=0}))/86400) .. ", 1993"
+end,{
+	desc="gets Eternal September time",
+	group="fun",
+})
+
 hook.new({"command_ip2num"},function(user,chan,txt)
 	local ip=txt:tmatch("%d+")
 	return tostring((ip[1]*16777216)+(ip[2]*65536)+(ip[3]*256)+ip[4])
@@ -737,7 +744,7 @@ end,{
 
 hook.new("command_hastebin",function(user,chan,txt)
 	local res={}
-	local scc,err=http.request("http://hastebin.com/raw/"..txt)
+	local scc,err=http.request("http://hastebin.com/raw/"..txt:match("%S+"))
 	if err==404 then
 		return "Not found."
 	end
@@ -835,9 +842,9 @@ hook.new({"command_mcdown","command_mcstats","command_mcstat","command_mc"},func
 		return "Errror parsing"
 	end
 	local col={
-		["red"]="\2\0034",
-		["yellow"]="\2\0038",
-		["green"]="\0039",
+		["red"]="\0034\2",
+		["yellow"]="\0038\2",
+		["green"]="\00303",
 	}
 	local nm={
 		["minecraft.net"]="minecraft.net",
@@ -845,15 +852,16 @@ hook.new({"command_mcdown","command_mcstats","command_mcstat","command_mc"},func
 		["account.mojang.com"]="account",
 		["auth.mojang.com"]="auth",
 		["skins.minecraft.net"]="skins",
-		["authserver.mojang.com"]="authserver",
-		["sessionserver.mojang.com"]="sessionserver",
+		["authserver.mojang.com"]="auth-server",
+		["sessionserver.mojang.com"]="session-server",
+		["login.minecraft.net"]="legacy-login",
 		["api.mojang.com"]="api",
 		["textures.minecraft.net"]="textures",
 	}
 	local o={}
 	for l1=1,#dat do
 		for k,v in pairs(dat[l1]) do
-			table.insert(o,col[v]..nm[k].."\15")
+			table.insert(o,(col[v] or "("..v..")")..(nm[k] or k).."\15")
 		end
 	end
 	return table.concat(o," ")

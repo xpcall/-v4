@@ -22,12 +22,13 @@ function crypt.tohex(txt)
 	return ({txt:gsub(".",function(c) return string.format("%02x",c:byte()) end)})[1]
 end
 local byte=string.byte
+local char=string.char
 local fmt=string.format
 local floor=math.floor
 do
 	local ht={}
 	for l1=0,255 do
-		hr[l1]=fmt("%02x",l1)
+		ht[l1]=fmt("%02x",l1)
 	end
 	function tohex(txt)
 		local o=""
@@ -465,4 +466,39 @@ function watcrypt(key,dec,ha)
 		end
 		return out
 	end,state
+end
+
+function tobits(txt)
+	local o=""
+	for l1=1,#txt do
+		local b=txt:byte(l1)
+		o=o..(floor(b/64)%2)..(floor(b/32)%2)..(floor(b/16)%2)..(floor(b/8)%2)..(floor(b/4)%2)..(floor(b/2)%2)..(b%2)
+	end
+	return o
+end
+
+function encodestream(txt)
+	txt=txt..("0"):rep((31-#txt)%31)
+	local o={}
+	local b={string.byte(txt,1,-1)}
+	for l1=1,#txt,31 do
+		local co=0
+		for l2=0,30 do
+			co=co+((b[l1+(30-l2)]%2)*(2^l2))
+		end
+		o[floor(l1/32)+1]=co
+	end
+	return o
+end
+
+function decodestream(tbl)
+	local o=""
+	for k,v in pairs(tbl) do
+		o=o..(floor(v/1073741824)%2)..(floor(v/536870912)%2)..(floor(v/268435456)%2)..(floor(v/134217728)%2)..(floor(v/67108864)%2)..(floor(v/33554432)%2)..(floor(v/16777216)%2)..(floor(v/8388608)%2)..(floor(v/4194304)%2)..(floor(v/2097152)%2)..(floor(v/1048576)%2)..(floor(v/524288)%2)..(floor(v/262144)%2)..(floor(v/131072)%2)..(floor(v/65536)%2)..(floor(v/32768)%2)..(floor(v/16384)%2)..(floor(v/8192)%2)..(floor(v/4096)%2)..(floor(v/2048)%2)..(floor(v/1024)%2)..(floor(v/512)%2)..(floor(v/256)%2)..(floor(v/128)%2)..(floor(v/64)%2)..(floor(v/32)%2)..(floor(v/16)%2)..(floor(v/8)%2)..(floor(v/4)%2)..(floor(v/2)%2)..(v%2)
+	end
+	return o
+end
+
+function multbinary(a,b)
+	
 end

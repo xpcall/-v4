@@ -19,10 +19,11 @@ local function log(chan,txt)
 	end
 end
 local function connect()
+	socket.sleep(5)
 	sv=socket.connect(svname,6667)
 	while not sv do
 		print("failed")
-		socket.sleep(5)
+		socket.sleep(10)
 		print("retrying")
 		sv=socket.connect(svname,6667)
 	end
@@ -99,7 +100,7 @@ while true do
 				assert(sv:send("PONG "..pong.."\n"))
 				print("<PONG "..pong)
 			end
-			svbuff=svbuff:gsub("^[^\r\n]+[\r\n]+","")
+			svbuff=svbuff:gsub("^[^\r\n]*[\r\n]+","")
 		end
 	end
 	socket.select({sv,cl},nil,1)

@@ -5,7 +5,6 @@ local http=require("socket.http")
 local lfs=require("lfs")
 local bit=require("bit")
 local bc=require("bc")
-local lanes=require("lanes").configure()
 local json=require("dkjson")
 local sqlite=require("lsqlite3")
 local im=require("imlua")
@@ -14,11 +13,12 @@ local crypto=require("crypto")
 local posix=require("posix")
 local lpeg=require("lpeg")
 local re=require("re")
+local ffi=require("ffi")
+local C=ffi.C
 require("cdluaim")
 
 math.randomseed(socket.gettime()*1000)
 cnick="^v"
-local mainlinda=lanes.linda()
 do
 	local exists={}
 	local isdir={}
@@ -210,6 +210,14 @@ function timestamp()
 	return date.month.."/"..date.day.." "..date.hour..":"..("0"):rep(2-#tostring(date.min))..date.min
 end
 
+function gcd(a,b)
+	if b==0 then
+		return math.abs(a)
+	else
+		return gcd(b, a % b)
+	end
+end
+
 function tpairs(tbl)
 	local s={}
 	local c=1
@@ -231,11 +239,9 @@ function mean(...)
 	end
 	return n/#p
 end
-function string.tmatch(str,...)
+function string.tmatch(str,p)
 	local o={}
-	for r in str:gmatch(...) do
-		table.insert(o,r)
-	end
+	str:gsub(p,function(r) table.insert(o,r) end)
 	return o
 end
 getmetatable("").tmatch=string.tmatch
@@ -309,7 +315,7 @@ local function respond(user,txt)
 		(user.chan==cnick and user.nick or user.chan)..
 		" :"..txt
 		:gsub("^[\r\n]+",""):gsub("[\r\n]+$",""):gsub("[\r\n]+"," | ")
-		:gsub("[%z\2\4\5\6\7\8\9\10\11\12\13\14\16\17\18\19\20\21\22\23\24\25\26\27\28\29\30\31]","")
+		:gsub("[%z\4\5\6\7\8\9\10\11\12\13\14\16\17\18\19\20\21\22\23\24\25\26\27\28\29\30\31]","")
 		:sub(1,446)
 	)
 end
@@ -340,7 +346,6 @@ local plenv=setmetatable({
 	sql=sql,
 	bc=bc,
 	json=json,
-	lanes=lanes,
 	sqlite=sqlite,
 	im=im,
 	cd=cd,
@@ -348,6 +353,8 @@ local plenv=setmetatable({
 	posix=posix,
 	re=re,
 	lpeg=lpeg,
+	ffi=ffi,
+	C=C,
 },{__index=_G,__newindex=_G})
 plenv._G=plenv
 
@@ -372,34 +379,6 @@ send("WHOIS "..cnick)
 sv:settimeout(0)
 hook.newsocket(sv)
 
-local sel=assert(lanes.gen("*",function(recv,sendt,timeout)
-	local socket=require("socket")
-	-- remake sockets
-	local crecv={}
-	for k,v in pairs(recv) do
-		crecv[k]=socket.client(v)
-	end
-	local csendt={}
-	for k,v in pairs(sendt) do
-		csendt[k]=socket.client(v)
-	end
-	local orecv,osendt,err=socket.select(crecv,csendt,timeout)
-	if not orecv then
-		return nil,nil,err
-	end
-	local out={"select",{},{},err}
-	-- put them back into number form
-	for k,v in ipairs(orecv) do
-		table.insert(out[2],v:getfd())
-		v:setfd(-1) -- set socket to invalid so it wont close on GC
-	end
-	for k,v in ipairs(osendt) do
-		table.insert(out[3],v:getfd())
-		v:setfd(-1)
-	end
-	mainlinda:send("event",out)
-end))
-
 local _,err=xpcall(function()
 	local buff=""
 	while true do
@@ -407,8 +386,8 @@ local _,err=xpcall(function()
 		if e=="timeout" then
 			buff=buff..r
 			while buff:match("[\r\n]") do
-				hook.queue("raw",buff:match("^[^\r\n]+"))
-				buff=buff:gsub("^[^\r\n]+[\r\n]+","")
+				hook.queue("raw",buff:match("^[^\r\n]+") or "")
+				buff=buff:gsub("^[^\r\n]*[\r\n]+","")
 			end
 		else
 			if e=="closed" then
