@@ -211,8 +211,222 @@ int (luaopen_string) (lua_State *L);
 int (luaopen_math) (lua_State *L);
 int (luaopen_debug) (lua_State *L);
 int (luaopen_package) (lua_State *L);
+int (luaopen_package) (lua_State *L);
 void (luaL_openlibs) (lua_State *L); 
 ]]
+local threadhead=[[
+union pthread_attr_t
+{
+  char __size[56];
+  long int __align;
+};
+typedef union pthread_attr_t pthread_attr_t;
+
+
+typedef struct __pthread_internal_slist
+{
+  struct __pthread_internal_slist *__next;
+} __pthread_slist_t;
+
+
+/* Data structures for mutex handling.  The structure of the attribute
+   type is not exposed on purpose.  */
+typedef union
+{
+  struct __pthread_mutex_s
+  {
+    int __lock;
+    unsigned int __count;
+    int __owner;
+    unsigned int __nusers;
+    __extension__ union
+    {
+      struct
+      {
+	short __espins;
+	short __elision;
+      } d;
+      __pthread_slist_t __list;
+    };
+  } __data;
+  char __size[40];
+  long int __align;
+} pthread_mutex_t;
+
+typedef union
+{
+  char __size[4];
+  int __align;
+} pthread_mutexattr_t;
+
+
+/* Data structure for conditional variable handling.  The structure of
+   the attribute type is not exposed on purpose.  */
+typedef union
+{
+  struct
+  {
+    int __lock;
+    unsigned int __futex;
+    __extension__ unsigned long long int __total_seq;
+    __extension__ unsigned long long int __wakeup_seq;
+    __extension__ unsigned long long int __woken_seq;
+    void *__mutex;
+    unsigned int __nwaiters;
+    unsigned int __broadcast_seq;
+  } __data;
+  char __size[48];
+  __extension__ long long int __align;
+} pthread_cond_t;
+
+typedef union
+{
+  char __size[4];
+  int __align;
+} pthread_condattr_t;
+
+
+/* Keys for thread-specific data */
+typedef unsigned int pthread_key_t;
+
+
+/* Once-only execution */
+typedef int pthread_once_t;
+
+
+/* Data structure for read-write lock variable handling.  The
+   structure of the attribute type is not exposed on purpose.  */
+typedef union
+{
+  struct
+  {
+    int __lock;
+    unsigned int __nr_readers;
+    unsigned int __readers_wakeup;
+    unsigned int __writer_wakeup;
+    unsigned int __nr_readers_queued;
+    unsigned int __nr_writers_queued;
+    /* FLAGS must stay at this position in the structure to maintain
+       binary compatibility.  */
+    unsigned char __flags;
+    unsigned char __shared;
+    unsigned char __pad1;
+    unsigned char __pad2;
+    int __writer;
+  } __data;
+  char __size[56];
+  long int __align;
+} pthread_rwlock_t;
+
+typedef union
+{
+  char __size[8];
+  long int __align;
+} pthread_rwlockattr_t;
+
+typedef volatile int pthread_spinlock_t;
+
+typedef union
+{
+  char __size[32];
+  long int __align;
+} pthread_barrier_t;
+
+typedef union
+{
+  char __size[8];
+  int __align;
+} pthread_barrierattr_t;
+
+typedef unsigned long int pthread_t;
+
+int   pthread_attr_destroy(pthread_attr_t *);
+int   pthread_attr_getdetachstate(const pthread_attr_t *, int *);
+int   pthread_attr_getguardsize(const pthread_attr_t *, size_t *);
+int   pthread_attr_getinheritsched(const pthread_attr_t *, int *);
+int   pthread_attr_getschedparam(const pthread_attr_t *, struct sched_param *);
+int   pthread_attr_getschedpolicy(const pthread_attr_t *, int *);
+int   pthread_attr_getscope(const pthread_attr_t *, int *);
+int   pthread_attr_getstackaddr(const pthread_attr_t *, void **);
+int   pthread_attr_getstacksize(const pthread_attr_t *, size_t *);
+int   pthread_attr_init(pthread_attr_t *);
+int   pthread_attr_setdetachstate(pthread_attr_t *, int);
+int   pthread_attr_setguardsize(pthread_attr_t *, size_t);
+int   pthread_attr_setinheritsched(pthread_attr_t *, int);
+int   pthread_attr_setschedparam(pthread_attr_t *, const struct sched_param *);
+int   pthread_attr_setschedpolicy(pthread_attr_t *, int);
+int   pthread_attr_setscope(pthread_attr_t *, int);
+int   pthread_attr_setstackaddr(pthread_attr_t *, void *);
+int   pthread_attr_setstacksize(pthread_attr_t *, size_t);
+int   pthread_cancel(pthread_t *);
+int   pthread_cond_broadcast(pthread_cond_t *);
+int   pthread_cond_destroy(pthread_cond_t *);
+int   pthread_cond_init(pthread_cond_t *, const pthread_condattr_t *);
+int   pthread_cond_signal(pthread_cond_t *);
+int   pthread_cond_timedwait(pthread_cond_t *, pthread_mutex_t *, const struct timespec *);
+int   pthread_cond_wait(pthread_cond_t *, pthread_mutex_t *);
+int   pthread_condattr_destroy(pthread_condattr_t *);
+int   pthread_condattr_getpshared(const pthread_condattr_t *, int *);
+int   pthread_condattr_init(pthread_condattr_t *);
+int   pthread_condattr_setpshared(pthread_condattr_t *, int);
+int   pthread_create(pthread_t *, const pthread_attr_t *, void *(*)(void *), void *);
+int   pthread_detach(pthread_t);
+int   pthread_equal(pthread_t, pthread_t);
+void  pthread_exit(void *);
+int   pthread_kill(pthread_t, int sig);
+int   pthread_getconcurrency(void);
+int   pthread_getschedparam(pthread_t, int *, struct sched_param *);
+void *pthread_getspecific(pthread_key_t);
+int   pthread_join(pthread_t, void **);
+int   pthread_key_create(pthread_key_t *, void (*)(void *));
+int   pthread_key_delete(pthread_key_t);
+int   pthread_mutex_destroy(pthread_mutex_t *);
+int   pthread_mutex_getprioceiling(const pthread_mutex_t *, int *);
+int   pthread_mutex_init(pthread_mutex_t *, const pthread_mutexattr_t *);
+int   pthread_mutex_lock(pthread_mutex_t *);
+int   pthread_mutex_setprioceiling(pthread_mutex_t *, int, int *);
+int   pthread_mutex_trylock(pthread_mutex_t *);
+int   pthread_mutex_unlock(pthread_mutex_t *);
+int   pthread_mutexattr_destroy(pthread_mutexattr_t *);
+int   pthread_mutexattr_getprioceiling(const pthread_mutexattr_t *, int *);
+int   pthread_mutexattr_getprotocol(const pthread_mutexattr_t *, int *);
+int   pthread_mutexattr_getpshared(const pthread_mutexattr_t *, int *);
+int   pthread_mutexattr_gettype(const pthread_mutexattr_t *, int *);
+int   pthread_mutexattr_init(pthread_mutexattr_t *);
+int   pthread_mutexattr_setprioceiling(pthread_mutexattr_t *, int);
+int   pthread_mutexattr_setprotocol(pthread_mutexattr_t *, int);
+int   pthread_mutexattr_setpshared(pthread_mutexattr_t *, int);
+int   pthread_mutexattr_settype(pthread_mutexattr_t *, int);
+int   pthread_once(pthread_once_t *, void (*)(void));
+int   pthread_rwlock_destroy(pthread_rwlock_t *);
+int   pthread_rwlock_init(pthread_rwlock_t *, const pthread_rwlockattr_t *);
+int   pthread_rwlock_rdlock(pthread_rwlock_t *);
+int   pthread_rwlock_tryrdlock(pthread_rwlock_t *);
+int   pthread_rwlock_trywrlock(pthread_rwlock_t *);
+int   pthread_rwlock_unlock(pthread_rwlock_t *);
+int   pthread_rwlock_wrlock(pthread_rwlock_t *);
+int   pthread_rwlockattr_destroy(pthread_rwlockattr_t *);
+int   pthread_rwlockattr_getpshared(const pthread_rwlockattr_t *, int *);
+int   pthread_rwlockattr_init(pthread_rwlockattr_t *);
+int   pthread_rwlockattr_setpshared(pthread_rwlockattr_t *, int);
+pthread_t	pthread_self(void);
+int   pthread_setcancelstate(int, int *);
+int   pthread_setcanceltype(int, int *);
+int   pthread_setconcurrency(int);
+int   pthread_setschedparam(pthread_t, int , const struct sched_param *);
+int   pthread_setspecific(pthread_key_t, const void *);
+void  pthread_testcancel(void);
+typedef void *(*thread_func)(void *);
+]]
+ffi.cdef(threadhead)
+local thread=ffi.load("pthread")
+pthread={}
+for line in threadhead:gmatch("[^\r\n]+") do
+	local name=line:match("^%S-%s+pthread_(.-)%(")
+	if name then
+		pthread[name]=thread["pthread_"..name]
+	end
+end
 local funcs={}
 for line in head:gmatch("[^\r\n]+") do
 	local ret,name=line:match("^(.-)%((.-)%) %(lua_State %*L")
@@ -222,11 +436,17 @@ for line in head:gmatch("[^\r\n]+") do
 	end
 end
 ffi.cdef(head)
-function newvm()
-	local L=C.luaL_newstate()
+function newvm(L)
+	local L=L or C.luaL_newstate()
 	local LC={
 		getglobal=function(name)
 			return C.lua_getfield(L,-10002,name)
+		end,
+		setglobal=function(name)
+			return C.lua_setfield(L,-10002,name)
+		end,
+		pushcfunction=function(func)
+			return C.lua_pushcclosure(L,func,0)
 		end,
 	}
 	for k,v in pairs(funcs) do
@@ -236,7 +456,7 @@ function newvm()
 	end
 	LC.openlibs()
 	local o
-	o={
+	o=setmetatable({
 		L=L,
 		loadstring=function(txt,name)
 			local res=LC.loadbuffer(txt,#txt,name or "str")
@@ -259,8 +479,10 @@ function newvm()
 					LC.pushnumber(v)
 				elseif tpe=="nil" then
 					LC.pushnil()
+				elseif tpe=="boolean" then
+					LC.pushboolean(v and 1 or 0)
 				elseif tpe=="function" then
-					assert(o.loadstring(string.dump(v)))
+					LC.pushcfunction(ffi.cast("lua_CFunction",v))
 				else
 					error("unsupported type "..tpe)
 				end
@@ -280,11 +502,12 @@ function newvm()
 				elseif tpe==3 then
 					o[#o+1]=LC.checknumber(i)
 				elseif tpe==4 then
-					o[#o+1]=ffi.string(LC.tolstring(i,nil))
+					local len=LC.objlen(-1)
+					o[#o+1]=ffi.string(LC.tolstring(i,nil),len)
 				elseif tpe==5 then
 					o[#o+1]=LC.gettable(i)
 				elseif tpe==6 then
-					o[#o+1]=nil
+					o[#o+1]=nope
 				elseif tpe==8 then
 					o[#o+1]=LC.tothread(i)
 				end
@@ -311,7 +534,27 @@ function newvm()
 			end
 			return o.pcall(...)
 		end,
+		_G=setmetatable({},{
+			__index=function(s,n)
+				LC.getglobal(n)
+				return o.pop()
+			end,
+			__newindex=function(s,n,d)
+				o.push(d)
+				LC.setglobal(n)
+			end
+		}),
+		exit=function()
+			LC.close()
+		end,
 		C=LC,
-	}
+	},{
+		__gc=function()
+			o.exit()
+		end,
+		__call=function(s,...)
+			return o.dostring(...)
+		end
+	})
 	return o
 end
