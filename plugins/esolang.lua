@@ -323,9 +323,11 @@ hook.new({"command_bf","command_brainfuck"},function(user,chan,txt)
 	if not func then
 		return err
 	end
+	jit.off(func)
 	local func=coroutine.create(setfenv(func,_G))
 	debug.sethook(func,function() error("Time limit exeeded.",0) end,"",100000)
 	local err,res=coroutine.resume(func)
+	debug.sethook(func)
 	return res or "nil"
 end,{
 	desc="http://esolangs.org/wiki/Brainfuck",
@@ -355,9 +357,11 @@ hook.new({"command_cf","command_clusterfuck"},function(user,chan,txt)
 	if not func then
 		return err
 	end
+	jit.off(func)
 	local func=coroutine.create(setfenv(func,_G))
 	debug.sethook(func,function() error("Time limit exeeded.",0) end,"",100000)
 	local err,res=coroutine.resume(func)
+	debug.sethook(func)
 	return res or "nil"
 end,{
 	desc="http://esolangs.org/wiki/Clusterfuck",
@@ -1199,6 +1203,7 @@ hook.new({"command_sstack"},function(user,chan,txt)
 	if not func then
 		return err
 	end
+	jit.off(func)
 	local func=coroutine.create(setfenv(func,{
 		push=push,
 		pop=pop,
@@ -1210,6 +1215,7 @@ hook.new({"command_sstack"},function(user,chan,txt)
 	}))
 	debug.sethook(func,function() error("Time limit exeeded.",0) end,"",100000)
 	local err,res=coroutine.resume(func)
+	debug.sethook(func)
 	return res or "nil"
 end,{
 	desc="http://esolangs.org/wiki/Super_Stack!",

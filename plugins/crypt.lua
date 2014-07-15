@@ -67,6 +67,21 @@ end,{
 	desc="second most secure encryption ever made",
 	group="fun",
 })
+
+hook.new({"command_hex","command_tohex"},function(user,chan,txt)
+	return crypt.tohex(txt)
+end,{
+	desc="converts to hex",
+	group="misc",
+})
+
+hook.new({"command_unhex","command_fromhex"},function(user,chan,txt)
+	return crypt.fromhex(txt)
+end,{
+	desc="converts from hex",
+	group="misc",
+})
+
 function crypt.space(txt)
 	return tobase(txt,nil,"01234567")
 		:gsub("0","\226\128\139")

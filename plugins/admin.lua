@@ -55,6 +55,9 @@ do
 		file:close()
 	end
 	hook.new("command_ignore",function(user,chan,txt)
+		if not admin.auth(user) then
+			return
+		end
 		if admin.perms[txt] then
 			txt="*!*@"..admin.perms[txt].host
 		end
@@ -70,6 +73,9 @@ do
 		group="admin",
 	})
 	hook.new("command_unignore",function(user,chan,txt)
+		if not admin.auth(user) then
+			return
+		end
 		if admin.perms[txt] then
 			local u=false
 			for k,v in tpairs(admin.ignore) do
@@ -102,6 +108,11 @@ end
 local whqueue={}
 
 hook.new("raw",function(txt)
+	if txt=="QUIT" then
+		admin.chans={}
+		admin.perms={}
+		cnick="^v"
+	end
 	txt:gsub("^:%S+ 319 "..cnick.." "..cnick.." :(.*)",function(chans)
 		for chan in chans:gmatch("#%S+") do
 			admin.chans[chan]={}
@@ -265,9 +276,15 @@ hook.new("raw",function(txt)
 	end)
 	txt:gsub("^:([^%s!]+)![^%s@]+@%S+ QUIT :(.*)",function(nick,reason)
 		hook.queue("quit",nick,reason)
-		admin.perms[nick]=nil
-		for k,v in pairs(admin.chans) do
-			v[nick]=nil
+		if nick==cnick then
+			admin.chans={}
+			admin.perms={}
+			cnick="^v"
+		else
+			admin.perms[nick]=nil
+			for k,v in pairs(admin.chans) do
+				v[nick]=nil
+			end
 		end
 	end)
 	local function queuemsg(user,chan,txt,me,callback)

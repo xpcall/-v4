@@ -3,6 +3,7 @@ local servers=server.servers
 function server.listen(port,func)
 	local sv,err=socket.bind("*",port)
 	if not sv then
+		print("error listening on port "..port.." : "..err)
 		return false,err
 	end
 	servers[sv]=func

@@ -121,7 +121,27 @@ hook.new({"command_lj","command_luaj"},function(user,chan,txt)
 	local file=io.open("sbox.tmp","w")
 	file:write(txt)
 	file:close()
-	local fi=io.popen("timelimit -t 0.5 java -cp luaj-js* lua sbox.lua")
+	local fi=io.popen("timelimit -t 0.5 java -cp OCLuaJ.jar lua sbox.lua")
+	local out=fi:read("*a")
+	if out:match("Program done%.\n$") then
+		out=out:gsub("Program done%.\n$","")
+	else
+		out=out.."Time limit exeeded."
+	end
+	return limitoutput(out)
+end,{
+	desc="executes lua 5.2 code",
+	group="help",
+})
+
+hook.new({"command_blj","command_borkluaj"},function(user,chan,txt)
+	if txt:sub(1,1)=="\27" then
+		return "Nope."
+	end
+	local file=io.open("sbox.tmp","w")
+	file:write(txt)
+	file:close()
+	local fi=io.popen("timelimit -t 0.5 java -cp BorkLuaJ.jar lua sbox.lua")
 	local out=fi:read("*a")
 	if out:match("Program done%.\n$") then
 		out=out:gsub("Program done%.\n$","")

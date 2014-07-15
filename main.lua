@@ -231,6 +231,7 @@ function tpairs(tbl)
 		return s[c],tbl[s[c]]
 	end
 end
+
 function mean(...)
 	local p={...}
 	local n=0
@@ -239,6 +240,7 @@ function mean(...)
 	end
 	return n/#p
 end
+
 function string.tmatch(str,p)
 	local o={}
 	str:gsub(p,function(r) table.insert(o,r) end)

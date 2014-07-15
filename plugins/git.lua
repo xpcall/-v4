@@ -12,7 +12,7 @@ function git.get(url)
 	return res
 end
 
-hook.new("msg",function(user,chan,txt,act)
+--[[hook.new("msg",function(user,chan,txt,act)
 	local o
 	txt:gsub("https://gist%.github%.com/%w-/(%w+)",function(id)
 		local dat,err=https.request("https://api.github.com/gists/"..id)
@@ -35,4 +35,4 @@ hook.new("msg",function(user,chan,txt,act)
 		math.round((fl.size or 0)/1000,2).."KB"
 	end)
 	return o
-end)
+end)]]

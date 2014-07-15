@@ -49,6 +49,7 @@ while true do
 		print("got client")
 	end
 	if scheck(sv) then
+		cl:send("QUIT\n")
 		print("lost server")
 		connect()
 	end

@@ -871,7 +871,6 @@ hook.new({"command_steal","command_wouldsteal"},function(user,chan,txt)
 	return "https://www.youtube.com/watch?v=zhKdH8MT6j0"
 end)
 
-
 hook.new({"command_lazyupdateoc"},function(user,chan,txt)
 	if not admin.auth(user) then
 		return
@@ -885,3 +884,76 @@ hook.new({"command_lazyupdateoc"},function(user,chan,txt)
 	file["/home/nadine/Desktop/server/mods/oc.jar"]=data
 	return "Updated"
 end)
+
+function guesshax(min,max)
+	local last=math.floor((min+max)/2)
+	return {
+		less=function()
+			max=last-1
+			last=math.floor((min+max)/2)
+			return last
+		end,
+		more=function()
+			min=last+1
+			last=math.floor((min+max)/2)
+			return last
+		end,
+	},last
+end
+
+do
+	local function z(val)
+		local size=val<0x10000 and (val<0x800 and (val<0x80 and 1 or 2) or 3) or 4
+		if size==1 then
+			return string.char(val)
+		end
+		local b={string.char((240*2^(4-size)%256)+(val/2^18)%(2^(7-size)))}
+		for i=size*6-12,0,-6 do
+			b[#b+1]=string.char(128+(val/2^i)%64)
+		end
+		return table.concat(b)
+	end
+	local fonts={
+		swank={0x1D56C,0x1D56C},
+		serif={0x1D5A0,0x1D5A0,0x1D7E2},
+		ultrabold={0x1D400,0x1D400,0x1D7EC},
+		bold={0x1D5D4,0x1D5D4,0x1D7EC},
+		script={0x1D4D0,0x1D4D0},
+		monospace={0x1D670,0x1D670,0x1D7F6},
+		doublestruck={0x1D538,0x1D538,0x1D7D8},
+		greek={0x1D756,0x1D756},
+	}
+	local types={
+		{"%l",71},
+		{"%u",65},
+		{"%d",48},
+	}
+	local function conv(txt,font)
+		for n,l in pairs(font) do
+			txt=txt:gsub(types[n][1],function(t)
+				return z(l+t:byte()-types[n][2])
+			end)
+		end
+		return txt
+	end
+	local flist={}
+	local nlist={}
+	for k,v in pairs(fonts) do
+		table.insert(flist,v)
+		if v[3] then
+			table.insert(nlist,v)
+		end
+		hook.new("command_"..k,function(user,chan,txt)
+			return conv(txt,v)
+		end)
+	end
+	hook.new({"command_derpfont"},function(user,chan,txt)
+		txt=txt:gsub("%a",function(t)
+			return conv(t,flist[math.random(1,#flist)])
+		end):gsub("%d",function(t)
+			return conv(t,nlist[math.random(1,#nlist)])
+		end)
+		return txt
+	end)
+end
+

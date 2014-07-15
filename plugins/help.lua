@@ -39,9 +39,10 @@ end,{
 })
 
 jenkins={
-	[{"http://ci.cil.li/job/OpenComputers/api/json?depth=1","OpenComputers"}]={"oc","opencomputers","16","164","oc16","oc164"},
-	[{"http://ci.cil.li/job/OpenComputers-MC1.7/api/json?depth=1","OpenComputers 1.7"}]={"opencomputers17","17","172","oc17","oc172"},
-	[{"http://ci.cil.li/job/OpenComputers-MC1.7.10/api/json?depth=1","OpenComputers 1.7.10"}]={"opencomputers1710","1710","oc1710","oc1710"},
+	[{"http://ci.cil.li/job/OpenComputers-dev/api/json?depth=1","OpenComputers"}]={"","b","beta","dev","testing"},
+	[{"http://ci.cil.li/job/OpenComputers-1.3-MC1.6.4/api/json?depth=1","OpenComputers"}]={"oc","opencomputers","16","164","oc16","oc164"},
+	[{"http://ci.cil.li/job/OpenComputers-1.3-MC1.7.2/api/json?depth=1","OpenComputers 1.7"}]={"opencomputers17","17","172","oc17","oc172"},
+	[{"http://ci.cil.li/job/OpenComputers-1.3-MC1.7.10/api/json?depth=1","OpenComputers 1.7.10"}]={"opencomputers1710","1710","oc1710","oc1710"},
 	[{"http://ci.cil.li/job/OpenComponents/api/json?depth=1","OpenComponents"}]={"c","c16","components","opencomponents","ocomponents"},
 	[{"http://ci.cil.li/job/OpenComponents-MC1.7/api/json?depth=1","OpenComponents 1.7"}]={"c17","components17","opencomponents17","ocomponents17"},
 	[{"http://lanteacraft.com/jenkins/job/OpenPrinter/api/json?depth=1","OpenPrinters"}]={"op","op16","printer","printer16","openprinter","openprinters","openprinter16"},
@@ -55,11 +56,8 @@ for k,v in tpairs(jenkins) do
 end
 hook.new({"command_j","command_build","command_beta"},function(user,chan,txt)
 	txt=txt:lower():gsub("[%s%.]","")
-	if txt=="" then
-		txt="oc"
-	end
 	if jenkins[txt] then
-		local dat,err=http.request(jenkins[txt][1])
+		local dat,err=ahttp.get(jenkins[txt][1])
 		if not dat then
 			if err then
 				return "Error grabbing "..jenkins[txt][1].." ("..err..")"
@@ -78,10 +76,10 @@ hook.new({"command_j","command_build","command_beta"},function(user,chan,txt)
 		local hours=math.floor(minutes/60)
 		local days=math.floor(hours/24)
 		miliseconds=miliseconds~=0 and ((miliseconds%1000).." milliseconds ") or ""
-		seconds=seconds~=0 and ((seconds%60).." seconds ") or ""
-		minutes=minutes~=0 and ((minutes%60).." minutes ") or ""
-		hours=hours~=0 and ((hours%24).." hour"..(hours%24==1 and "" or "s").." ") or ""
-		days=days~=0 and (days.." days ") or ""
+		seconds=seconds~=0 and ((seconds%60).." second"..(seconds~=1 and "s " or " ")) or ""
+		minutes=minutes~=0 and ((minutes%60).." minute"..(minutes~=1 and "s " or " ")) or ""
+		hours=hours~=0 and ((hours%24).." hour"..(hours%24==1 and " " or "s ")) or ""
+		days=days~=0 and (days.." day"..(days~=1 and "s " or " ")) or ""
 		local url
 		for k,v in pairs(dat.artifacts) do
 			if v.relativePath:match("%-universal.jar$") then
@@ -164,41 +162,39 @@ dofile("help.lua")
 local owikinames
 do
 	local wikinames={
-		["api-colors"]={"color","colors","color api","colors api"},
-		["api-component"]={"component api","components api"},
-		["api-computer"]={"computer","computer api"},
-		["api-event"]={"event","events","event api","events api"},
-		["api-filesystem"]={"fs","filesystem","fs api","filesystem api"},
-		["api-internet"]={"internet","internet api","tcp","socket","sockets","http","http api"},
-		["api-keyboard"]={"keyboard","keys","keyboard api","keys api"},
-		["api-robot"]={"robot","robots","robot api","robots api","turtle","turtle api"},
-		["api-serialization"]={"serialize","serialization","serial","serializer"},
-		["api-shell"]={"shell api","shell"},
-		["api-sides"]={"sides","sides api"},
-		["api-term"]={"term","term api"},
-		["api-text"]={"text","text api"},
-		["api-unicode"]={"unicode","unicode api"},
-		["apis"]={"apis","api","api list","apis list"},
-		["blocks"]={"blocks","block list","blocks list"},
-		["codeconventions"]={"conventions","code conventions"},
-		["component-abstract-bus"]={"abstract bus"},
-		["component-commandblock"]={"command block","commandblock","command block component"},
-		["component-computer"]={"computer component","component computer"},
-		["component-crafting"]={"crafting","crafter","crafting component","crafter component","craft api","crafting api","crafter api"},
-		["component-generator"]={"generator","generator component","generator api"},
-		["component-gpu"]={"gpu","gpu api","gpu component"},
-		["component-modem"]={"modem","modem api","modem component","rednet","wireless","wireless api","rednet api"},
-		["component-navigation"]={"navigation","navigation api","gps","gps api"},
-		["component-noteblock"]={"noteblock","noteblock api","noteblock component"},
-		["component-redstone"]={"redstone","rs","redstone api","rs api","redstone component","rs component"},
-		["component-redstoneinmotion"]={"redstone in motion","rim","redstone in motion api","rim api","redstone in motion component","rim component"},
-		["component-sign"]={"sign","sign api","sign component"},
-		["component-hologram"]={"holo","hologram","hologram component"},
+		["api:colors"]={"color","colors","color api","colors api"},
+		["api:component"]={"component api","components api","component"},
+		["api:computer"]={"computer","computer api"},
+		["api:event"]={"event","events","event api","events api"},
+		["api:filesystem"]={"fs","filesystem","fs api","filesystem api"},
+		["api:internet"]={"internet","internet api","tcp","socket","sockets","http","http api"},
+		["api:keyboard"]={"keyboard","keys","keyboard api","keys api"},
+		["api:robot"]={"robot","robots","robot api","robots api","turtle","turtle api"},
+		["api:serialization"]={"serialize","serialization","serial","serializer"},
+		["api:shell"]={"shell api","shell"},
+		["api:sides"]={"sides","sides api"},
+		["api:term"]={"term","term api"},
+		["api:text"]={"text","text api"},
+		["api:unicode"]={"unicode","unicode api"},
+		["api"]={"apis","api","api list","apis list"},
+		["start?idx=block"]={"blocks","block list","blocks list"},
+		["component:abstract-bus"]={"abstract bus"},
+		["component:commandblock"]={"command block","commandblock","command block component"},
+		["component:computer"]={"computer component","component computer"},
+		["component:crafting"]={"crafting","crafter","crafting component","crafter component","craft api","crafting api","crafter api"},
+		["component:generator"]={"generator","generator component","generator api"},
+		["component:gpu"]={"gpu","gpu api","gpu component"},
+		["component:modem"]={"modem","modem api","modem component","rednet","wireless","wireless api","rednet api"},
+		["component:navigation"]={"navigation","navigation api","gps","gps api"},
+		["component:noteblock"]={"noteblock","noteblock api","noteblock component"},
+		["component:redstone"]={"redstone","rs","redstone api","rs api","redstone component","rs component"},
+		["component:redstoneinmotion"]={"redstone in motion","rim","redstone in motion api","rim api","redstone in motion component","rim component"},
+		["component:sign"]={"sign","sign api","sign component"},
+		["component:hologram"]={"holo","hologram","hologram component"},
 		["componentaccess"]={"component access"},
-		["components"]={"component","components","component list","components list"},
+		["component"]={"components","component list","components list"},
 		["computercraft"]={"computercraft","cc"},
-		["computerusers"]={"users","perms","uac"},
-		["home"]={"home","main"},
+		["computer_users"]={"users","perms","uac"},
 		["items"]={"items","item list","items list"},
 		["nonstandardlualibs"]={"non standard lua libs","non standard","nonstandard","sandbox"},
 		["signals"]={"signal","signals"},
@@ -256,7 +252,7 @@ do
 			return "http://ccjam.ml/"
 		end
 		txt=txt:lower()
-		local b="https://github.com/MightyPirates/OpenComputers/wiki/"
+		local b="http://ocd.cil.li/"
 		if txt=="" then
 			return b
 		end
@@ -304,7 +300,7 @@ do
 			end
 		end
 	end
-	for k,v in pairs(owikinames["component-redstoneinmotion"]) do
+	for k,v in pairs(owikinames["component:redstoneinmotion"]) do
 		req[v]="local component=require(\"component\") local carriage=component.carriage"
 	end
 	hook.new({"command_req","command_require"},function(user,chan,txt)

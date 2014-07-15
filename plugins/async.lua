@@ -4,14 +4,19 @@ function async.new(func,err)
 	local co=coroutine.create(func)
 	local sfunc
 	function sfunc(...)
+		local prev=async.current
 		async.current=sfunc
 		hook.del(sfunc)
 		if coroutine.status(co)=="dead" then
 			return
 		end
 		local p={coroutine.resume(co,...)}
-		if not p[1] then
-			(err or error)((p[2] or "").."\npotato\n"..debug.traceback(co))
+		async.current=prev
+		if coroutine.status(co)=="dead" then
+			hook.queue("async_dead",sfunc)
+			if not p[1] then
+				(err or error)((p[2] or "").."\nin async resume\n"..debug.traceback(co))
+			end
 		end
 		return unpack(p,2)
 	end
@@ -26,10 +31,23 @@ function async.wait(n)
 	hook.new(hook.timer(n),async.current)
 	coroutine.yield()
 end
+function async.join(...)
+	local r=setmetatable({},{__mode="k"})
+	for k,v in pairs({...}) do
+		r[v]=true
+	end
+	while next(r) do
+		local f=async.pull("async_dead",hook.timer(5))
+		if r[f] then
+			return f
+		end
+	end
+end
 function async.socket(sk,err)
 	assert(sk,err)
 	local out
 	out=setmetatable({
+		ip=sk:getpeername(),
 		receive=function(len,pfx)
 			local tmo=out.timeout
 			if type(len)=="number" and len<1 then
@@ -49,7 +67,7 @@ function async.socket(sk,err)
 			hook.new("select",function()
 				local txt,err,str=sk:receive(len)
 				txt=txt or str
-				if err~="timeout" then
+				if err~="timeout" or (txt~="" and len=="*a") then
 					resume(txt,err)
 					stop=true
 					hook.stop()

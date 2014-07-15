@@ -149,12 +149,6 @@ function numstr(num)
 		end
 		sbtm=sbtm..c
 	end
-	if sbtm=="" then
-		sbtm="0"
-	end
-	if stop=="" then
-		stop="0"
-	end
 	return (stop=="" and "0" or stop).."."..(sbtm=="" and "0" or sbtm)
 end
 

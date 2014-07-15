@@ -3,6 +3,7 @@ local cb={}
 server.listen(1339,function(cl)
 	local dat=cl.receive()
 	cl.close()
+	print("recv '"..dat.."'")
 	local t=unserialize(dat)
 	if cb[t[1]] then
 		cb[t[1]](unpack(t,2))
@@ -10,7 +11,7 @@ server.listen(1339,function(cl)
 end)
 function ahttp.get(url,post)
 	local cid
-	for l1=1,1000 do
+	for l1=1,100 do
 		if not cb[l1] then
 			cid=l1
 			break
