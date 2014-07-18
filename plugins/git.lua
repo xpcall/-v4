@@ -1,5 +1,5 @@
 git={}
-local file=io.open("githubpassword.txt","r")
+local file=io.open("pass/githubpassword.txt","r")
 local auth=file:read("*a")
 file:close()
 function git.get(url)

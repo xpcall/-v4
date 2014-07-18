@@ -1,4 +1,4 @@
-function tobits(c)
+--[[function tobits(c)
 	local o={}
 	for l1=1,7 do
 		o[8-l1]=c%2
@@ -46,7 +46,119 @@ function failunb64(data)
     end))
 end
 
-db={}
+db={}]]
+
+function bc.abs(a)
+	return bc.isneg(a) and -a or a
+end
+
+function timestamp()
+	local date=os.date("!*t")
+	return date.month.."/"..date.day.." "..date.hour..":"..("0"):rep(2-#tostring(date.min))..date.min
+end
+
+function gcd(a,b)
+	if b==0 then
+		return math.abs(a)
+	else
+		return gcd(b, a % b)
+	end
+end
+
+function tpairs(tbl)
+	local s={}
+	local c=1
+	for k,v in pairs(tbl) do
+		s[c]=k
+		c=c+1
+	end
+	c=0
+	return function()
+		c=c+1
+		return s[c],tbl[s[c]]
+	end
+end
+
+function mean(...)
+	local p={...}
+	local n=0
+	for l1=1,#p do
+		n=n+p[l1]
+	end
+	return n/#p
+end
+
+function string.tmatch(str,p)
+	local o={}
+	str:gsub(p,function(r) table.insert(o,r) end)
+	return o
+end
+getmetatable("").tmatch=string.tmatch
+
+file=setmetatable({},{
+	__index=function(s,n)
+		local file=io.open(n,"r")
+		return file and file:read("*a")
+	end,
+	__newindex=function(s,n,d)
+		if not d then
+			lfs.delete(n)
+		else
+			local file=io.open(n,"w")
+			file:write(d)
+			file:close()
+		end
+	end,
+})
+
+function math.round(num,idp)
+	local mult=10^(idp or 0)
+	return math.floor(num*mult+0.5)/mult
+end
+
+function table.reverse(tbl)
+    local size=#tbl
+    local o={}
+    for k,v in ipairs(tbl) do
+		o[size-k]=v
+    end
+	for k,v in pairs(o) do
+		tbl[k+1]=v
+	end
+	return tbl
+end
+
+function string.min(...)
+	local p={...}
+	local n
+	local o
+	for k,v in pairs(p) do
+		if not n or #v<n then
+			n=#v
+			o=v
+		end
+	end
+	return o
+end
+
+function string.max(...)
+	local p={...}
+	local n
+	local o
+	for k,v in pairs(p) do
+		if not n or #v>n then
+			n=#v
+			o=v
+		end
+	end
+	return o
+end
+
+function pescape(txt)
+	local o=txt:gsub("[%.%[%]%(%)%%%*%+%-%?%^%$]","%%%1"):gsub("%z","%%z")
+	return o
+end
+
 local _tob64={
 	[0]="A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z",
 	"a","b","c","d","e","f","g","h","i","j","k","l","m","n","o","p","q","r","s","t","u","v","w","x","y","z",
@@ -290,7 +402,7 @@ function serialize(value, pretty)
 	return result
 end
 
-function split(T,func) -- splits a table
+--[[function split(T,func) -- splits a table
 	if func then
 		T=func(T) -- advanced function
 	end
@@ -303,7 +415,7 @@ function split(T,func) -- splits a table
 		Out=T
 	end
 	return Out
-end
+end]]
 function unserialize(s) -- converts a string back into its original form
 	if type(s)~="string" then
 		error("String exepcted. got "..type(s),2)
@@ -321,7 +433,7 @@ local function mindex(tbl,dat)
 	end
 	return c
 end
-function db.new(name,default)
+--[[function db.new(name,default)
 	local file=io.open("db/"..name,"r")
 	local db=default or {}
 	if file then
@@ -382,21 +494,4 @@ function db.new(name,default)
 	}
 	setmetatable(out,meta)
 	return out,db
-end
-local opairs=pairs
-local iserial=false
-function pairs(tbl)
-	local m=getmetatable(tbl)
-	if m and m.__pairs then
-		return m.__pairs(tbl)
-	end
-	return opairs(tbl)
-end
-local oipairs=ipairs
-function ipairs(tbl)
-	local m=getmetatable(tbl)
-	if m and m.__ipairs then
-		return m.__ipairs(tbl)
-	end
-	return oipairs(tbl)
-end
+end]]

@@ -47,7 +47,7 @@ function img.explode(c)
 	return math.floor(c/65536)%256,math.floor(c/256)%256,math.floor(c)%256
 end
 
-hook.new("command_encodeimg",function(user,chan,txt)
+--[[hook.new("command_encodeimg",function(user,chan,txt)
 	if not admin.auth(user) then
 		return
 	end
@@ -106,4 +106,4 @@ hook.new("command_decodeimg",function(user,chan,txt)
 		end
 	end
 	return brainfuck(o)()
-end)
+end)]]

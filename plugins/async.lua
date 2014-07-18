@@ -1,4 +1,5 @@
 async={}
+async.threads=setmetatable({},{__mode="kv"})
 local resume
 function async.new(func,err)
 	local co=coroutine.create(func)
@@ -20,17 +21,21 @@ function async.new(func,err)
 		end
 		return unpack(p,2)
 	end
+	async.threads[sfunc]=co
 	sfunc()
 	return sfunc
 end
+
 function async.pull(...)
 	hook.new({...},async.current)
 	return coroutine.yield()
 end
+
 function async.wait(n)
 	hook.new(hook.timer(n),async.current)
 	coroutine.yield()
 end
+
 function async.join(...)
 	local r=setmetatable({},{__mode="k"})
 	for k,v in pairs({...}) do
@@ -43,6 +48,7 @@ function async.join(...)
 		end
 	end
 end
+
 function async.socket(sk,err)
 	assert(sk,err)
 	local out

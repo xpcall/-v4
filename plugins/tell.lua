@@ -1,5 +1,5 @@
 tells={}
-local file=io.open("db/tells","r")
+local file=io.open("db/"..network.."/tells","r")
 if file then
 	tells=unserialize(file:read("*a"))
 	if not tells then
@@ -7,7 +7,7 @@ if file then
 	end
 end
 local function update()
-	local file=io.open("db/tells","w")
+	local file=io.open("db/"..network.."/tells","w")
 	file:write(serialize(tells))
 	file:close()
 end
@@ -33,7 +33,10 @@ hook.new("command_tell",function(user,chan,txt)
 	table.insert(tells[meta],"From "..user.nick..": "..txt)
 	update()
 	return "Message queued."
-end)
+end,{
+	desc="tells a person something the next time they talk",
+	group="help",
+})
 local function get(usr,o)
 	if tells[usr] then
 		for k,v in pairs(tells[usr]) do

@@ -293,6 +293,7 @@ if sv then
 			else
 				local s,e=cl:receive(tonumber(cldat.post and cldat.headers["Content-Length"]))
 				if s then
+					print(s)
 					if cldat.post then
 						cldat.post=s
 						req(cl)

@@ -7,7 +7,7 @@ admin.db=sql.new("admin").new("perms","name","group","perms")
 function admin.match(user,txt,chan)
 	local pfx,mt=txt:match("^$([arcl]):(.*)")
 	mt="^"..pescape(mt or txt):gsub("%%%*",".-").."$"
-	return (pfx=="a" and user.account:match(mt)~=nil)
+	return (pfx=="a" and (user.account or "0"):match(mt)~=nil)
 		or (pfx=="r" and user.realname:match(mt)~=nil)
 		or (pfx=="c" and (user.chan or chan or ""):match(mt)~=nil)
 		or (pfx=="l" and setfenv(assert(loadstring(({txt:match(":(.*)"):gsub("^=","return ")})[1])),{
@@ -31,7 +31,7 @@ function admin.find(txt)
 end
 
 function admin.auth(user,resp)
-	if admin.perms[user.nick]==nil or admin.perms[user.nick].account~="ping" then
+	if admin.perms[user.nick]==nil or admin.perms[user.nick].account~=owneracc then
 		if not resp then
 			respond(user,"Nope.")
 		end
@@ -343,7 +343,7 @@ end)
 
 hook.new("msg",function(user,chan,txt)
 	txt=txt:gsub("%s+$","")
-	if txt:sub(1,1)=="." then
+	if txt:sub(1,#cmdprefix)==cmdprefix then
 		async.new(function()
 			print(user.nick.." used "..txt)
 			local cb=function(st,dat)
@@ -356,8 +356,9 @@ hook.new("msg",function(user,chan,txt)
 				end
 			end
 			hook.callback=cb
-			hook.queue("command",user,chan,txt:sub(2))
-			local cmd,param=txt:match("^%.(%S+) ?(.*)")
+			txt=txt:sub(#cmdprefix+1)
+			hook.queue("command",user,chan,txt)
+			local cmd,param=txt:match("^(%S+) ?(.*)")
 			if cmd then
 				hook.callback=cb
 				hook.queue("command_"..cmd,user,chan,param)

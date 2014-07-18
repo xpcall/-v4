@@ -24,7 +24,10 @@ hook.new("command_newvote",function(user,chan,txt)
 		t=0
 	}
 	return "Vote started! end with .endvote"
-end)
+end,{
+	desc="creates a new vote",
+	group="fun",
+})
 
 hook.new("command_vote",function(user,chan,txt)
 	if not cvote then
@@ -41,7 +44,10 @@ hook.new("command_vote",function(user,chan,txt)
 	cvote.cur[txt]=cvote.cur[txt]+1
 	cvote.t=cvote.t+1
 	return "Voted"
-end)
+end,{
+	desc="",
+	group="fun",
+})
 
 hook.new("command_endvote",function(user,chan,txt)
 	if not user.voice and not user.op then
@@ -55,4 +61,7 @@ hook.new("command_endvote",function(user,chan,txt)
 		o=o.." "..k..": "..tostring(v)
 	end
 	return o
-end)
+end,{
+	desc="",
+	group="fun",
+})

@@ -240,9 +240,6 @@ do
 	end
 end
 
-
-reqplugin("bit64.lua")
-
 local function chars2num64(txt)
 	return {
 		(txt:byte(1)*16777216)+(txt:byte(2)*65536)+(txt:byte(3)*256)+(txt:byte(4)),

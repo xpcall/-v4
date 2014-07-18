@@ -13,7 +13,7 @@ do
 		return s[1]+(s[2]*256)+(s[3]*65536)+(s[4]*16777216)
 	end
 	function uconv(num)
-		return str_char(num%256)..str_char(math.floor(num/256)%65535)..str_char(math.floor(num/65535)%16777216)..str_char(math.floor(num/16777216))
+		return str_char(num%256,math.floor(num/256)%65535,math.floor(num/65535)%16777216,math.floor(num/16777216))
 	end
 end
 do

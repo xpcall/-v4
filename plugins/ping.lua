@@ -1,4 +1,4 @@
-local pings={}
+pings={}
 hook.new({"command_ping","command_v^","command_p"},function(user,chan,txt)
 	local un=txt
 	if txt=="" then
@@ -21,12 +21,14 @@ hook.new("raw",function(txt)
 	end
 end)
 local last=socket.gettime()
-async.new(function()
+reqplugin("async.lua")
+print("reg "..tostring(async.new(function()
 	while true do
+		assert(getfenv(async.wait).hook==hook)
 		async.wait(20)
 		if socket.gettime()-last>20 then
 			send("PING POTATO"..math.random(100000,999999))
 		end
 	end
-end)
+end)))
 

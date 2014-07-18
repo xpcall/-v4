@@ -50,7 +50,7 @@ hook.new({"command_>"},function(user,chan,txt)
 			end
 		end
 		local o=""
-		local res={cpcall(setfenv(func,setmetatable({
+		local res={pcall(setfenv(func,setmetatable({
 			print=function(...)
 				for k,v in pairs({...}) do
 					o=o..tostring(v).."\n"
@@ -82,7 +82,7 @@ hook.new({"command_<"},function(user,chan,txt)
 				return err
 			end
 		end
-		local res={cpcall(setfenv(func,_G))}
+		local res={pcall(setfenv(func,_G))}
 		local o
 		for l1=2,maxval(res) do
 			o=(o or "")..tostring(res[l1]).."\n"
@@ -101,7 +101,7 @@ hook.new({"command_l","command_lua"},function(user,chan,txt)
 	local file=io.open("sbox.tmp","w")
 	file:write(txt)
 	file:close()
-	local fi=io.popen("timelimit -t 0.5 ./lua52 sbox.lua")
+	local fi=assert(io.popen("timelimit -t 0.5 ./bin/lua52 sbox.lua"))
 	local out=fi:read("*a")
 	if out:match("Program done%.\n$") then
 		out=out:gsub("Program done%.\n$","")
@@ -121,7 +121,7 @@ hook.new({"command_lj","command_luaj"},function(user,chan,txt)
 	local file=io.open("sbox.tmp","w")
 	file:write(txt)
 	file:close()
-	local fi=io.popen("timelimit -t 0.5 java -cp OCLuaJ.jar lua sbox.lua")
+	local fi=assert(io.popen("timelimit -t 0.8 java -cp ./bin/OCLuaJ.jar lua sbox.lua"))
 	local out=fi:read("*a")
 	if out:match("Program done%.\n$") then
 		out=out:gsub("Program done%.\n$","")
@@ -141,7 +141,7 @@ hook.new({"command_blj","command_borkluaj"},function(user,chan,txt)
 	local file=io.open("sbox.tmp","w")
 	file:write(txt)
 	file:close()
-	local fi=io.popen("timelimit -t 0.5 java -cp BorkLuaJ.jar lua sbox.lua")
+	local fi=assert(io.popen("timelimit -t 0.8 java -cp ./bin/BorkLuaJ.jar lua sbox.lua"))
 	local out=fi:read("*a")
 	if out:match("Program done%.\n$") then
 		out=out:gsub("Program done%.\n$","")
@@ -161,7 +161,7 @@ hook.new({"command_l53","command_lua53"},function(user,chan,txt)
 	local file=io.open("sbox.tmp","w")
 	file:write(txt)
 	file:close()
-	local fi=io.popen("timelimit -t 0.5 ./lua53 sbox.lua")
+	local fi=assert(io.popen("timelimit -t 0.5 ./bin/lua53 sbox.lua"))
 	local out=fi:read("*a")
 	if out:match("Program done%.\n$") then
 		out=out:gsub("Program done%.\n$","")

@@ -1,5 +1,5 @@
-local file=io.open("routerpassword.txt","r")
-local pass=file:read("*a")
+local file=io.open("pass/routerpassword.txt","r")
+local pass=file:read("*a"):match("%S+")
 file:close()
 function portforward()
 	local res,code=http.request("http://"..pass.."@192.168.1.1/SingleForward.asp")

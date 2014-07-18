@@ -5,9 +5,11 @@ hook={
 	sel={},
 	rsel={},
 	meta={},
+	created={},
 	hooks=hooks,
 	timers=timers,
 }
+local hook=hook
 local function nxt(tbl)
 	local n=1
 	while tbl[n] do
@@ -59,6 +61,7 @@ function hook.queue(name,...)
 	return unpack(p)
 end
 function hook.newsocket(sk)
+	hook.created[sk]=debug.traceback()
 	sk:settimeout(0)
 	table.insert(hook.sel,sk)
 end
@@ -71,6 +74,7 @@ function hook.remsocket(sk)
 	end
 end
 function hook.newrsocket(sk)
+	hook.created[sk]=debug.traceback()
 	sk:settimeout(0)
 	table.insert(hook.rsel,sk)
 end

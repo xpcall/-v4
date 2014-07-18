@@ -302,7 +302,6 @@ function brainfuck(txt)
 end
 
 do
-	reqplugin("sql.lua")
 	local bfconv=sql.new("bfconv").new("conv","x","y","o")
 	hook.new({"command_encbf","command_encbrainfuck"},function(user,chan,txt)
 		local l=0

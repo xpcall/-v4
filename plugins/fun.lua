@@ -1,10 +1,9 @@
-hook.new({"command_computronics_oc13","command_computronics13","command_computronics_oc1.3","command_computronics1.3"},function()
-	return "http://oc.cil.li/index.php?/topic/14-mc-164-oc-122-computronics-015/#entry422"
-end)
-
 hook.new({"command_alot","command_ALOT"},function(user,chan,txt)
 	return "http://hyperboleandahalf.blogspot.no/2010/04/alot-is-better-than-you-at-everything.html"
-end)
+end,{
+	desc="links to alot is better than you at everything",
+	group="fun"
+})
 
 function antiping(name)
 	local f=true
@@ -41,12 +40,18 @@ end,{
 hook.new({"command_ip2num"},function(user,chan,txt)
 	local ip=txt:tmatch("%d+")
 	return tostring((ip[1]*16777216)+(ip[2]*65536)+(ip[3]*256)+ip[4])
-end)
+end,{
+	desc="converts a ip to a number",
+	group="fun",
+})
 
 hook.new({"command_num2ip"},function(user,chan,txt)
 	local num=tonumber(txt) or 0
 	return math.floor(num/16777216).."."..(math.floor(num/65536)%256).."."..(math.floor(num/256)%256).."."..(num%256)
-end)
+end,{
+	desc="converts a number to a ip",
+	group="fun",
+})
 
 hook.new({"command_derp"},function()
 	return "herp"
@@ -517,7 +522,7 @@ end)
 	return out
 end]]
 
-local pass=fs.read("bitlytoken.txt"):gsub("%X","")
+local pass=fs.read("pass/bitlytoken.txt"):gsub("%X","")
 function shorturl(url)
 	local res,err=https.request("https://api-ssl.bitly.com/v3/shorten?access_token="..pass.."&uri="..urlencode(url))
 	print("getting ".."https://api-ssl.bitly.com/v3/shorten?access_token="..pass.."&uri="..urlencode(url))
@@ -835,17 +840,12 @@ end,{
 hook.new({"command_mcdown","command_mcstats","command_mcstat","command_mc"},function(user,chan,txt)
 	local res,err=http.request("http://status.mojang.com/check")
 	if err~=200 then
-		return "Error "..err
+		return "error "..err
 	end
 	local dat=json.decode(res)
 	if not dat then
-		return "Errror parsing"
+		return "error parsing"
 	end
-	local col={
-		["red"]="\0034\2",
-		["yellow"]="\0038\2",
-		["green"]="\00303",
-	}
 	local nm={
 		["minecraft.net"]="minecraft.net",
 		["session.minecraft.net"]="sessions",
@@ -858,18 +858,45 @@ hook.new({"command_mcdown","command_mcstats","command_mcstat","command_mc"},func
 		["api.mojang.com"]="api",
 		["textures.minecraft.net"]="textures",
 	}
-	local o={}
+	local up={}
+	local slow={}
+	local down={}
 	for l1=1,#dat do
-		for k,v in pairs(dat[l1]) do
-			table.insert(o,(col[v] or "("..v..")")..(nm[k] or k).."\15")
+		local k=next(dat[l1])
+		local v=dat[l1][k]
+		table.insert((v=="green" and up) or (v=="yellow" and slow) or (v=="red" and down) or {},nm[k] or k)
+	end
+	if #slow==0 and #down==0 then
+		return #up==0 and "error parsing" or "all good"
+	end
+	local o={}
+	if #down~=0 then
+		if #up>=#down or #slow~=0 then
+			o[#o+1]=table.concat(down," ").." "..(#down==1 and "is" or "are").." down"
+		else
+			o[#o+1]="everything but "..table.concat(up," ").." is down"
 		end
 	end
-	return table.concat(o," ")
-end)
+	if #slow~=0 then
+		if #up>=#slow or #down~=0 then
+			o[#o+1]=table.concat(slow," ").." "..(#slow==1 and "is" or "are").." slow"
+		else
+			o[#o+1]="everything but "..table.concat(up," ").." is slow"
+		end
+	end
+	return table.concat(o," and ")
+end,{
+	desc="checks if mojang's servers are down",
+	group="fun",
+})
+
 
 hook.new({"command_steal","command_wouldsteal"},function(user,chan,txt)
 	return "https://www.youtube.com/watch?v=zhKdH8MT6j0"
-end)
+end,{
+	desc="links to 10/10 would steal",
+	group="fun",
+})
 
 hook.new({"command_lazyupdateoc"},function(user,chan,txt)
 	if not admin.auth(user) then
@@ -883,7 +910,10 @@ hook.new({"command_lazyupdateoc"},function(user,chan,txt)
 	end
 	file["/home/nadine/Desktop/server/mods/oc.jar"]=data
 	return "Updated"
-end)
+end,{
+	desc="updates OC on my server automatically",
+	group="fun",
+})
 
 function guesshax(min,max)
 	local last=math.floor((min+max)/2)
@@ -945,7 +975,10 @@ do
 		end
 		hook.new("command_"..k,function(user,chan,txt)
 			return conv(txt,v)
-		end)
+		end,{
+			desc="unicode font",
+			group="fun",
+		})
 	end
 	hook.new({"command_derpfont"},function(user,chan,txt)
 		txt=txt:gsub("%a",function(t)
@@ -954,6 +987,9 @@ do
 			return conv(t,nlist[math.random(1,#nlist)])
 		end)
 		return txt
-	end)
+	end,{
+		desc="randomizes the unicode font",
+		group="fun",
+	})
 end
 

@@ -1,6 +1,5 @@
 sql={}
 local dbs=setmetatable({},{__mode="v"})
-reqplugin("async.lua")
 local function start(db)
 	if not db.transaction then
 		db.db:execute("BEGIN TRANSACTION")

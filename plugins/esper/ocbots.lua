@@ -4,11 +4,11 @@ hook.new("join",function(user,chan)
 	end
 end)
 
---[[hook.new("op",function(user,chan,suser)
+--[==[hook.new("op",function(user,chan,suser)
 	if suser=="EpicnessTwo" then
 		send("MODE "..chan.." -o EpicnessTwo")
 	end
-end)]]
+end)
 
 hook.new("nick",function(onick,cnick)
 	cnick=cnick:lower()
@@ -17,9 +17,9 @@ hook.new("nick",function(onick,cnick)
 	end
 end)
 
---[==[
 	hook.new("msg",function(user,chan,txt,act)
 	if chan=="#ocbots" and txt:match(":%-?[%)%>3%]]") then
 		respond(user,(act and "* "..user.nick.." " or "<"..user.nick.."> ")..txt:gsub(":%-?[%)%>3%]]","in bed"))
 	end
 end)]==]
+

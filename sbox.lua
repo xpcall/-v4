@@ -200,7 +200,14 @@ sbox={
 }
 local function no(name)
 	for k,v in pairs(_G[name]) do
-		sbox[name][k]=sbox[name][k] or "no"
+		sbox[name][k]=sbox[name][k] or setmetatable({},{
+			__tostring=function()
+				return "no"
+			end,
+			__call=function()
+				error("no",0)
+			end
+		})
 	end
 end
 no("io")
