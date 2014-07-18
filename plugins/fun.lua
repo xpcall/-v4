@@ -22,6 +22,14 @@ function antiping(name)
 	return n
 end
 
+hook.new({"command_gizoogle","command_ghetto"},function(user,chant,txt)
+	local s=http.request("http://www.gizoogle.net/textilizer.php","translatetext="..txt)
+	return s:match("<textarea type=\"text\" name=\"translatetext\" style=\"width: 600px; height:250px;\"/>(.-)</textarea>")
+end,{
+	desc="Ghettoifies a string",
+	group="fun"
+})
+
 hook.new({"command_rep","command_repeat"},function(user,chant,txt)
 	local str,num=txt:match("^(.+) (%d+)")
 	return str and str:rep(tonumber(num)) or "Usage: .repeat <text> <number>"
