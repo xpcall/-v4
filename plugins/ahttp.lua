@@ -1,17 +1,21 @@
 ahttp={}
 local cb={}
-server.listen(1339,function(cl)
+ahttp.callback=cb
+local lport=network=="freenode" and 1339 or 1341
+server.listen(lport,function(cl)
 	local dat=cl.receive()
 	cl.close()
 	print("recv '"..dat.."'")
-	local t=unserialize(dat)
+	local t=assert(unserialize(dat),dat)
 	if cb[t[1]] then
 		cb[t[1]](unpack(t,2))
 	end
 end)
+local cb=ahttp.callback
+ahttp={}
 function ahttp.get(url,post)
 	local cid
-	for l1=1,100 do
+	for l1=1,20 do
 		if not cb[l1] then
 			cid=l1
 			break
@@ -35,7 +39,7 @@ function ahttp.get(url,post)
 			local http=require("socket.http")
 			res,err=http.request(url,post)
 		end
-		local sv=assert(socket.connect("localhost",1339))
+		local sv=assert(socket.connect("localhost",]]..lport..[[))
 		sv:send(serialize({cid,res,err}))
 		sv:close()
 	]])

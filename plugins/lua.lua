@@ -7,6 +7,7 @@ local function maxval(tbl)
 	end
 	return mx
 end
+
 function limitoutput(txt)
 	if #txt>250 then
 		return paste(txt)

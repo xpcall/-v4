@@ -1,5 +1,7 @@
 sql={}
 local dbs=setmetatable({},{__mode="v"})
+local dbw=setmetatable({},{__mode="v"})
+reqplugin("async.lua")
 local function start(db)
 	if not db.transaction then
 		db.db:execute("BEGIN TRANSACTION")
@@ -7,7 +9,7 @@ local function start(db)
 		async.new(function()
 			async.wait(1)
 			if db.transaction then
-				db.db:execute("COMMIT")
+				assert(db.db:execute("COMMIT"))
 				db.transaction=nil
 			end
 		end)
@@ -27,8 +29,12 @@ function sql.new(dir)
 	else
 		db=sqlite.open("db/"..dir..".db")
 	end
+	db:rollback_hook(function()
+		print("ROLLBACK? WAI")
+	end)
 	local out
 	out=setmetatable({
+		dir=dir,
 		db=db,
 		new=function(name,...)
 			start(out)
@@ -50,6 +56,9 @@ function sql.new(dir)
 				end,
 				delete=function(...)
 					return out.delete(name,...)
+				end,
+				wrap=function(...)
+					return out.wrap(name,...)
 				end,
 			}
 		end,
@@ -91,13 +100,18 @@ function sql.new(dir)
 			end
 			local vl={}
 			for k,v in pairs(vals) do
-				table.insert(vl,k.."=:u"..k)
-				bind["u"..k]=v
+				if not where[k] then
+					table.insert(vl,k.."=:u"..k)
+					bind["u"..k]=v
+				end
 			end
 			start(out)
-			local sn=db:prepare("update "..name.." set "..table.concat(vl," ")..(where and " where " or "")..table.concat(w," and "))
+			local statement="update "..name.." set "..table.concat(vl,",")..(where and " where " or "")..table.concat(w," and ")
+			local sn=db:prepare(statement)
+			print(serialize({name=name,w=w,vl=vl,bind=bind}))
+			print(" statement: "..serialize(statement))
 			if not sn then
-				error(db:errmsg().." statement: "..serialize("update "..name.." set "..table.concat(vl," ")..(where and " where " or "")..table.concat(w," and ")))
+				error(db:errmsg())
 			end
 			sn:bind_names(bind)
 			sn:step()
@@ -149,6 +163,47 @@ function sql.new(dir)
 			end
 			db:close()
 		end,
+		wrap=function(name,keyname)
+			assert(keyname)
+			if not out.wrapped[name] then
+				out.wrapped[name]=setmetatable({},{
+					__index=function(s,n)
+						local ind=out.select(name,{[keyname]=n})
+						if ind then
+							rawset(s,n,setmetatable({},{
+								__index=ind,
+								__newindex=function(s,n,d)
+									ind[n]=d
+									out.update(name,{[keyname]=keyname},ind)
+								end,
+								__pairs=function()
+									return pairs(ind)
+								end
+							}))
+							return rawget(s,n)
+						end
+					end,
+					__newindex=function(s,n,d)
+						if s[n] then
+							out.update(name,{[keyname]=n},d)
+						else
+							d[keyname]=n
+							out.insert(name,d)
+						end
+						rawset(s,n,d)
+					end,
+					__pairs=function()
+						local tbl={}
+						for row in out.pselect(name) do
+							tbl[row[keyname]]=row
+						end
+						return pairs(tbl)
+					end
+				})
+			end
+			return out.wrapped[name]
+		end,
+		wrapped={},
 	},{__gc=function()
 		out.close()
 	end})

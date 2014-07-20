@@ -1238,6 +1238,23 @@ end,{
 	group="misc",
 })
 
+hook.new({"command_rledecode","command_unrle"},function(user,chan,txt)
+	local o=""
+	while #txt>0 do
+		local n=txt:match("^"..pescape(txt:sub(1,1)).."+")
+		if #n>2 then
+			o=o..txt:sub(1,1)..#n
+		else
+			o=o..n
+		end
+		txt=txt:sub(#n+1)
+	end
+	return o
+end,{
+	desc="rle decodes a5b4 -> aaaaabbbb",
+	group="misc",
+})
+
 hook.new({"command_df","command_deadfish"},function(user,chan,txt)
 	local o=""
 	local ac=0

@@ -2,7 +2,7 @@ admin={}
 admin.perms={}
 admin.chans={}
 admin.cmd={}
-admin.db=sql.new("admin").new("perms","name","group","perms")
+admin.db=sql.new(network.."/admin").new("perms","name","group","perms")
 
 function admin.match(user,txt,chan)
 	local pfx,mt=txt:match("^$([arcl]):(.*)")
@@ -42,7 +42,7 @@ end
 
 do
 	admin.ignore={}
-	local file=io.open("db/ignore","r")
+	local file=io.open("db/"..network.."/ignore","r")
 	if file then
 		admin.ignore=unserialize(file:read("*a"))
 		if not admin.ignore then
@@ -50,7 +50,7 @@ do
 		end
 	end
 	local function save()
-		local file=io.open("db/ignore","w")
+		local file=io.open("db/"..network.."/ignore","w")
 		file:write(serialize(admin.ignore))
 		file:close()
 	end
@@ -296,7 +296,7 @@ hook.new("raw",function(txt)
 			end
 		end
 		hook.callback=callback
-		hook.queue("msg",user,chan,txt)
+		hook.queue("msg",user,chan,txt,me)
 	end
 	txt:gsub("^:([^!]+)!([^@]+)@(%S+) PRIVMSG (%S+) :(.+)",function(nick,real,host,chan,txt)
 		local ctcp=txt:match("^\1(.-)\1?$")

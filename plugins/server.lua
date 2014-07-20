@@ -8,7 +8,7 @@ function server.listen(port,func)
 	end
 	servers[sv]=func
 	hook.newsocket(sv)
-	print("registered "..tostring(sv))
+	print("listening on port "..port)
 	return true
 end
 hook.new("select",function(a)

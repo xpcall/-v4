@@ -23,8 +23,8 @@ function antiping(name)
 end
 
 hook.new({"command_gizoogle","command_ghetto"},function(user,chant,txt)
-	local s=http.request("http://www.gizoogle.net/textilizer.php","translatetext="..txt)
-	return s:match("<textarea type=\"text\" name=\"translatetext\" style=\"width: 600px; height:250px;\"/>(.-)</textarea>")
+	local out=ahttp.get("http://www.gizoogle.net/textilizer.php","translatetext="..txt):match("<textarea type=\"text\" name=\"translatetext\" style=\"width: 600px; height:250px;\"/>(.-)</textarea>") or "no match ds84182 is retarded"
+	return out
 end,{
 	desc="Ghettoifies a string",
 	group="fun"
@@ -270,7 +270,7 @@ end
 hook.new({"command_random"},function(user,chan,fname)
 	local t={}
 	local n=0
-	local file=io.open("log.txt","r")
+	local file=io.open("logs/"..network.."/"..chan..".txt","r")
 	local line=file:read("*l")
 	local txt,name
 	while line do

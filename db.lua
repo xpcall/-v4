@@ -48,8 +48,10 @@ end
 
 db={}]]
 
-function bc.abs(a)
-	return bc.isneg(a) and -a or a
+if bc then
+	function bc.abs(a)
+		return bc.isneg(a) and -a or a
+	end
 end
 
 function timestamp()
@@ -61,7 +63,7 @@ function gcd(a,b)
 	if b==0 then
 		return math.abs(a)
 	else
-		return gcd(b, a % b)
+		return gcd(b,a%b)
 	end
 end
 
@@ -102,7 +104,7 @@ file=setmetatable({},{
 	end,
 	__newindex=function(s,n,d)
 		if not d then
-			lfs.delete(n)
+			os.remove(n)
 		else
 			local file=io.open(n,"w")
 			file:write(d)

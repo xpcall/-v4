@@ -66,7 +66,7 @@ end
 loaddir("base")
 networks={
 	esper=loaddir("",{cnick="^v",owneracc="ping",sv=espersv,network="esper",cmdprefix="."}),
-	freenode=loaddir("",{cnick="^3",owneracc="^v",sv=freesv,network="freenode",cmdprefix="^"}),
+	freenode=loaddir("",{cnick="^0",owneracc="^v",sv=freesv,network="freenode",cmdprefix="^"}),
 }
 
 for k,v in pairs(networks) do
@@ -78,7 +78,7 @@ end
 
 local _,err=xpcall(function()
 	while true do
-		local tme=10
+		local tme=5
 		for netname,net in pairs(networks) do
 			net.svbuffer=net.svbuffer or ""
 			local s,e,r=net.sv:receive("*a")
@@ -93,9 +93,10 @@ local _,err=xpcall(function()
 					error(e)
 				end
 			end
-			tme=math.min(tme,net.hook.interval or 10)
+			tme=math.min(tme,net.hook.interval or 5)
 		end
 		local sel={socket.select(hook.sel,hook.rsel,tme)}
+		hook.queue("select",unpack(sel))
 		for netname,net in pairs(networks) do
 			net.hook.queue("select",unpack(sel))
 		end
