@@ -248,7 +248,7 @@ end,{
 
 do
 	local u
-	hook.new({"command_namegen"},function(user,chan,txt)
+	--[[hook.new({"command_namegen"},function(user,chan,txt)
 		send("cs namegen")
 		u=user
 	end,{
@@ -264,7 +264,7 @@ do
 			end
 			respond(u,u.nick..", "..table.concat(o,", "))
 		end
-	end)
+	end)]]
 end
 
 hook.new({"command_random"},function(user,chan,fname)

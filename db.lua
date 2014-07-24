@@ -497,3 +497,11 @@ end
 	setmetatable(out,meta)
 	return out,db
 end]]
+
+null=setmetatable({},{
+	__index=function(s)
+		return s
+	end,
+	__newindex=null,
+	__call=function() end,
+})

@@ -1,5 +1,18 @@
 admin={}
 admin.perms={}
+admin.users=setmetatable({},{
+	__index=function(s,n)
+		if admin.perms[n] then
+			return admin.perms[n]
+		end
+		for k,v in pairs(admin.perms) do
+			if k:lower()==n:lower() then
+				return v
+			end
+		end
+	end,
+	__newindex=admin.perms,
+})
 admin.chans={}
 admin.cmd={}
 admin.db=sql.new(network.."/admin").new("perms","name","group","perms")
@@ -299,7 +312,7 @@ hook.new("raw",function(txt)
 		hook.queue("msg",user,chan,txt,me)
 	end
 	txt:gsub("^:([^!]+)!([^@]+)@(%S+) PRIVMSG (%S+) :(.+)",function(nick,real,host,chan,txt)
-		local ctcp=txt:match("^\1(.-)\1?$")
+		local ctcp=txt:match("^\1(.+)\1?$")
 		local user={txt=txt,chan=chan,nick=nick,real=real,host=host}
 		if admin.perms[nick] then
 			for k,v in pairs(admin.perms[nick]) do

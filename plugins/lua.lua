@@ -56,7 +56,7 @@ hook.new({"command_>"},function(user,chan,txt)
 				for k,v in pairs({...}) do
 					o=o..tostring(v).."\n"
 				end
-			end
+			end,
 		},{
 			__index=_G,
 			__newindex=_G
@@ -122,7 +122,7 @@ hook.new({"command_lj","command_luaj"},function(user,chan,txt)
 	local file=io.open("sbox.tmp","w")
 	file:write(txt)
 	file:close()
-	local fi=assert(io.popen("timelimit -t 0.8 java -cp ./bin/OCLuaJ.jar lua sbox.lua"))
+	local fi=assert(io.popen("timelimit -t 1 java -cp ./bin/OCLuaJ.jar lua sbox.lua"))
 	local out=fi:read("*a")
 	if out:match("Program done%.\n$") then
 		out=out:gsub("Program done%.\n$","")
@@ -142,7 +142,7 @@ hook.new({"command_blj","command_borkluaj"},function(user,chan,txt)
 	local file=io.open("sbox.tmp","w")
 	file:write(txt)
 	file:close()
-	local fi=assert(io.popen("timelimit -t 0.8 java -cp ./bin/BorkLuaJ.jar lua sbox.lua"))
+	local fi=assert(io.popen("timelimit -t 1 java -cp ./bin/BorkLuaJ.jar lua sbox.lua"))
 	local out=fi:read("*a")
 	if out:match("Program done%.\n$") then
 		out=out:gsub("Program done%.\n$","")
