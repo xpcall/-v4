@@ -426,6 +426,7 @@ do
 		["tutorial-harddrives"]={"tutorial hardrives","tutorial2","tutorial hdd","tutorial hdds","tutorial filesystem","tutorial fs"},
 		["tutorial-writingcode"]={"tutorial3","tutorial code","tutorial coding"},
 		["tutorials"]={"tutorials","help","tutorial"},
+		["tutorial:program:oppm"]={"oppm","oppm tutorial"},
 		["OneThree"]={"onethree","1.3","13"},
 		[":http://www.lua.org/manual/5.2/manual.html#6.8"]={"io","io api"},
 		[":http://www.lua.org/manual/5.2/manual.html#6.7"]={"bit32","bit32 api","bit","bit api"},
