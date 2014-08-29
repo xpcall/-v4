@@ -63,7 +63,7 @@ if sv then
 		local cldat=cli[cl]
 		if headers["Connection"]=="keep-alive" then
 			for k,v in pairs(cldat) do
-				if k~="ip" then
+				if k~="ip" and k~="sk" then
 					cldat[k]=nil
 				end
 			end
@@ -247,7 +247,6 @@ if sv then
 							end
 							if not err then
 								res.data="<html>"..htmlencode(out).."</html>"
-								print(out)
 								res.code="500 Internal Server Error"
 							else
 								res.data=o
@@ -257,7 +256,6 @@ if sv then
 						end
 					else
 						if cldat.headers["If-None-Match"] and cldat.headers["If-None-Match"]==fs.hash(bse) then
-							print("304")
 							res.code="304 Not Modified"
 						else
 							if fs.size(bse)>16384 then -- TODO: configurable
@@ -279,9 +277,9 @@ if sv then
 		while cl do
 			hook.newsocket(cl)
 			cl:settimeout(0)
-			cli[cl]={headers={},ip=cl:getpeername()}
+			cli[cl]={headers={},ip=cl:getpeername(),sk=cl}
 			if (config or {logging=true}).logging then
-				print("got client "..cli[cl].ip.." "..(hook.queue("command_find",nil,nil,"ip "..cli[cl].ip) or ""))
+				print("got client "..(cli[cl].ip or "BORK").." "..(hook.queue("command_find",nil,nil,"ip "..cli[cl].ip) or "").." "..(cl:getfd()))
 			end
 			cl=sv:accept()
 		end
@@ -293,7 +291,6 @@ if sv then
 			else
 				local s,e=cl:receive(tonumber(cldat.post and cldat.headers["Content-Length"]))
 				if s then
-					print(s)
 					if cldat.post then
 						cldat.post=s
 						req(cl)

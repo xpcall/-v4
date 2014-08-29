@@ -511,6 +511,26 @@ function decodestream(tbl)
 	return o
 end
 
-function multbinary(a,b)
-	
+function overkillgen(key)
+	local state=crypt.hash.sha512(key,true)
+	for l1=1,7 do
+		state=state..crypt.hash.sha512(key..state,true)
+	end
+	return state
 end
+
+function overkill(state,txt,dec)
+	local out=""
+	for l1=1,#txt,32 do
+		local ts=txt:sub(l1,l1+31)
+		local hs=state:sub(1,64)
+		local o=""
+		for l2=1,#ts do
+			o=o..string.char(bit.bxor(ts:byte(l2,l2),hs:byte(l2,l2)))
+		end
+		out=out..o
+		state=state:sub(65)..crypt.hash.sha512((dec and o or ts)..hs,true)
+	end
+	return out,state
+end
+

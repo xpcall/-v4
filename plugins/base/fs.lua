@@ -23,6 +23,17 @@ local function set(tbl,ind,val)
 	tbl[ind]={time=10,value=val}
 	return val
 end
+local oio_open=io.open
+local oio_close=io.close
+openfiles={}
+function io.open(...)
+	local f,e=oio_open(...)
+	if f then
+		print(tostring(...).." file opened "..debug.traceback())
+		return f
+	end
+	return f,e
+end
 fs={
 	exists=function(file)
 		return lfs.attributes(file)~=nil
@@ -114,7 +125,9 @@ fs={
 		if res~=nil then
 			return res
 		end
-		local data=io.open(file,"rb"):read("*a")
+		local fl=io.open(file,"rb")
+		local data=fl:read("*a")
+		fl:close()
 		if (rd[file] or {}).data~=data then
 			modified[file]=os.date()
 		end
@@ -138,9 +151,10 @@ fs={
 			end
 			local chunk=file:read(16384)
 			while chunk do
-				out:update(line)
+				out:update(chunk)
 				chunk=file:read(16384)
 			end
+			file:close()
 			return out:final()
 		end
 		return out

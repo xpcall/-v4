@@ -1,1 +1,1 @@
-print("<center><h1>"..hook.queue("command_aeiou",nil,nil,hook.queue("command_drama")).."</h1></center>")
+print("<center><h1>"..(cl.sk:getfd()).."</h1></center>")

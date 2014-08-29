@@ -38,6 +38,16 @@ do
 	})
 end
 
+hook.new("command_rpi",function(user,chan,txt)
+	if not admin.auth(user) then
+		return
+	end
+	local rpi=assert(socket.connect("192.168.2.137",1337))
+	rpi:send(txt.."\n")
+	local s,_,res=rpi:receive("*a")
+	return s or res
+end)
+
 hook.new({"command_>"},function(user,chan,txt)
 	if admin.auth(user) then
 		if txt:sub(1,1)=="\27" then

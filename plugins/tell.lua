@@ -7,7 +7,7 @@ if file then
 	end
 end
 local function update()
-	local file=io.open("db/"..network.."/tells","w")
+	local file=assert(io.open("db/"..network.."/tells","w"))
 	file:write(serialize(tells))
 	file:close()
 end
@@ -43,6 +43,7 @@ local function get(usr,o)
 			table.insert(o,v)
 		end
 		tells[usr]=nil
+		update()
 	end
 end
 hook.new("msg",function(user,chan,txt)
@@ -50,7 +51,6 @@ hook.new("msg",function(user,chan,txt)
 	get("$n:"..user.nick,o)
 	get("$a:"..(user.account or 0),o)
 	get("$h:"..user.host,o)
-	update()
 	if #o>0 then
 		send("NOTICE "..user.nick.." :"..table.concat(o," | "))
 	end

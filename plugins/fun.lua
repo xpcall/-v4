@@ -38,13 +38,6 @@ end,{
 	group="misc",
 })
 
-hook.new("command_sdate",function(user,chan,txt)
-	return "Sep " .. math.ceil(os.difftime(os.time(),os.time({year=1993,month=9,day=1,hour=0}))/86400) .. ", 1993"
-end,{
-	desc="gets Eternal September time",
-	group="fun",
-})
-
 hook.new({"command_ip2num"},function(user,chan,txt)
 	local ip=txt:tmatch("%d+")
 	return tostring((ip[1]*16777216)+(ip[2]*65536)+(ip[3]*256)+ip[4])
@@ -268,6 +261,9 @@ do
 end
 
 hook.new({"command_random"},function(user,chan,fname)
+	if chan==cnick then
+		chan=user.nick
+	end
 	local t={}
 	local n=0
 	local file=io.open("logs/"..network.."/"..chan..".txt","r")
@@ -745,7 +741,7 @@ end,{
 
 hook.new("command_pastebin",function(user,chan,txt)
 	local res={}
-	local scc,err=http.request("http://pastebin.com/raw.php?i="..txt)
+	local scc,err=http.request("http://pastebin.com/raw.php?i="..(urlencode(txt:gsub("/",""))))
 	if err==404 then
 		return "Not found."
 	end
@@ -757,7 +753,7 @@ end,{
 
 hook.new("command_hastebin",function(user,chan,txt)
 	local res={}
-	local scc,err=http.request("http://hastebin.com/raw/"..txt:match("%S+"))
+	local scc,err=http.request("http://hastebin.com/raw/"..txt:match("%S+"):gsub("/",""))
 	if err==404 then
 		return "Not found."
 	end

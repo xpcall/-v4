@@ -2,7 +2,9 @@ local lanes=require("posix")
 local func=function(svip,svname,lport,nick)
 	local socket=require("socket")
 	local sv
-	local scl=socket.bind("*",lport)
+	print("trying "..lport)
+	local scl=assert(socket.bind("*",lport))
+	print("listening on "..lport)
 	local logfile={}
 	local function log(chan,txt)
 		if chan then

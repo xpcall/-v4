@@ -53,6 +53,29 @@ function admin.auth(user,resp)
 	return true
 end
 
+local trusted={
+	esper={
+		["ping"]=true,
+		["JoshTheEnder"]=true,
+		["Sangar"]=true,
+		["Michiyo"]=true,
+		["Kilobyte"]=true,
+		["Cazzar"]=true,
+		["Tahg"]=true,
+		["LordFokas"]=true,
+		["ShadowKatStudios"]=true,
+		["gamax92"]=true,
+		["ds84182"]=true,
+	},
+	freenode={
+		["^v"]=true,
+	}
+}
+
+function admin.trusted(user)
+	return trusted[network][user.account] and true or false
+end
+
 do
 	admin.ignore={}
 	local file=io.open("db/"..network.."/ignore","r")
@@ -68,7 +91,7 @@ do
 		file:close()
 	end
 	hook.new("command_ignore",function(user,chan,txt)
-		if not admin.auth(user) then
+		if not admin.trusted(user) then
 			return
 		end
 		if admin.perms[txt] then
@@ -86,7 +109,7 @@ do
 		group="admin",
 	})
 	hook.new("command_unignore",function(user,chan,txt)
-		if not admin.auth(user) then
+		if not admin.trusted(user) then
 			return
 		end
 		if admin.perms[txt] then
@@ -196,7 +219,7 @@ hook.new("raw",function(txt)
 	txt:gsub("^:([^%s!]+)!([^%s@]+)@(%S+) JOIN (%S+)",function(nick,username,host,chan)
 		if nick==cnick then
 			admin.chans[chan]={}
-			send("WHO "..chan.." %cuihsnfar")
+			send("WHO "..chan.." c%cuihsnfar")
 		else
 			if not admin.perms[nick] then
 				if whqueue[chan] then
@@ -209,7 +232,7 @@ hook.new("raw",function(txt)
 							send("WHO "..chan.." %cuihsnfar")
 						else
 							for k,v in pairs(whqueue[chan]) do
-								send("WHO "..v.." %cuihsnfar")
+								send("WHO "..v.." n%cuihsnfar")
 							end
 						end
 						whqueue[chan]=nil
@@ -450,4 +473,70 @@ hook.new("command_sudo",function(user,chan,txt)
 		local dat=admin.perms[nick]
 		hook.queue("raw",":"..nick.."!"..dat.username.."@"..dat.host.." PRIVMSG "..chan.." :"..txt)
 	end
+end)
+
+local ccommands={}
+local function regcc(n)
+	hook.del("command_"..n)
+	hook.new("command_"..n,function(user,chan,txt)
+		return hook.queue("command_lua",user,chan,"local user,chan,txt="..serialize(user)..","..serialize(chan)..","..serialize(txt).." "..ccommands[n])
+	end)
+end
+
+local file=io.open("db/"..network.."/commands","r")
+if file then
+	ccommands=unserialize(file:read("*a")) or {}
+	for k,v in pairs(ccommands) do
+		regcc(k)
+	end
+end
+
+local function save()
+	local file=io.open("db/"..network.."/commands","w")
+	file:write(serialize(ccommands))
+	file:close()
+end
+
+hook.new("command_setcommand",function(user,chan,txt)
+	if not admin.trusted(user) then
+		return
+	end
+	local name,run=txt:match("^(%S+) (.+)$")
+	if not name then
+		return "usage: .setcommand <command name> <lua>"
+	end
+	if hook.hooks["command_"..name] and not ccommands[name] then
+		return "Command already hardcoded"
+	end
+	if loadstring("return "..run) then
+		run="return "..run
+	end
+	local res,err=loadstring(run)
+	if not res then
+		return err
+	end
+	ccommands[name]=run
+	regcc(name)
+	save()
+	return "Registered"
+end)
+
+hook.new("command_command",function(user,chan,txt)
+	return ccommands[txt] or "None"
+end)
+
+hook.new("command_delcommand",function(user,chan,txt)
+	if not admin.trusted(user) then
+		return
+	end
+	if not hook.hooks["command_"..txt] then
+		return "No such command"
+	end
+	if not ccommands[txt] then
+		return "Could not delete (command hardcoded)"
+	end
+	ccommands[txt]=nil
+	save()
+	hook.del("command_"..txt)
+	return "Deleted"
 end)

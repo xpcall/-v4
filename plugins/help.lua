@@ -42,7 +42,7 @@ jenkins={
 	[{"http://ci.cil.li/job/OpenComputers-1.3-MC1.6.4/api/json?depth=1","OpenComputers"}]={"","oc","opencomputers","16","164","oc16","oc164"},
 	[{"http://ci.cil.li/job/OpenComputers-1.3-MC1.7.2/api/json?depth=1","OpenComputers 1.7"}]={"opencomputers17","17","172","oc17","oc172"},
 	[{"http://ci.cil.li/job/OpenComputers-dev-MC1.7.10/api/json?depth=1","OpenComputers 1.7.10"}]={"opencomputers1710","1710","oc1710","oc1710"},
-	[{"http://ci.cil.li/job/OpenComponents/api/json?depth=1","OpenComponents"}]={"c","c16","components","opencomponents","ocomponents"},
+	[{"http://ci.cil.li/job/OpenComponents-MC1.6.4/api/json?depth=1","OpenComponents"}]={"c","c16","components","opencomponents","ocomponents"},
 	[{"http://ci.cil.li/job/OpenComponents-MC1.7/api/json?depth=1","OpenComponents 1.7"}]={"c17","components17","opencomponents17","ocomponents17"},
 	[{"http://lanteacraft.com/jenkins/job/OpenPrinter/api/json?depth=1","OpenPrinters"}]={"op","op16","printer","printer16","openprinter","openprinters","openprinter16"},
 	[{"http://lanteacraft.com/jenkins/job/OpenPrinter1.7/api/json?depth=1","OpenPrinters 1.7"}]={"op17","printer17","openprinter17","openprinters16"},
@@ -103,12 +103,16 @@ hook.new({"command_r","command_release","command_releases"},function(user,chan,t
 		end
 	end
 	local dat=json.decode(dat)
-	if not dat or not dat[1] then
+	if not dat or not dat[1] or not dat[1].assets then
 		error("Error parsing. "..serialize(dat))
 	end
 	dat=dat[1]
 	local burl="https://github.com/MightyPirates/OpenComputers/releases/download/"..dat.tag_name.."/"
-	return "Latest release: "..dat.name.." Download: 1.6.4 "..shorturl(burl..dat.assets[1].name).." 1.7.2 "..shorturl(burl..dat.assets[3].name).." 1.7.10 "..shorturl(burl..dat.assets[2].name)
+	local o=""
+	for k,v in pairs(dat.assets) do
+		o=o.." "..v.name:match("MC([^%-]+)").." "..shorturl(burl..v.name)
+	end
+	return "Latest release: "..dat.name.." Download:"..o
 end,{
 	desc="links downloads for releases",
 	group="help",
@@ -403,6 +407,8 @@ do
 		["api"]={"apis","api","api list","apis list"},
 		["start?idx=block"]={"blocks","block list","blocks list"},
 		["component:abstract-bus"]={"abstract bus"},
+		["component:access_point"]={"access point","relay"},
+		["component:chunkloader"]={"chunkloader","chunk loader","anchor"},
 		["component:commandblock"]={"command block","commandblock","command block component"},
 		["component:computer"]={"computer component","component computer"},
 		["component:crafting"]={"crafting","crafter","crafting component","crafter component","craft api","crafting api","crafter api"},
@@ -411,6 +417,9 @@ do
 		["component:modem"]={"modem","modem api","modem component","rednet","wireless","wireless api","rednet api"},
 		["component:navigation"]={"navigation","navigation api","gps","gps api"},
 		["component:noteblock"]={"noteblock","noteblock api","noteblock component"},
+		["component:tractor_beam"]={"tractor beam","tractorbeam"},
+		["component:tunnel"]={"tunnel component","tunnel","linked","linked card"},
+		["component:inventory_controller"]={"inventory","inv","inv component","inventory controller"},
 		["component:redstone"]={"redstone","rs","redstone api","rs api","redstone component","rs component"},
 		["component:redstoneinmotion"]={"redstone in motion","rim","redstone in motion api","rim api","redstone in motion component","rim component"},
 		["component:sign"]={"sign","sign api","sign component"},
@@ -422,10 +431,11 @@ do
 		["items"]={"items","item list","items list"},
 		["nonstandardlualibs"]={"non standard lua libs","non standard","nonstandard","sandbox"},
 		["signals"]={"signal","signals"},
-		["tutorial-basiccomputer"]={"tutorial1","tutorial basic","tutorial basic computer","tutorial computer"},
-		["tutorial-harddrives"]={"tutorial hardrives","tutorial2","tutorial hdd","tutorial hdds","tutorial filesystem","tutorial fs"},
-		["tutorial-writingcode"]={"tutorial3","tutorial code","tutorial coding"},
+		["tutorial:oc1_basic_computer"]={"tutorial1","tutorial basic","tutorial basic computer","tutorial computer"},
+		["tutorial:oc3_hard_drives"]={"tutorial hardrives","tutorial2","tutorial hdd","tutorial hdds","tutorial filesystem","tutorial fs"},
+		["tutorial:oc2_writing_code"]={"tutorial3","tutorial code","tutorial coding"},
 		["tutorials"]={"tutorials","help","tutorial"},
+		["tutorial:program:oppm"]={"oppm","oppm tutorial"},
 		["OneThree"]={"onethree","1.3","13"},
 		[":http://www.lua.org/manual/5.2/manual.html#6.8"]={"io","io api"},
 		[":http://www.lua.org/manual/5.2/manual.html#6.7"]={"bit32","bit32 api","bit","bit api"},
@@ -435,7 +445,7 @@ do
 		[":http://www.lua.org/manual/5.2/manual.html#6.2"]={"coroutine","coroutine api","coroutines","coroutine api"},
 		[":http://www.lua.org/manual/5.1/manual.html#5.4.1"]={"patterns","pattern","regex"},
 		[":http://en.wikipedia.org/wiki/Sod's_law"]={"joshtheender","ender","josh"},
-		[":http://en.wikipedia.org/wiki/Ping_of_death"]={"ping","pong","^v","pixeltoast"},
+		[":http://en.wikipedia.org/wiki/Ping_of_death"]={"ping","pong","v^","^v","pixeltoast"},
 		[":http://en.wikipedia.org/wiki/Hydrofluoric_acid"]={"bizzycola","cola","bizzy"},
 		[":http://en.wikipedia.org/wiki/OS_X"]={"asie","asiekierka","kierka"},
 		[":http://en.wikipedia.org/wiki/Stoner_(drug_user)"]={"kenny"},

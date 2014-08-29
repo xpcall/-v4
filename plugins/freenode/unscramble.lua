@@ -1,8 +1,14 @@
 local cword={}
+local uword={}
 wordlist={}
 for line in io.lines("/usr/share/dict/words") do
 	if line==line:lower() and #line<9 then
 		table.insert(wordlist,line)
+		local t={string.byte(line,1,-1)}
+		table.sort(t)
+		local k=string.char(unpack(t))
+		uword[k]=uword[k] or {}
+		table.insert(uword[k],line)
 	end
 end
 print((#wordlist).." words")
@@ -18,4 +24,13 @@ hook.new("msg",function(user,chan,txt)
 		cword[chan]=nil
 		return "Congradululzations the correct answer was \2"..txt.."\2 you win \196\1440 because i hate you"
 	end
+end)
+hook.new("command_haxscramble",function(user,chan,txt)
+	local t={string.byte(txt,1,-1)}
+	table.sort(t)
+	return table.concat(uword[string.char(unpack(t))] or {}," | ")
+end)
+
+hook.new("command_combinations",function(user,chan,txt)
+	
 end)
