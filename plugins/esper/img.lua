@@ -1,4 +1,16 @@
 img={}
+local function tocolor(val)
+	if type(val)=="number" then
+		return cd.EncodeColor(val/65536,(val/256)%256,val%256)
+	elseif type(val)=="table" then
+		local c=cd.EncodeColor(unpack(val))
+		if val[4] then
+			c=cd.EncodeAlpha(c,val[4]) 
+		end
+		return c
+	end
+	return val
+end
 function img.new(w,h)
 	local image
 	if not h then
@@ -6,9 +18,13 @@ function img.new(w,h)
 	else
 		image=im.ImageCreate(w,h,im.RGB,im.BYTE)
 	end
+	local canvas=image:cdCreateCanvas()
+	--canvas:InvertYAxis(0)
+	canvas:Origin(1,1)
 	local out
 	out={
 		image=image,
+		canvas=canvas,
 		width=function()
 			return image:Width()
 		end,
@@ -28,8 +44,25 @@ function img.new(w,h)
 				end
 			end
 		end,
-		save=function(format,name)
-			image:Save(name or out.name,(format or out.format):upper())
+		text=function(x,y,txt,font,size,sstyle,color)
+			font=font or "Times"
+			sstyle=sstyle or "plain"
+			local style=0
+			for word in sstyle:gmatch("%S+") do
+				style=bit.bor(style,cd[word:upper()])
+			end
+			color=tocolor(color or 0)
+			size=size or 12
+			canvas:Foreground(color)
+			canvas:Font(font,style,size)
+			canvas:Text(x,y,txt)
+		end,
+		clear=function(color)
+			canvas:Background(tocolor(color or 0xFFFFFF))
+			canvas:Clear()
+		end,
+		save=function(name,format)
+			image:Save(name or out.name,(format or out.format or (name or out.name):match("^.*%.(.*)")):upper())
 		end,
 	}
 	return out
