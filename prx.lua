@@ -112,7 +112,7 @@ local func=function(svip,svname,lport,nick)
 end
 -- fork because lazy
 if posix.fork()==0 then
-	func("64.32.24.176","freenode",1335,"^0")
+	func("185.30.166.35","freenode",1335,"^0")
 else
 	func("irc.esper.net","esper",1337,"^v")
 end

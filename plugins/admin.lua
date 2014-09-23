@@ -1,3 +1,10 @@
+local spamconf={
+	["#oc"]={
+		[{"ping","pong","v^","p"}]={"#oc is not a ping machine","stahp spamming"},
+		[{"fail"}]={"you, for spamming","im going to stuff you into a cake if you dont stop spamming"}
+	}
+}
+
 admin={}
 admin.perms={}
 admin.users=setmetatable({},{
@@ -66,6 +73,8 @@ local trusted={
 		["ShadowKatStudios"]=true,
 		["gamax92"]=true,
 		["ds84182"]=true,
+		["Wobbo"]=true,
+		["vifino"]=true,
 	},
 	freenode={
 		["^v"]=true,
@@ -377,6 +386,8 @@ hook.new("raw",function(txt)
 	end)
 end)
 
+local spam={}
+
 hook.new("msg",function(user,chan,txt)
 	txt=txt:gsub("%s+$","")
 	if txt:sub(1,#cmdprefix)==cmdprefix then
@@ -479,7 +490,7 @@ local ccommands={}
 local function regcc(n)
 	hook.del("command_"..n)
 	hook.new("command_"..n,function(user,chan,txt)
-		return hook.queue("command_lua",user,chan,"local user,chan,txt="..serialize(user)..","..serialize(chan)..","..serialize(txt).." "..ccommands[n])
+		return hook.queue("command_lua",user,chan,"local user,chan,txt="..serialize(user)..","..serialize(chan)..","..serialize(txt).." "..ccommands[n].code)
 	end)
 end
 
@@ -515,14 +526,14 @@ hook.new("command_setcommand",function(user,chan,txt)
 	if not res then
 		return err
 	end
-	ccommands[name]=run
+	ccommands[name]={code=run,creator=user.account}
 	regcc(name)
 	save()
 	return "Registered"
 end)
 
 hook.new("command_command",function(user,chan,txt)
-	return ccommands[txt] or "None"
+	return ccommands[txt] and ccommands[txt].code or (hook.hooks["command_"..txt] and "Built in" or "None")
 end)
 
 hook.new("command_delcommand",function(user,chan,txt)

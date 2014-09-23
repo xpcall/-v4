@@ -22,6 +22,10 @@ function antiping(name)
 	return n
 end
 
+function stripcolor(txt)
+	return txt:gsub("\3%d%d?,%d%d?",""):gsub("\3%d%d?",""):gsub("[\2\3\9\15\19\21\22\31]","")
+end
+
 hook.new({"command_gizoogle","command_ghetto"},function(user,chant,txt)
 	local out=ahttp.get("http://www.gizoogle.net/textilizer.php","translatetext="..txt):match("<textarea type=\"text\" name=\"translatetext\" style=\"width: 600px; height:250px;\"/>(.-)</textarea>") or "no match ds84182 is retarded"
 	return out
@@ -793,7 +797,7 @@ hook.new({"command_bytes"},function(user,chan,txt)
 end)
 
 hook.new({"command_drama"},function(user,chan,txt)
-	local dat,err=http.request("http://asie.pl/drama.php?plain")
+	local dat,err=http.request("http://asie.pl/drama.php?2&plain"):match("^[^\n]+")
 	return dat or "Error "..err
 end,{
 	desc="asie's drama generator",

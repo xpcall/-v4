@@ -185,30 +185,6 @@ end,{
 	group="help",
 })
 
-hook.new({"command_ips"},function(user,chan,txt)
-	local p=coroutine.create(function()
-		while true do
-			local a={}
-			for l1=1,1000 do
-				table.insert(a,1234)
-			end
-		end
-	end)
-	local ltime=socket.gettime()
-	local rt
-	debug.sethook(p,function()
-		local tme=socket.gettime()
-		local dt=tme-ltime
-		rt=1000000/dt
-		error()
-	end,"",1000000)
-	coroutine.resume(p)
-	return rt
-end,{
-	desc="benchmarks instructions per second",
-	group="fun",
-})
-
 hook.new({"command_bm","command_benchmark"},function(user,chan,txt)
 	local t=socket.gettime()
 	local o=hook.queue("command_lua51",user,chan,txt) or ""

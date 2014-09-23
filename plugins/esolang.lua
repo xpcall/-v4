@@ -1080,7 +1080,7 @@ hook.new({"command_sstack"},function(user,chan,txt)
 	local ins={
 		["(%d+)"]=function(num)
 			sb=#num
-			return "push("..num..")"
+			return "push("..serialize(num)..")"
 		end,
 		["add"]=function()
 			sb=3
@@ -1168,7 +1168,7 @@ hook.new({"command_sstack"},function(user,chan,txt)
 		end,
 		["if"]=function()
 			sb=2
-			return "while stack[1]>0 do"
+			return "while (stack[1] or 0)>0 do"
 		end,
 		["fi"]=function()
 			sb=2
@@ -1184,7 +1184,11 @@ hook.new({"command_sstack"},function(user,chan,txt)
 		end,
 		["\"(.-)\""]=function(txt)
 			sb=#txt+2
-			return "for l1="..#txt..",1,-1 do push((\""..txt.."\"):byte(l1,l1)) end"
+			local o=""
+			for l1=1,#txt do
+				o=o.."push("..txt:byte(l1,l1)..") "
+			end
+			return o
 		end,
 	}
 	local out=""

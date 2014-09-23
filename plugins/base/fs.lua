@@ -23,17 +23,6 @@ local function set(tbl,ind,val)
 	tbl[ind]={time=10,value=val}
 	return val
 end
-local oio_open=io.open
-local oio_close=io.close
-openfiles={}
-function io.open(...)
-	local f,e=oio_open(...)
-	if f then
-		print(tostring(...).." file opened "..debug.traceback())
-		return f
-	end
-	return f,e
-end
 fs={
 	exists=function(file)
 		return lfs.attributes(file)~=nil

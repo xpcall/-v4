@@ -1,25 +1,19 @@
 #include <stdlib.h>
+#include <stdio.h>
 #include "lua.h"
 #include "lauxlib.h"
 
-static int getstate(lua_State *L) {
-	char out[16];
-	snprintf(out,16,"%llu",(unsigned long long)L);
-	lua_pushstring(L,out);
-	return 1;
-}
+#include "util.h"
 
-static const luaL_Reg R[]={
-	{"getstate",getstate},
-	{NULL,NULL}
-};
-
-int luaopen_derp(lua_State *L) {
- luaL_newmetatable(L,"derp");
- luaL_register(L,NULL,R);
- lua_pushliteral(L,"__index");
- lua_pushvalue(L,-2);
- lua_settable(L,-3);
- return 1;
+int main() {
+	printf("derrrp\n");
+	lua_State *L=luaL_newstate();
+	//util_load(L);
+	luaL_openlibs(L);
+	if (luaL_dofile(L,"main.lua")!=0) {
+		printf("bork %s\n",lua_tolstring(L,-1,NULL));
+	}
+	lua_close(L);
+	return 0;
 }
 

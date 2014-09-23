@@ -434,10 +434,6 @@ local band=bit64.band
 local bnot=bit64.bnot
 local add=bit64.add
 
-local function xor()
-	
-end
-
 function watcrypt(key,dec,ha)
 	ha=ha or {[0]=
 		{0x6a09e667,0xf3bcc908},{0xbb67ae85,0x84caa73b},{0x3c6ef372,0xfe94f82b},{0xa54ff53a,0x5f1d36f1},
