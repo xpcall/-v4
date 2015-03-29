@@ -64,18 +64,33 @@ function img.new(w,h)
 		save=function(name,format)
 			image:Save(name or out.name,(format or out.format or (name or out.name):match("^.*%.(.*)")):upper())
 		end,
+		line=function(x1,y1,x2,y2,color)
+			canvas:Foreground(tocolor(color or 0xFFFFFF))
+			canvas:Line(x1,y1,x2,y2)
+		end,
+		paste=function()
+			local o=""
+			for l1=1,5 do
+				o=o..string.char((math.random(0x41,0x59)+(math.random(0,1)*0x20)))
+			end
+			out.save("www/img/"..o..".png")
+			return "http://ptoast.tk/img/"..o..".png"
+		end,
 	}
 	return out
 end
+
 function img.load(name)
 	local out=img.new(im.FileImageLoad(name))
 	out.name=name
 	out.format=name:match("^.*%.(.*)")
 	return out
 end
+
 function img.combine(r,g,b)
 	return (((math.floor(r%256)*256)+math.floor(g%256))*256)+math.floor(b%256)
 end
+
 function img.explode(c)
 	return math.floor(c/65536)%256,math.floor(c/256)%256,math.floor(c)%256
 end

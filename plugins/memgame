@@ -1,0 +1,12 @@
+--[[hook.new("command_memgame",function(user,chan,txt)
+	local char=math.random(0x41,0x5A)+(math.random(0,1)*32)
+	local yey
+	respond(user,user.nick..", code is "..string.format("%X",char))
+	async.new(function()
+		
+	end)
+	async.wait(20)
+	if not yey then
+		return "fail, answer is "..string.char(char)
+	end
+end)]]

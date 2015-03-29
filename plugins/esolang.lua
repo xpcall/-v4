@@ -302,7 +302,7 @@ function brainfuck(txt)
 end
 
 do
-	local bfconv=sql.new("bfconv").new("conv","x","y","o")
+	--[[local bfconv=sql.new("bfconv").new("conv","x","y","o")
 	hook.new({"command_encbf","command_encbrainfuck"},function(user,chan,txt)
 		local l=0
 		return txt:gsub(".",function(char)
@@ -314,7 +314,7 @@ do
 	end,{
 		desc="text to brainfuck generator",
 		group="esolangs",
-	})
+	})]]
 end
 
 hook.new({"command_bf","command_brainfuck"},function(user,chan,txt)
@@ -1641,3 +1641,58 @@ end,{
 	group="esolangs",
 })
 
+hook.new({"command_rna"},function(user,chan,txt)
+	if not admin.auth(user) then return end
+	local var={}
+	local cmds=256
+	local function vtnum(n)
+		local o=var[n]
+		if type(o)=="number" then
+			return n
+		elseif type(o)=="string" then
+			local o=0
+			local n=0
+			for c in o:gmatch(".") do
+				o=o+bit.bxor(c:byte(),(c:byte()*n)%256)
+				n=n+1
+			end
+			return o
+		end
+	end
+	local out=""
+	local ip=1
+	local lns={}
+	for line in txt:gmatch("[^;]+") do
+		table.insert(lns,line)
+	end
+	while ip<=#lns do
+		local line=lns[ip] or ""
+		local cmd,sparams=line:match("(%S+)(.*)")
+		local params={}
+		for p in sparams:gmatch("%S+") do
+			params[#params+1]=p
+		end
+		local nmd=0
+		for char in cmd:gmatch(".") do
+			nmd=(nmd*char:byte())%cmds
+		end
+		nmd=nmd+vtnum(cmd)
+		if nmd==0 then
+			for l1=1,#sparams,2 do
+				var[params[l1]]=sparams[l1+1]
+			end
+		elseif nmd==1 then
+			var[params[1]]=vtnum(var[params[1]] or 0)
+		elseif nmd==2 then
+			ip=vtnum(var[params[1]] or 0)
+		elseif nmd==3 then
+			var[params[1]]=tostring(vtnum(var[params[1]] or 0))
+		elseif nmd==4 then
+			loadstring(var[params[1]])(var)
+		elseif nmd==5 then
+			out=out..var[params[1]].."\n"
+		end
+		ip=ip+1
+	end
+	return out
+end)

@@ -234,7 +234,6 @@ if not func then
 	end
 end
 local res={pcall(func)}
-local o
 local function maxval(tbl)
 	local mx=0
 	for k,v in pairs(tbl) do
@@ -245,7 +244,7 @@ local function maxval(tbl)
 	return mx
 end
 for l1=2,math.max(2,maxval(res)) do
-	o=(o or "")..tostring(res[l1]).."\n"
+	out=out..tostring(res[l1]).."\n"
 end
-print(o)
+print(out)
 print("Program done.")

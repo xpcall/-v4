@@ -1,4 +1,4 @@
-local fails={}
+fails={}
 local file=io.open("db/"..network.."/fails","r")
 if file then
 	fails=unserialize(file:read("*a")) or {}

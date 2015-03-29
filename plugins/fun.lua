@@ -5,21 +5,22 @@ end,{
 	group="fun"
 })
 
-function antiping(name)
-	local f=true
-	for k,v in pairs(admin.perms) do
-		if k:lower()==name:lower() then
-			f=false
-		end
+validnick="[%a_\\%[%]{}%^`|][%a%d_%-\\%[%]{}%^`|]*"
+
+function antiping(txt)
+	local n=1
+	while n>0 do
+		n=0
+		txt=txt:gsub(validnick,function(nm)
+			if admin.perms[nm] and #nm>1 then
+				local md=math.floor(#nm/2)
+				nm=nm:sub(1,md).."\226\128\139"..nm:sub(md+1)
+				n=n+1
+			end
+			return nm
+		end)
 	end
-	if f then
-		return name
-	end
-	local n=name:sub(1,-4)..name:sub(-2,-2)..name:sub(-3,-3)..name:sub(-1)
-	if n==name then
-		return n:sub(1,-2).."."..n:sub(-1)
-	end
-	return n
+	return txt
 end
 
 function stripcolor(txt)
@@ -472,6 +473,11 @@ end,{
 	group="misc",
 })
 
+local load8
+hook.new("command_load8",function(user,chan,txt)
+	load8=txt
+end)
+
 local magic8={
 	"It is certain",
 	"It is decidedly so",
@@ -497,6 +503,11 @@ local magic8={
 hook.new("msg",function(user,chan,txt)
 	local question=txt:match("^"..cnick.."[,:] (.+)")
 	if question then
+		if load8 then
+			local o=load8
+			load8=nil
+			return o
+		end
 		local ch=question:match("%s+$")
 		local range=(ch==" " and {1,10}) or (ch=="  " and {16,20}) or (ch=="   " and {11,15}) or {1,20}
 		return magic8[math.random(range[1],range[2])]
@@ -804,6 +815,18 @@ end,{
 	group="misc",
 })
 
+function derpntfs(dir)
+	local t=0
+	for k,v in pairs(fs.list(dir)) do
+		local file=fs.combine(dir,v)
+		if fs.isDir(file) then
+			derpntfs(file)
+		elseif v:match("_ntfs$") then
+			fs.move(c,v:gsub("_ntfs$",""))
+		end
+	end
+end
+
 hook.new({"command_lines"},function(user,chan,txt)
 	local count
 	function count(dir)
@@ -1000,4 +1023,45 @@ do
 		group="fun",
 	})
 end
+local logoCache={}
+function genlogo(txt,raw)
+	local font,text=txt:match("(.-),(.+)")
+	font=font or fs.read("/home/nadine/Desktop/A/ball/brushedtxt/font.txt")
+	if text then
+		txt=text
+		fs.write("/home/nadine/Desktop/A/ball/brushedtxt/font.txt",font)
+	end
+	if txt:match("[^ %a%d]") then
+		return "Nope \""..txt:match("[^ %a%d]").."\""
+	end
+	txt=txt:upper()
+	if logoCache[font..","..txt] then
+		if raw then
+			return fs.read("www/logo/"..logoCache[font..","..txt]..".png")
+		end
+		return "http://ptoast.tk/logo/"..logoCache[font..","..txt]..".png"
+	end
+	fs.write("/home/nadine/Desktop/A/ball/brushedtxt/text.txt",txt)
+	local f=io.popen("love /home/nadine/Desktop/A/ball/brushedtxt")
+	local dat=f:read("*a")
+	print(">>>>>> "..serialize(dat))
+	local t,d=dat:match("(%S+) (.-)\n")
+	if t=="error" then
+		return dat
+	end
+	fs.write("www/logo/"..d..".png",fs.read("/home/nadine/.local/share/love/brushedtxt/"..d..".png"))
+	logoCache[font..","..txt]=d
+	if raw then
+		return fs.read("www/logo/"..d..".png")
+	end
+	return "http://ptoast.tk/logo/"..d..".png"
+end
+hook.new("command_logo",function(user,chan,txt)
+	if not admin.auth(user) then return end
+	return genlogo(txt)
+end)
 
+hook.new({"command_object","command_objection"},function(user,chan,txt)
+	local res,err,head,serr=ahttp.get("http://objection.mrdictionary.net/objection_catch.php","text="..urlencode(txt).."&attorney=phoenix")
+	return head.location or ("Error "..serr)
+end)

@@ -197,7 +197,7 @@ end,{
 hook.new({"command_cmd"},function(user,chan,txt)
 	if admin.auth(user) then
 		local cm=io.popen(txt,"r")
-		return cm:read("*a")
+		return limitoutput(cm:read("*a"))
 	end
 end,{
 	desc="executes batch",

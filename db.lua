@@ -59,12 +59,46 @@ function timestamp()
 	return date.month.."/"..date.day.." "..date.hour..":"..("0"):rep(2-#tostring(date.min))..date.min
 end
 
-function gcd(a,b)
+do
+	local function ts(num,mn)
+		return ("0"):rep(mn-#tostring(num))..num
+	end
+	function iso8601(t)
+		local d=os.date("!*t",t)
+		return ts(d.year,4).."-"..ts(d.month,2).."-"..ts(d.day,2).."T"..ts(d.hour,2)..":"..ts(d.min,2)..":"..ts(d.sec,2).."Z"
+	end
+	function uniso8601(txt)
+		local year,month,day,hour,min,sec=txt:match("^(%d%d%d%d)-(%d%d)-(%d%d)T(%d%d):(%d%d):(%d%d)Z$")
+		return os.time({year=tonumber(year),month=tonumber(month),day=tonumber(day),hour=tonumber(hour),min=tonumber(min),sec=tonumber(sec)})
+	end
+end
+
+--[[function gcd(a,b)
 	if b==0 then
 		return math.abs(a)
 	else
 		return gcd(b,a%b)
 	end
+end]]
+
+function urlencode(txt)
+	return txt:gsub("\r?\n","\r\n"):gsub("[^%w ]",function(t) return string.format("%%%02X",t:byte()) end):gsub(" ","+")
+end
+
+function urldecode(txt)
+	return txt:gsub("+"," "):gsub("%%(%x%x)",function(t) return string.char(tonumber("0x"..t)) end)
+end
+
+function htmlencode(txt)
+	return txt:gsub("&","&amp;"):gsub("<","&lt;"):gsub(">","&gt;"):gsub("\"","&quot;"):gsub("'","&apos;"):gsub("\r?\n","<br>"):gsub("\t","&nbsp;&nbsp;&nbsp;&nbsp;")
+end
+
+function parseurl(url)
+	local out={}
+	for var,dat in url:gmatch("([^&]+)=([^&]+)") do
+		out[urldecode(var)]=urldecode(dat)
+	end
+	return out
 end
 
 function tpairs(tbl)
@@ -113,6 +147,26 @@ file=setmetatable({},{
 	end,
 })
 
+function math.dist(a,b)
+	local s=0
+	for i=1,#a do
+		if not b then
+			s=s+(math.abs(a[i])^2)
+		else
+			s=s+(math.abs(a[i]-b[i])^2)
+		end
+	end
+	return math.sqrt(s)
+end
+
+function math.dist2(x1,y1,x2,y2)
+	return math.dist({x1,y1},{x2,y2})
+end
+
+function math.dist3(x1,y1,z1,x2,y2,z2)
+	return math.dist({x1,y1,z1},{x2,y2,z2})
+end
+
 function math.round(num,idp)
 	local mult=10^(idp or 0)
 	return math.floor(num*mult+0.5)/mult
@@ -128,6 +182,18 @@ function table.reverse(tbl)
 		tbl[k+1]=v
 	end
 	return tbl
+end
+
+function table.copy(t)
+	local ot={}
+	for k,v in pairs(t) do
+		if type(v)=="table" then
+			ot[k]=table.copy(v)
+		else
+			ot[k]=v
+		end
+	end
+	return ot
 end
 
 function string.min(...)
@@ -346,7 +412,7 @@ function serialize(value, pretty)
 				return tostring(v)
 			end
 		elseif t == "string" then
-			return string.format("%q", v):gsub("\\\n","\\n")
+			return string.format("%q", v):gsub("\\\n","\\n"):gsub("%z","\\z")
 		elseif t == "table" and pretty and getmetatable(v) and getmetatable(v).__tostring then
 			return tostring(v)
 		elseif t == "table" then
@@ -381,6 +447,8 @@ function serialize(value, pretty)
 			return "func"
 		elseif t == "userdata" then
 			return "userdata"
+		elseif t == "cdata" then
+			return "cd("..serialize(tostring(ffi.typeof(v)):match("^ctype<(.-)>$"))..","..serialize(tob64(ffi.dump(v)))..")"
 		else
 			if pretty then
 				return tostring(t)
@@ -418,15 +486,28 @@ end
 	end
 	return Out
 end]]
-function unserialize(s) -- converts a string back into its original form
+function unserialize(s,err) -- converts a string back into its original form
 	if type(s)~="string" then
+		if err then
+			return false,"String exepcted. got "..type(s)
+		end
 		error("String exepcted. got "..type(s),2)
 	end
 	local func,e=loadstring("return "..s,"unserialize")
 	if not func then
+		if err then
+			return "Invalid string."
+		end
 		error("Invalid string.",2)
 	end
-	return setfenv(func,{f=function(s) return loadstring(unb64(s)) end})()
+	return setfenv(func,{
+		f=function(s)
+			return loadstring(unb64(s))
+		end,
+		cd=function(tp,data)
+			return ffi.udump(tp,unb64(data))
+		end,
+	})()
 end
 local function mindex(tbl,dat)
 	local c=tbl

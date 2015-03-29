@@ -22,7 +22,7 @@ admin.users=setmetatable({},{
 })
 admin.chans={}
 admin.cmd={}
-admin.db=sql.new(network.."/admin").new("perms","name","group","perms")
+admin.db=nil--sql.new(network.."/admin").new("perms","name","group","perms")
 
 function admin.match(user,txt,chan)
 	local pfx,mt=txt:match("^$([arcl]):(.*)")
@@ -37,7 +37,7 @@ function admin.match(user,txt,chan)
 			account=user.account,
 			chan=user.chan or chan,
 		})())
-		or (not pfx and (user.nick.."!"..user.username.."@"..user.host):match(mt)~=nil)
+		or (not pfx and (user.nick.."!"..(user.username or "*").."@"..user.host):match(mt)~=nil)
 end
 
 function admin.find(txt)
@@ -48,16 +48,6 @@ function admin.find(txt)
 		end
 	end
 	return o
-end
-
-function admin.auth(user,resp)
-	if admin.perms[user.nick]==nil or admin.perms[user.nick].account~=owneracc then
-		if not resp then
-			respond(user,"Nope.")
-		end
-		return false
-	end
-	return true
 end
 
 local trusted={
@@ -75,11 +65,33 @@ local trusted={
 		["ds84182"]=true,
 		["Wobbo"]=true,
 		["vifino"]=true,
+		["Kubuxu"]=true,
 	},
 	freenode={
 		["^v"]=true,
 	}
 }
+
+local operator={
+	esper={
+		["ping"]=true,
+		["vifino"]=true,
+		["ds84182"]=true,
+	},
+	freenode={
+		["^v"]=true,
+	}
+}
+
+function admin.auth(user,resp)
+	if admin.perms[user.nick]==nil or not operator[network][admin.perms[user.nick].account] then
+		if not resp then
+			respond(user,"Nope.")
+		end
+		return false
+	end
+	return true
+end
 
 function admin.trusted(user)
 	return trusted[network][user.account] and true or false
@@ -151,7 +163,7 @@ do
 end
 
 local whqueue={}
-
+local authed=false
 hook.new("raw",function(txt)
 	if txt=="QUIT" then
 		admin.chans={}
@@ -203,6 +215,10 @@ hook.new("raw",function(txt)
 		end
 	end)
 	txt:gsub("^:%S+ 354 "..cnick.." (%S+) (%S+) (%S+) (%S+) (%S+) (%S+) (%S+) (%S+) :(.+)",function(chan,username,ip,host,server,nick,modes,account,realname)
+		if network=="esper" and chan=="#V" and not authed then
+			send("PRIVMSG #V :authed")
+			authed=true
+		end
 		if admin.chans[chan] then
 			admin.chans[chan][nick]=true
 			admin.perms[nick]=admin.perms[nick] or {}
@@ -550,4 +566,10 @@ hook.new("command_delcommand",function(user,chan,txt)
 	save()
 	hook.del("command_"..txt)
 	return "Deleted"
+end)
+
+hook.new("command_restart",function(user,chan,txt)
+	if admin.trusted(user) then
+		exit=true
+	end
 end)

@@ -73,6 +73,9 @@ function async.socket(sk,err)
 			hook.new("select",function()
 				local txt,err,str=sk:receive(len)
 				txt=txt or str
+				if not txt and err~="timeout" then
+					resume(false,err)
+				end
 				if err~="timeout" or (txt~="" and len=="*a") then
 					resume(txt,err)
 					stop=true

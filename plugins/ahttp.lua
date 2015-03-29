@@ -2,28 +2,33 @@ ahttp={}
 local cb={}
 ahttp.callback=cb
 local lport=network=="freenode" and 1339 or 1341
-server.listen(lport,function(cl)
-	local dat=cl.receive()
-	cl.close()
-	print("recv '"..dat.."'")
-	local t=assert(unserialize(dat),dat)
-	if cb[t[1]] then
-		cb[t[1]](unpack(t,2))
-	end
-end)
-local cb=ahttp.callback
-ahttp={}
-function ahttp.get(url,post)
-	local cid
-	for l1=1,20 do
-		if not cb[l1] then
-			cid=l1
-			break
+local cbp={}
+local function prc(cid,url,post)
+	local ptr=ffi.new("char*[1]")
+	local thread=newthread(function(cid,url,post,lport,ptr)
+		local ffi=require("ffi")
+		ptr=ffi.cast("char**",loadstring("return "..(ptr:match("0x%x+")).."ULL")())
+		dofile("db.lua")
+		local res,err,head,code
+		if url:match("^https://") then
+			local https=require("ssl.https")
+			res,err,head,code=https.request(url,post)
+		else
+			local http=require("socket.http")
+			res,err,head,code=http.request(url,post)
 		end
-	end
-	if not cid then
-		error("http request overflow")
-	end
+		local out=serialize({res,err,head,code})
+		local nout=ffi.new("char[?]",#out)
+		ffi.copy(nout,out)
+		ptr[0]=nout
+		local sv=assert(socket.connect("localhost",lport))
+		assert(sv:send(cid.."\n"))
+	end,cid,url,post,lport,tostring(ptr))
+	return ptr
+end
+
+--[===[local function prc(cid,url,post)
+	cbd[cid]={url,post}
 	local file=io.open("asynctemp.lua","w")
 	file:write([[
 		local url=]]..serialize(url)..[[
@@ -58,7 +63,7 @@ function ahttp.get(url,post)
 						return tostring(v)
 					end
 				elseif t == "string" then
-					return string.format("%q", v):gsub("\\\n","\\n")
+					return string.format("%q", v):gsub("\\\n","\\n"):gsub("%z","\\z")
 				elseif t == "table" and pretty and getmetatable(v) and getmetatable(v).__tostring then
 					return tostring(v)
 				elseif t == "table" then
@@ -115,20 +120,80 @@ function ahttp.get(url,post)
 			end
 			return result
 		end
-		local res,err
+		print("ahttp requesting")
+		local res,err,head,code
 		if url:match("^https://") then
 			local https=require("ssl.https")
-			res,err=https.request(url,post)
+			res,err,head,code=https.request(url,post)
 		else
 			local http=require("socket.http")
-			res,err=http.request(url,post)
+			res,err,head,code=http.request(url,post)
 		end
 		local sv=assert(socket.connect("localhost",]]..lport..[[))
-		sv:send(serialize({cid,res,err}).."\n")
-		
+		sv:send(cid.."\n")
+		assert(sv:send(serialize({res,err,head,code}):gsub("\n","").."\n"))
+		print("ahttp sent")
 	]])
 	file:close()
+	print("ahttp running")
 	io.popen("luajit asynctemp.lua")
+end]===]
+
+server.listen(lport,function(cl)
+	local cid=tonumber(cl.receive())
+	cl.close()
+	if not cb[cid] then
+		error("invalid index "..tostring(cid))
+	end
+	local t,e=unserialize(ffi.string(cbp[cid][0]),true)
+	if not t then
+		error("Serialization error "..e)
+	end
+	cb[cid](unpack(t))
+end)
+
+ahttp={}
+
+function ahttp.get(url,post)
+	local cid
+	for l1=1,20 do
+		if not cb[l1] then
+			cid=l1
+			break
+		end
+	end
+	if not cid then
+		error("http request overflow")
+	end
+	cbp[cid]=prc(cid,url,post)
 	cb[cid]=async.current
-	return coroutine.yield()
+	local res={coroutine.yield()}
+	cb[cid]=nil
+	cbp[cid]=nil
+	return unpack(res)
 end
+
+setmetatable(http,{__call=function(s,url,data)
+	data=data or {}
+	if type(url)=="table" then
+		data=url
+	else
+		data.url=url
+	end
+	if type(data)=="string" then
+		data.post=data
+	end
+	data.method=data.method or (data.post and "POST") or (data.put and "PUT") or "GET"
+	data.headers=data.headers or {}
+	if data.auth then
+		data.headers.Authorization="Basic "..tob64(data.auth)
+	end
+	if data.post or data.put then
+		data.source=ltn12.source.string(data.post or data.put)
+		data.headers["Content-Length"]=#(data.post or data.put)
+	end
+	local t={}
+	data.sink=ltn12.sink.table(t)
+	local b,c,h=(url:match("^https://") and https or http).request(data)
+	return {result=b,data=table.concat(t),code=c,headers=h,url=data.url}
+end})

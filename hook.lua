@@ -93,6 +93,7 @@ function hook.new(name,func,meta)
 	for _,nme in pairs(name) do
 		hook.meta[nme]=meta
 		hooks[nme]=hooks[nme] or {}
+		hook.created[nme]=debug.traceback()
 		table.insert(hooks[nme],func)
 	end
 	return func

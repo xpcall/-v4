@@ -24,13 +24,6 @@ end,{
 	group="help",
 })
 
-hook.new({"command_openprograms","command_openp"},function(user,chan,txt)
-	return "openprograms.github.io https://github.com/OpenPrograms/"..txt
-end,{
-	desc="links to the openprograms site and github",
-	group="help",
-})
-
 hook.new({"command_opencomponents","command_openc"},function(user,chan,txt)
 	return "http://ci.cil.li/job/OpenComponents/"..txt
 end,{
@@ -423,14 +416,15 @@ do
 		["component:redstone"]={"redstone","rs","redstone api","rs api","redstone component","rs component"},
 		["component:redstoneinmotion"]={"redstone in motion","rim","redstone in motion api","rim api","redstone in motion component","rim component"},
 		["component:sign"]={"sign","sign api","sign component"},
+		["component:filesystem"]={"filesystem component","fs component"},
 		["component:hologram"]={"holo","hologram","hologram component"},
 		["componentaccess"]={"component access"},
 		["component"]={"components","component list","components list"},
 		["computercraft"]={"computercraft","cc"},
 		["computer_users"]={"users","perms","uac"},
 		["items"]={"items","item list","items list"},
-		["nonstandardlualibs"]={"non standard lua libs","non standard","nonstandard","sandbox"},
-		["signals"]={"signal","signals"},
+		["api:non-standard-lua-libs"]={"non standard lua libs","non standard","nonstandard","sandbox"},
+		["component:signals"]={"signal","signals"},
 		["tutorial:oc1_basic_computer"]={"tutorial1","tutorial basic","tutorial basic computer","tutorial computer"},
 		["tutorial:oc3_hard_drives"]={"tutorial hardrives","tutorial2","tutorial hdd","tutorial hdds","tutorial filesystem","tutorial fs"},
 		["tutorial:oc2_writing_code"]={"tutorial3","tutorial code","tutorial coding"},

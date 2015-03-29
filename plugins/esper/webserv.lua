@@ -11,26 +11,6 @@ if sv then
 		while hook.remsocket(cl) do end
 	end
 
-	function urlencode(txt)
-		return txt:gsub("\r?\n","\r\n"):gsub("[^%w ]",function(t) return string.format("%%%02X",t:byte()) end):gsub(" ","+")
-	end
-
-	function urldecode(txt)
-		return txt:gsub("+"," "):gsub("%%(%x%x)",function(t) return string.char(tonumber("0x"..t)) end)
-	end
-
-	function htmlencode(txt)
-		return txt:gsub("&","&amp;"):gsub("<","&lt;"):gsub(">","&gt;"):gsub("\"","&quot;"):gsub("'","&apos;"):gsub("\r?\n","<br>"):gsub("\t","&nbsp;&nbsp;&nbsp;&nbsp;")
-	end
-
-	function parseurl(url)
-		local out={}
-		for var,dat in url:gmatch("([^&]+)=([^&]+)") do
-			out[urldecode(var)]=urldecode(dat)
-		end
-		return out
-	end
-
 	local ctype={
 		["html"]="text/html",
 		["css"]="text/css",
@@ -42,6 +22,14 @@ if sv then
 		["zip"]="application/octet-stream",
 		["jar"]="application/octet-stream",
 		["oci"]="application/octet-stream",
+		["apk"]="application/octet-stream",
+		["ogg"]="application/octet-stream",
+		["mp3"]="application/octet-stream",
+		["mp4"]="application/octet-stream",
+		["mkv"]="application/octet-stream",
+		["mov"]="application/octet-stream",
+		["mpeg"]="application/octet-stream",
+		["mp3"]="application/octet-stream",
 		["swf"]="application/x-shockwave-flash",
 	}
 
@@ -185,7 +173,7 @@ if sv then
 						end
 					end
 					if not gt then
-						local o="<a href=\"/"..fs.resolve(url.."/../").."\">..</a><br>"
+						local o="<a href=\"/"..fs.resolve(url.."/../"):gsub("^/","").."\">..</a><br>"
 						for k,v in pairs(fs.list(bse)) do
 							o=o.."<a href=\"/"..fs.combine(url,v):gsub("^/","").."\">"..htmlencode(v).."</a><br>"
 						end
@@ -279,14 +267,14 @@ if sv then
 			cl:settimeout(0)
 			cli[cl]={headers={},ip=cl:getpeername(),sk=cl}
 			if (config or {logging=true}).logging then
-				print("got client "..(cli[cl].ip or "BORK").." "..(hook.queue("command_find",nil,nil,"ip "..cli[cl].ip) or "").." "..(cl:getfd()))
+				print("got client "..(cli[cl].ip or "BORK").." "..(hook.queue("command_find",nil,nil,"ip "..(cli[cl].ip or "")) or "").." "..(cl:getfd()))
 			end
 			cl=sv:accept()
 		end
 		for cl,cldat in pairs(cli) do
 			local s,e=cl:receive(0)
 			if not s and e=="closed" then
-				print("closed "..cldat.ip)
+				print("closed "..(cldat.ip or "bork"))
 				close(cl)
 			else
 				local s,e=cl:receive(tonumber(cldat.post and cldat.headers["Content-Length"]))

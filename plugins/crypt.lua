@@ -14,6 +14,14 @@ function crypt.rot13(txt)
 		return string.char(((c:byte()-52)%26)+65)
 	end)
 end
+
+hook.new("command_bestcipher",function(user,chan,txt)
+	return crypt.tohex(unb64(crypt.rot13(tob64(txt))))
+		:gsub("0","1111"):gsub("1","1110"):gsub("2","1101"):gsub("3","1100"):gsub("4","1011"):gsub("5","1010"):gsub("6","1001"):gsub("7","1000")
+		:gsub("8","0111"):gsub("9","0110"):gsub("a","0101"):gsub("b","0100"):gsub("c","0011"):gsub("d","0010"):gsub("e","0001"):gsub("f","0000")
+		:reverse()
+end)
+
 function crypt.rot47(txt)
 	txt=txt:gsub(".",function(c) if c:byte()<127 and c:byte()>32 then return string.char((((c:byte()-33)+47)%94)+33) end end)
 	return txt
@@ -183,7 +191,8 @@ local function num2chars(num,l)
 end
 
 local function num2hex(num)
-	return string.format("%08x",num)
+	local o=string.format("%08x",num):match("........$")
+	return o
 end
 
 do
@@ -353,7 +362,15 @@ local crc32dat={
 	0xb3667a2e,0xc4614ab8,0x5d681b02,0x2a6f2b94,0xb40bbe37,0xc30c8ea1,0x5a05df1b,0x2d02ef8d
 }
 
-function crc32(txt)
+function crc32(txt,nohex)
+	local crc=bit.bnot(0)
+	for l1=1,#txt do
+		crc=bit.bxor(bit.rshift(crc,8),crc32dat[bit.bxor(bit.band(crc,0xFF),txt:byte(l1,l1))+1])
+	end
+	return (nohex and num2chars or num2hex)(bit.bnot(crc))
+end
+
+function ncrc32(txt,nohex)
 	local crc=bit.bnot(0)
 	for l1=1,#txt do
 		crc=bit.bxor(bit.rshift(crc,8),crc32dat[bit.bxor(bit.band(crc,0xFF),txt:byte(l1,l1))+1])
@@ -381,7 +398,7 @@ function strdist(s,t)
 	end
 	for i=1,m do
 		d[i][0]=i
-    end
+	end
 	for j=1,n do
 		d[0][j]=j
 	end
@@ -416,7 +433,7 @@ function dstword(txt)
 	return txt
 end
 
-dstdb=sql.new("dstdb").new("wordlist","word","encoded")
+--dstdb=sql.new("dstdb").new("wordlist","word","encoded")
 
 --[[local file=io.open("/home/nadine/Downloads/derp/Two_Word_Full.txt")
 for line in file:lines() do
@@ -507,26 +524,40 @@ function decodestream(tbl)
 	return o
 end
 
-function overkillgen(key)
-	local state=crypt.hash.sha512(key,true)
+function overkill(pass)
+	local estate=sha512(key,true)
 	for l1=1,7 do
-		state=state..crypt.hash.sha512(key..state,true)
+		estate=estate..sha512(key..estate,true)
 	end
-	return state
-end
-
-function overkill(state,txt,dec)
-	local out=""
-	for l1=1,#txt,32 do
-		local ts=txt:sub(l1,l1+31)
-		local hs=state:sub(1,64)
-		local o=""
-		for l2=1,#ts do
-			o=o..string.char(bit.bxor(ts:byte(l2,l2),hs:byte(l2,l2)))
+	local dstate=estate
+	local function cr(state,txt,dec)
+		local out=""
+		for l1=1,#txt,32 do
+			local ts=txt:sub(l1,l1+31)
+			local hs=state:sub(1,64)
+			local o=""
+			for l2=1,#ts do
+				o=o..string.char(bit.bxor(ts:byte(l2,l2),hs:byte(l2,l2)))
+			end
+			out=out..o
+			state=state:sub(65)..sha512((dec and o or ts)..hs,true)
 		end
-		out=out..o
-		state=state:sub(65)..crypt.hash.sha512((dec and o or ts)..hs,true)
+		return out,state
 	end
-	return out,state
+	return {
+		encrypt=function(txt)
+			cr(estate,txt)
+		end,
+		decrypt=function(txt)
+			cr(dstate,txt,true)
+		end,
+	}
 end
 
+local function lshift(n,p)
+	return n*(2^p)
+end
+
+local function rshift(n,p)
+	return n/(2^p)
+end

@@ -8,7 +8,7 @@ function paste(txt,nolimit)
 	local file=assert(io.open("www/paste/"..id..".txt","w"))
 	file:write(nolimit and txt or txt:sub(1,100000))
 	file:close()
-	return "http://71.238.153.166/paste/"..id..".txt"
+	return "http://68.36.225.16/paste/"..id..".txt"
 end
 hook.new("command_paste",function(user,chan,txt)
 	return paste(txt)

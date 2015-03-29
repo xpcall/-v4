@@ -1,3 +1,51 @@
+function mtindex(tbl,...)
+	local c=tbl
+	local p={...}
+	for k,v in ipairs(p) do
+		c=c[v]
+	end
+	return c
+end
+
+local pmt
+pmt={
+	__newindex=function(s,n,d)
+		local p=getmetatable(s)
+		local prx=p.prx
+		prx[n]=d
+		rawset(s,n,nil)
+		fs.write(getmetatable(s).dir,serialize(p.oprx))
+	end,
+	__index=function(s,n)
+		local p=getmetatable(s)
+		local prx=p.prx
+		local o=prx[n]
+		if type(o)=="table" then
+			local op=table.copy(pmt)
+			op.prx=o
+			op.oprx=p.oprx
+			op.dir=p.dir
+			rawset(s,n,setmetatable({},op))
+			return s[n]
+		end
+		return o
+	end,
+}
+
+function persist(name,default)
+	local prx=default or {}
+	if fs.exists("persist/"..name) then
+		prx=unserialize(fs.read("persist/"..name))
+		assert(type(prx)=="table")
+	end
+	local mt=table.copy(pmt)
+	mt.prx=prx
+	mt.oprx=prx
+	mt.dir="persist/"..name
+	return setmetatable({},mt)
+end
+
+--[==[
 sql={}
 local dbs=setmetatable({},{__mode="v"})
 local dbw=setmetatable({},{__mode="v"})
@@ -211,4 +259,4 @@ function sql.new(dir)
 		dbs[dir]=out
 	end
 	return out
-end
+end]==]

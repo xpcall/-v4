@@ -114,14 +114,20 @@ fs={
 		if res~=nil then
 			return res
 		end
-		local fl=io.open(file,"rb")
+		local fl=assert(io.open(file,"rb"))
 		local data=fl:read("*a")
 		fl:close()
 		if (rd[file] or {}).data~=data then
 			modified[file]=os.date()
 		end
-		hash[file]=crypto.digest("sha1",data)
+		--hash[file]=crypto.digest("sha1",data)
 		return set(rd,file,data)
+	end,
+	write=function(file,txt)
+		local h=assert(io.open(file,"w"))
+		h:write(txt)
+		h:close()
+		return true
 	end,
 	modified=function(file)
 		local res=modified[file]

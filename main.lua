@@ -95,6 +95,9 @@ local _,err=xpcall(function()
 			end
 			tme=math.min(tme,net.hook.interval or 5)
 		end
+		if networks.esper.exit or networks.freenode.exit then
+			break
+		end
 		local sel={socket.select(hook.sel,hook.rsel,tme)}
 		hook.queue("select",unpack(sel))
 		for netname,net in pairs(networks) do
@@ -102,5 +105,8 @@ local _,err=xpcall(function()
 		end
 	end
 end,debug.traceback)
-print(err)
-sql.cleanup()
+--sql.cleanup()
+if err then
+	error(err,0)
+end
+networks.esper.send("PRIVMSG #V :restarting")

@@ -1,14 +1,17 @@
 git={}
 local file=io.open("pass/githubpassword.txt","r")
-local auth=file:read("*a")
+local auth=file:read("*a"):match("[^\r\n]+")
 file:close()
-function git.get(url)
-	print("git get "..url)
-	local dat,code=https.request("https://"..auth.."@"..url:gsub("^https://",""))
-	if code~=200 then
-		error("Error "..url..","..code)
+function git.get(url,data)
+	data=data or {}
+	data.auth=data.auth or auth
+	data.headers=data.headers or {}
+	data.headers["User-Agent"]="caretv4"
+	data.headers["Accept"]="application/vnd.github.v3+json"
+	local res=http((url:match("^https?://") and "" or "https://api.github.com/")..url,data)
+	if res.result then
+		res.data=json.decode(res.data)
 	end
-	local res=json.decode(dat)
 	return res
 end
 
