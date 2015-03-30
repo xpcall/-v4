@@ -472,6 +472,114 @@ function serialize(value, pretty)
 	return result
 end
 
+function _serializehtml(t,r)
+	r=r or {}
+	if r[t] then
+		return "<div class=\"value unknown\">"..tostring(t).."</div>"
+	end
+	--print("serializing "..tostring(t):sub(1,100))
+	local tpe=type(t)
+	if tpe=="table" then
+		local err,res=pcall(function()
+			if not next(t) then
+				return "<div class=\"value table\"></div>"
+			end
+			local o=""
+			local u={}
+			local n=1
+			r[t]=true
+			while t[n] do
+				u[n]=true
+				o=o.."<tr><td></td><td>".._serializehtml(t[n],r).."</tr>"
+				n=n+1
+			end
+			local oi={}
+			for k,v in pairs(t) do
+				if not u[k] then
+					table.insert(oi,{k,v})
+				end
+			end
+			table.sort(oi,function(a,b)
+				return tostring(a[1])<tostring(b[1])
+			end)
+			for k,v in ipairs(oi) do
+				o=o.."<tr><td>".._serializehtml(v[1],r).."</td><td>=</td><td>".._serializehtml(v[2],r).."</td></tr>"
+			end
+			r[t]=nil
+			return "<table class=\"value table\">"..o.."</table>"
+		end)
+		return err and res or "<div class=\"value unknown\">"..htmlencode(tostring(t)).."</div>"
+	elseif tpe=="nil" then
+		return "<div class=\"value nil\">nil</div>"
+	elseif tpe=="boolean" then
+		return "<div class=\"value bool\">"..htmlencode(tostring(t)).."</div>"
+	elseif tpe=="number" then
+		if t~=t then
+			return "<div class=\"value number\">nan</div>"
+		elseif t==math.huge then
+			return "<div class=\"value number\">inf</div>"
+		elseif t==-math.huge then
+			return "<div class=\"value number\">-inf</div>"
+		end
+		return "<div class=\"value number\">"..htmlencode(tostring(t)).."</div>"
+	elseif tpe=="string" then
+		if t:match("\n") and '"'..(t:gsub("[\r\n\"'\\]",""))..'"'==string.format("%q",t:gsub("[\r\n\"'\\]","")) and not t:match("[[") and not t:match("]]") then
+			return "<div class=\"value longstring\">[["..htmlencode(t:gsub("\r","")).."]]</div>"
+		end
+		return "<div class=\"value string\">"..htmlencode(serialize(t)).."</div>"
+	else
+		return "<div class=\"value unknown\">"..htmlencode(tostring(t)).."</div>"
+	end
+end
+
+function serializehtml(t)
+	return [[
+		<html>
+			<head>
+				<style type="text/css">
+					body {
+						background-color: #191919;
+						color: #e0e2e4;
+						font-family: "Trebuchet MS", Helvetica, sans-serif;
+					}
+					.value {
+						font-size: 20px;
+					}
+					.table {
+						border-style: solid;
+						border-width: 2px;
+						border-color: #101010;
+						padding: 16px;
+						display: inline-block;
+						background-color: #1f1f1f;
+					}
+					.string {
+						color: #ec7600;
+					}
+					.longstring {
+						color: #c29f56;
+					}
+					.number {
+						color: #ffcd22;
+					}
+					.bool {
+						color: #93c763;
+					}
+					.nil {
+						color: #93c763;
+					}
+					.unknown {
+						color: #678cb1;
+					}
+				</style>
+			</head>
+			<body>
+	]].._serializehtml(t)..[[
+			</body>
+		</html>
+	]]
+end
+
 --[[function split(T,func) -- splits a table
 	if func then
 		T=func(T) -- advanced function

@@ -7,42 +7,116 @@ function mtindex(tbl,...)
 	return c
 end
 
-local pmt
-pmt={
-	__newindex=function(s,n,d)
-		local p=getmetatable(s)
-		local prx=p.prx
-		prx[n]=d
-		rawset(s,n,nil)
-		fs.write(getmetatable(s).dir,serialize(p.oprx))
-	end,
-	__index=function(s,n)
-		local p=getmetatable(s)
-		local prx=p.prx
-		local o=prx[n]
-		if type(o)=="table" then
-			local op=table.copy(pmt)
-			op.prx=o
-			op.oprx=p.oprx
-			op.dir=p.dir
-			rawset(s,n,setmetatable({},op))
-			return s[n]
-		end
-		return o
-	end,
-}
+do
+	local pmt
+	pmt={
+		__newindex=function(s,n,d)
+			local p=getmetatable(s)
+			local prx=p.prx
+			prx[n]=d
+			rawset(s,n,nil)
+			fs.write(getmetatable(s).dir,serialize(p.oprx))
+		end,
+		__index=function(s,n)
+			local p=getmetatable(s)
+			local prx=p.prx
+			local o=prx[n]
+			if type(o)=="table" then
+				local op=table.copy(pmt)
+				op.prx=o
+				op.oprx=p.oprx
+				op.dir=p.dir
+				rawset(s,n,setmetatable({},op))
+				return s[n]
+			end
+			return o
+		end,
+		__pairs=function(s)
+			return pairs(getmetatable(s).prx)
+		end,
+	}
 
-function persist(name,default)
-	local prx=default or {}
-	if fs.exists("persist/"..name) then
-		prx=unserialize(fs.read("persist/"..name))
-		assert(type(prx)=="table")
+	function persist(name,default)
+		local prx=default or {}
+		if fs.exists("persist/"..name) then
+			prx=unserialize(fs.read("persist/"..name))
+			assert(type(prx)=="table")
+		end
+		local mt=table.copy(pmt)
+		mt.prx=prx
+		mt.oprx=prx
+		mt.dir="persist/"..name
+		return setmetatable({},mt)
 	end
-	local mt=table.copy(pmt)
-	mt.prx=prx
-	mt.oprx=prx
-	mt.dir="persist/"..name
-	return setmetatable({},mt)
+end
+
+do
+	function saveData(dir,t)
+		if fs.exists(dir) then
+			fs.delete(dir)
+		end
+		if type(t)=="table" then
+			fs.makeDir(dir)
+			for k,v in pairs(t) do
+				saveData(fs.combine(dir,tostring(k)),v)
+			end
+		else
+			fs.write(dir,serialize(t))
+		end
+	end
+	
+	function readData(dir)
+		if fs.isDir(dir) then
+			local o={}
+			for k,v in pairs(fs.list(dir)) do
+				o[v]=readData(fs.combine(dir,v))
+			end
+			return o
+		else
+			return unserialize(fs.read(dir))
+		end
+	end
+	
+	local pmt
+	pmt={
+		__newindex=function(s,n,d)
+			local p=getmetatable(s)
+			local prx=p.prx
+			prx[n]=d
+			rawset(s,n,nil)
+			saveData(fs.combine(p.dir,tostring(n)),d)
+		end,
+		__index=function(s,n)
+			local p=getmetatable(s)
+			local prx=p.prx
+			local o=prx[n]
+			if type(o)=="table" then
+				local op=table.copy(pmt)
+				op.dir=fs.combine(p.dir,tostring(n))
+				op.prx=o
+				rawset(s,n,setmetatable({},op))
+				return s[n]
+			end
+			return o
+		end,
+		__pairs=function(s)
+			return pairs(getmetatable(s).prx)
+		end,
+	}
+	
+	function persistf(name,default)
+		local prx=default or {}
+		local dir="persist/"..name
+		if fs.exists(dir) then
+			prx=readData(dir)
+		else
+			saveData(dir,prx)
+		end
+		local mt=table.copy(pmt)
+		mt.dir=dir
+		mt.prx=prx
+		return setmetatable({},mt)
+	end
 end
 
 --[==[

@@ -22,8 +22,3 @@ extern int lib_udump(lua_State* L) {
 	return 1;
 }
 
-extern int lib_test(lua_State *L) {
-	int potato=1337;
-	luaL_pushcdata(L,&potato,sizeof(potato),"int");
-	return 1;
-}

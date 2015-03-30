@@ -5,7 +5,7 @@ local lport=network=="freenode" and 1339 or 1341
 local cbp={}
 local function prc(cid,url,post)
 	local ptr=ffi.new("char*[1]")
-	local thread=newthread(function(cid,url,post,lport,ptr)
+	local thread=thread.new(function(cid,url,post,lport,ptr)
 		local ffi=require("ffi")
 		ptr=ffi.cast("char**",loadstring("return "..(ptr:match("0x%x+")).."ULL")())
 		dofile("db.lua")

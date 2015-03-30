@@ -129,6 +129,9 @@ fs={
 		h:close()
 		return true
 	end,
+	makeDir=function(dir)
+		assert(lfs.mkdir(dir))
+	end,
 	modified=function(file)
 		local res=modified[file]
 		if not res then
