@@ -82,15 +82,18 @@ end
 end]]
 
 function urlencode(txt)
-	return txt:gsub("\r?\n","\r\n"):gsub("[^%w ]",function(t) return string.format("%%%02X",t:byte()) end):gsub(" ","+")
+	local o=txt:gsub("\r?\n","\r\n"):gsub("[^%w ]",function(t) return string.format("%%%02X",t:byte()) end):gsub(" ","+")
+	return o
 end
 
 function urldecode(txt)
-	return txt:gsub("+"," "):gsub("%%(%x%x)",function(t) return string.char(tonumber("0x"..t)) end)
+	local o=txt:gsub("+"," "):gsub("%%(%x%x)",function(t) return string.char(tonumber("0x"..t)) end)
+	return o
 end
 
 function htmlencode(txt)
-	return txt:gsub("&","&amp;"):gsub("<","&lt;"):gsub(">","&gt;"):gsub("\"","&quot;"):gsub("'","&apos;"):gsub("\r?\n","<br>"):gsub("\t","&nbsp;&nbsp;&nbsp;&nbsp;")
+	local o=txt:gsub("&","&amp;"):gsub("<","&lt;"):gsub(">","&gt;"):gsub("\"","&quot;"):gsub("'","&apos;"):gsub("\r?\n","<br>"):gsub("\t","&nbsp;&nbsp;&nbsp;&nbsp;"):gsub("  "," &nbsp;")
+	return o
 end
 
 function parseurl(url)
@@ -412,7 +415,8 @@ function serialize(value, pretty)
 				return tostring(v)
 			end
 		elseif t == "string" then
-			return string.format("%q", v):gsub("\\\n","\\n"):gsub("%z","\\z")
+			local o=string.format("%q", v):gsub("\\\n","\\n"):gsub("%z","\\z")
+			return o
 		elseif t == "table" and pretty and getmetatable(v) and getmetatable(v).__tostring then
 			return tostring(v)
 		elseif t == "table" then
@@ -578,6 +582,172 @@ function serializehtml(t)
 			</body>
 		</html>
 	]]
+end
+
+function utf8len(s)
+	local t=0
+	for l1=1,#s do
+		local c=s:byte(l1)
+		if bit.band(c,0xC0)~=0x80 then
+			t=t+1
+		end
+	end
+	return t
+end
+
+local box={
+	ud="│",
+	lr="─",
+	ur="└",
+	rd="┌",
+	ld="┐",
+	lu="┘",
+	e="[]"
+}
+
+--[[local box={
+	ud="|",
+	lr="-",
+	ur="\\",
+	rd="/",
+	ld="\\",
+	lu="/",
+	e="[]"
+}]]
+
+local function txtbl(s,mx)
+	local o=s:tmatch("[^\r\n]+")
+	mx=mx or 0
+	for l1=1,#o do
+		mx=math.max(mx,utf8len(o[l1]))
+	end
+	for l1=1,#o do
+		o[l1]=o[l1]..(" "):rep(mx-utf8len(o[l1]))
+	end
+	return o,mx
+end
+
+function consoleBox(s)
+	if s=="" then
+		s=" "
+	end
+	local t,l=txtbl(s)
+	for l1=1,#t do
+		t[l1]=box.ud..t[l1]..box.ud
+	end
+	table.insert(t,1,box.rd..(box.lr:rep(l))..box.ld)
+	table.insert(t,box.ur..(box.lr:rep(l))..box.lu)
+	return table.concat(t,"\n")
+end
+
+function consoleCat(a,b,al,bl)
+	local at,al=txtbl(a,al)
+	local bt,bl=txtbl(b,bl)
+	if #at==#bt then
+		for l1=1,#bt do
+			bt[l1]=at[l1]..bt[l1]
+		end
+		return table.concat(bt,"\n")
+	end
+	if al==0 then
+		return table.concat(bt,"\n")
+	elseif bl==0 then
+		return table.concat(at,"\n")
+	end
+	local ml=math.max(#at,#bt)
+	for l1=1,math.floor((#bt-#at)/2) do
+		table.insert(at,1,(" "):rep(al))
+	end
+	for l1=#at+1,ml do
+		table.insert(at,(" "):rep(al))
+	end
+	for l1=1,math.floor((#at-#bt)/2) do
+		table.insert(bt,1,(" "):rep(bl))
+	end
+	for l1=#bt+1,ml do
+		table.insert(bt,(" "):rep(bl))
+	end
+	for l1=1,ml do
+		at[l1]=at[l1]..bt[l1]
+	end
+	return table.concat(at,"\n")
+end
+
+function _consoleSerialize(t,r)
+	r=r or {}
+	if r[t] then
+		return tostring(t)
+	end
+	local tpe=type(t)
+	if tpe=="table" then
+		local err,res=pcall(function()
+			if not next(t) then
+				return box.e
+			end
+			local ok={}
+			local ov={}
+			local u={}
+			local n=1
+			r[t]=true
+			while t[n] do
+				u[n]=true
+				table.insert(ok," ")
+				table.insert(ov,_consoleSerialize(t[n],r))
+				n=n+1
+			end
+			local oi={}
+			for k,v in pairs(t) do
+				if not u[k] then
+					table.insert(oi,{k,v})
+				end
+			end
+			table.sort(oi,function(a,b)
+				return tostring(a[1])<tostring(b[1])
+			end)
+			for k,v in ipairs(oi) do
+				table.insert(ok,_consoleSerialize(v[1],r))
+				table.insert(ov,consoleCat(" = ",_consoleSerialize(v[2],r)))
+			end
+			local _
+			local kl=0
+			for k,v in pairs(ok) do
+				if v~=" " then
+					_,kl=txtbl(v,kl)
+				end
+			end
+			if kl==0 then
+				return consoleBox(table.concat(ov,"\n"))
+			end
+			local vl=0
+			for k,v in pairs(ov) do
+				_,vl=txtbl(v,vl)
+			end
+			local o=""
+			for l1=1,#ok do
+				o=o..consoleCat(ok[l1],ov[l1],kl,vl).."\n"
+			end
+			r[t]=nil
+			return consoleBox(o)
+		end)
+		return err and res or tostring(t)
+	elseif tpe=="number" then
+		if t~=t then
+			return "nan"
+		elseif t==math.huge then
+			return "inf"
+		elseif t==-math.huge then
+			return "-inf"
+		end
+		return tostring(t)
+	elseif tpe=="string" then
+		return serialize(t)
+	else
+		return tostring(t)
+	end
+end
+
+function consoleSerialize(t)
+	return _consoleSerialize(t)
 end
 
 --[[function split(T,func) -- splits a table

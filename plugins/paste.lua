@@ -1,5 +1,6 @@
 local chars="qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM0987654321"
-function paste(txt,nolimit)
+
+function pasteraw(txt,nolimit)
 	local id=""
 	for l1=1,5 do
 		local n=math.random(1,#chars)
@@ -19,6 +20,34 @@ function pastehtml(txt,nolimit)
 	end
 	local file=assert(io.open("www/paste/"..id..".html","w"))
 	file:write(nolimit and txt or txt:sub(1,1000000))
+	file:close()
+	return "http://68.36.225.16/paste/"..id..".html"
+end
+
+function paste(txt,nolimit)
+	local id=""
+	for l1=1,5 do
+		local n=math.random(1,#chars)
+		id=id..chars:sub(n,n)
+	end
+	local file=assert(io.open("www/paste/"..id..".html","w"))
+	file:write([[
+		<html>
+			<head>
+				<style type="text/css">
+					body {
+						font-family: "Lucida Console", Monaco, monospace;
+					}
+				</style>
+				<meta charset="utf-8"/>
+			</head>
+			<body>
+	]])
+	file:write(htmlencode(nolimit and txt or txt:sub(1,1000000)))
+	file:write([[
+			</body>
+		</html>
+	]])
 	file:close()
 	return "http://68.36.225.16/paste/"..id..".html"
 end
