@@ -12,6 +12,9 @@ function antiping(txt)
 	while n>0 do
 		n=0
 		txt=txt:gsub(validnick,function(nm)
+			if (admin.perms[nm] or {}).account=="Vexatos" then
+				nm="Potatos"
+			end
 			if admin.perms[nm] and #nm>1 then
 				local md=math.floor(#nm/2)
 				nm=nm:sub(1,md).."\226\128\139"..nm:sub(md+1)

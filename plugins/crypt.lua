@@ -15,13 +15,6 @@ function crypt.rot13(txt)
 	end)
 end
 
-hook.new("command_bestcipher",function(user,chan,txt)
-	return crypt.tohex(unb64(crypt.rot13(tob64(txt))))
-		:gsub("0","1111"):gsub("1","1110"):gsub("2","1101"):gsub("3","1100"):gsub("4","1011"):gsub("5","1010"):gsub("6","1001"):gsub("7","1000")
-		:gsub("8","0111"):gsub("9","0110"):gsub("a","0101"):gsub("b","0100"):gsub("c","0011"):gsub("d","0010"):gsub("e","0001"):gsub("f","0000")
-		:reverse()
-end)
-
 function crypt.rot47(txt)
 	txt=txt:gsub(".",function(c) if c:byte()<127 and c:byte()>32 then return string.char((((c:byte()-33)+47)%94)+33) end end)
 	return txt

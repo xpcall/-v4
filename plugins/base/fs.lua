@@ -1,64 +1,57 @@
-local exists={}
-local isdir={}
-local isfile={}
-local list={}
-local size={}
-local hash={}
-local rd={}
-local last={}
-local modified={}
-local function update(tbl,ind)
-	local tme=socket.gettime()
-	local dt=tme-(last[tbl] or tme)
-	last[tbl]=tme
-	for k,v in tpairs(tbl) do
-		v.time=v.time-dt
-		if v.time<=0 then
-			tbl[k]=nil
+local attr={}
+local function getAttr(file,force)
+	if attr[file]==nil or socket.gettime()>=(attr[file] or {blife=0}).blife then
+		attr[file]=lfs.attributes(file) or false
+		local dat=attr[file]
+		if dat then
+			dat.blife=socket.gettime()+5
+			if dat.mode=="directory" then
+				dat.list={}
+				for fn in lfs.dir(file) do
+					if fn~="." and fn~=".." then
+						table.insert(dat.list,fn)
+					end
+				end
+			end
 		end
 	end
-	return (tbl[ind] or {}).value
+	return attr[file]
 end
-local function set(tbl,ind,val)
-	tbl[ind]={time=10,value=val}
-	return val
+local filedata={}
+local function getFile(file)
+	local attr=getAttr(file)
+	if not attr then
+		filedata[file]=nil
+		return nil
+	end
+	for k,v in tpairs(filedata) do
+		if v[3]>=socket.gettime() then
+			filedata[k]=nil
+		end
+	end
+	if not filedata[file] or filedata[file][2]~=attr.modified then
+		local fl=assert(io.open(file,"r"))
+		filedata[file]={fl:read("*a"),attr.modified}
+		fl:close()
+	end
+	filedata[file][3]=socket.gettime()+5
+	return filedata[file][1]
 end
 fs={
 	exists=function(file)
-		return lfs.attributes(file)~=nil
+		return getAttr(file) and true
 	end,
 	isDir=function(file)
-		local res=update(isdir,file)
-		if res~=nil then
-			return res
-		end
-		local dat=lfs.attributes(file)
-		if not dat then
-			return nil
-		end
-		return set(isdir,file,dat.mode=="directory")
-	end,
-	size=function(file)
-		local res=update(size,file)
-		if res then
-			return res
-		end
-		local dat=lfs.attributes(file)
-		if not dat then
-			return nil
-		end
-		return set(size,file,dat.size)
+		local attr=getAttr(file)
+		return attr and attr.mode=="directory"
 	end,
 	isFile=function(file)
-		local res=update(isfile,file)
-		if res~=nil then
-			return res
-		end
-		local dat=lfs.attributes(file)
-		if not dat then
-			return nil
-		end
-		return set(isfile,file,dat.mode=="file")
+		local attr=getAttr(file)
+		return attr and attr.mode=="file"
+	end,
+	list=function(file)
+		local attr=getAttr(file)
+		return attr and attr.list
 	end,
 	split=function(file)
 		local t={}
@@ -66,6 +59,14 @@ fs={
 			t[#t+1]=dir
 		end
 		return t
+	end,
+	modified=function(file)
+		local attr=getAttr(file)
+		return attr and attr.modification
+	end,
+	size=function(file)
+		local attr=getAttr(file)
+		return attr and attr.size
 	end,
 	combine=function(filea,fileb)
 		local o={}
@@ -78,7 +79,6 @@ fs={
 		return filea:match("^/?")..table.concat(o,"/")..fileb:match("/?$")
 	end,
 	resolve=function(file)
-		local b,e=file:match("^(/?).-(/?)$")
 		local t=fs.split(file)
 		local s=0
 		for l1=#t,1,-1 do
@@ -93,82 +93,56 @@ fs={
 				s=s-1
 			end
 		end
-		return b..table.concat(t,"/")..e
+		return table.concat(t,"/")
 	end,
-	list=function(dir)
-		local res=update(list,dir)
-		if res~=nil then
-			return res
-		end
-		dir=dir or ""
-		local o={}
-		for fn in lfs.dir(dir) do
-			if fn~="." and fn~=".." then
-				table.insert(o,fn)
-			end
-		end
-		return set(list,dir,o)
+	pop=function(file,n)
+		return fs.resolve(("../"):rep(n or 1)..file)
 	end,
 	read=function(file)
-		local res=update(rd,file)
-		if res~=nil then
-			return res
-		end
-		local fl=assert(io.open(file,"rb"))
-		local data=fl:read("*a")
-		fl:close()
-		if (rd[file] or {}).data~=data then
-			modified[file]=os.date()
-		end
-		--hash[file]=crypto.digest("sha1",data)
-		return set(rd,file,data)
+		return getFile(file)
+	end,
+	makeDir=function(dir)
+		getAttr(dir,true)
+		getAttr(fs.pop(dir),true)
+		assert(lfs.mkdir(dir))
 	end,
 	write=function(file,txt)
+		getAttr(file,true)
+		getAttr(fs.pop(file),true)
 		local h=assert(io.open(file,"w"))
 		h:write(txt)
 		h:close()
 		return true
 	end,
-	makeDir=function(dir)
-		assert(lfs.mkdir(dir))
-	end,
-	modified=function(file)
-		local res=modified[file]
-		if not res then
-			fs.read(file)
-		end
-		return modified[file]
-	end,
-	hash=function(file)
-		local out=hash[file]
-		if not out then
-			out=crypto.digest.new("sha1")
-			local file=io.open(file,"r")
-			if not file then
-				return
-			end
-			local chunk=file:read(16384)
-			while chunk do
-				out:update(chunk)
-				chunk=file:read(16384)
-			end
-			file:close()
-			return out:final()
-		end
-		return out
-	end,
-	sethash=function(file,txt)
-		hash[file]=txt
-	end,
-	delete=function(file)
-		os.remove(file)
-	end,
 	move=function(file,tofile)
-		local fl=io.open(file,"rb")
-		local tofl=io.open(file,"wb")
+		local fl=assert(io.open(file,"rb"))
+		local tofl=assert(io.open(tofile,"wb"))
+		getAttr(file,true)
+		getAttr(fs.pop(file),true)
+		getAttr(tofile,true)
+		getAttr(fs.pop(tofile),true)
 		tofl:write(fl:read("*a"))
 		fl:close()
 		tofl:close()
-		os.remove(file)
+		fs.delete(file)
+	end,
+	delete=function(file)
+		if not fs.exists(file) then
+			return
+		end
+		if fs.isDir(file) then
+			for k,v in pairs(fs.list(file)) do
+				fs.delete(fs.combine(file,v))
+			end
+		end
+		assert(os.remove(file))
+	end,
+	recurse=function(file,func)
+		if fs.isDir(file) then
+			for k,v in pairs(fs.list(file)) do
+				fs.recurse(fs.combine(file,v),func)
+			end
+		end
+		func(file)
 	end,
 }

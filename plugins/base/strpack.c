@@ -44,9 +44,10 @@
 #include "lauxlib.h"
 #include "lualib.h"
 
-typedef unsigned int lua_Unsigned;
+typedef unsigned long long lua_Unsigned;
+typedef long long lua53_Integer;
 
-#define LUAL53_BUFFERSIZE ((int)(0x80 * sizeof(void*) * sizeof(lua_Integer)))
+#define LUAL53_BUFFERSIZE ((int)(0x80 * sizeof(void*) * sizeof(lua53_Integer)))
 
 typedef struct luaL53_Buffer {
   char *b;  /* buffer address */
@@ -153,7 +154,7 @@ LUALIB_API char *luaL53_buffinitsize (lua_State *L, luaL53_Buffer *B, size_t sz)
 
 /*
 ** Some sizes are better limited to fit in 'int', but must also fit in
-** 'size_t'. (We assume that 'lua_Integer' cannot be smaller than 'int'.)
+** 'size_t'. (We assume that 'lua53_Integer' cannot be smaller than 'int'.)
 */
 #define MAXSIZE  \
 	(sizeof(size_t) < sizeof(int) ? (~(size_t)0) : (size_t)(INT_MAX))
@@ -179,8 +180,8 @@ LUALIB_API char *luaL53_buffinitsize (lua_State *L, luaL53_Buffer *B, size_t sz)
 /* mask for one character (NB 1's) */
 #define MC	((1 << NB) - 1)
 
-/* size of a lua_Integer */
-#define SZINT	((int)sizeof(lua_Integer))
+/* size of a lua53_Integer */
+#define SZINT	((int)sizeof(lua53_Integer))
 
 
 /* dummy union to get native endianness */
@@ -193,7 +194,7 @@ static const union {
 /* dummy structure to get native alignment requirements */
 struct cD {
   char c;
-  union { double d; void *p; lua_Integer i; lua_Number n; } u;
+  union { double d; void *p; lua53_Integer i; lua_Number n; } u;
 };
 
 #define MAXALIGN	(offsetof(struct cD, u))
@@ -291,8 +292,8 @@ static KOption getoption (Header *h, const char **fmt, int *size) {
     case 'H': *size = sizeof(short); return Kuint;
     case 'l': *size = sizeof(long); return Kint;
     case 'L': *size = sizeof(long); return Kuint;
-    case 'j': *size = sizeof(lua_Integer); return Kint;
-    case 'J': *size = sizeof(lua_Integer); return Kuint;
+    case 'j': *size = sizeof(lua53_Integer); return Kint;
+    case 'J': *size = sizeof(lua53_Integer); return Kuint;
     case 'T': *size = sizeof(size_t); return Kuint;
     case 'f': *size = sizeof(float); return Kfloat;
     case 'd': *size = sizeof(double); return Kfloat;
@@ -408,16 +409,16 @@ extern int str_pack (lua_State *L) {
     arg++;
     switch (opt) {
       case Kint: {  /* signed integers */
-        lua_Integer n = luaL_checkinteger(L, arg);
+        lua53_Integer n = luaL_checkinteger(L, arg);
         if (size < SZINT) {  /* need overflow check? */
-          lua_Integer lim = (lua_Integer)1 << ((size * NB) - 1);
+          lua53_Integer lim = (lua53_Integer)1 << ((size * NB) - 1);
           luaL_argcheck(L, -lim <= n && n < lim, arg, "integer overflow");
         }
         packint(&b, (lua_Unsigned)n, h.islittle, size, (n < 0));
         break;
       }
       case Kuint: {  /* unsigned integers */
-        lua_Integer n = luaL_checkinteger(L, arg);
+        lua53_Integer n = luaL_checkinteger(L, arg);
         if (size < SZINT)  /* need overflow check? */
           luaL_argcheck(L, (lua_Unsigned)n < ((lua_Unsigned)1 << (size * NB)),
                            arg, "unsigned overflow");
@@ -494,7 +495,7 @@ extern int str_packsize (lua_State *L) {
       default:  break;
     }
   }
-  lua_pushinteger(L, (lua_Integer)totalsize);
+  lua_pushinteger(L, (lua53_Integer)totalsize);
   return 1;
 }
 
@@ -507,7 +508,7 @@ extern int str_packsize (lua_State *L) {
 ** it must check the unread bytes to see whether they do not cause an
 ** overflow.
 */
-static lua_Integer unpackint (lua_State *L, const char *str,
+static lua53_Integer unpackint (lua_State *L, const char *str,
                               int islittle, int size, int issigned) {
   lua_Unsigned res = 0;
   int i;
@@ -516,26 +517,26 @@ static lua_Integer unpackint (lua_State *L, const char *str,
     res <<= NB;
     res |= (lua_Unsigned)(unsigned char)str[islittle ? i : size - 1 - i];
   }
-  if (size < SZINT) {  /* real size smaller than lua_Integer? */
+  if (size < SZINT) {  /* real size smaller than lua53_Integer? */
     if (issigned) {  /* needs sign extension? */
       lua_Unsigned mask = (lua_Unsigned)1 << (size*NB - 1);
       res = ((res ^ mask) - mask);  /* do sign extension */
     }
   }
   else if (size > SZINT) {  /* must check unread bytes */
-    int mask = (!issigned || (lua_Integer)res >= 0) ? 0 : MC;
+    int mask = (!issigned || (lua53_Integer)res >= 0) ? 0 : MC;
     for (i = limit; i < size; i++) {
       if ((unsigned char)str[islittle ? i : size - 1 - i] != mask)
         luaL_error(L, "%d-byte integer does not fit into Lua Integer", size);
     }
   }
-  return (lua_Integer)res;
+  return (lua53_Integer)res;
 }
 
-lua_Integer posrelat (lua_Integer pos, size_t len) {
+lua53_Integer posrelat (lua53_Integer pos, size_t len) {
   if (pos >= 0) return pos;
   else if (0u - (size_t)pos > len) return 0;
-  else return (lua_Integer)len + pos + 1;
+  else return (lua53_Integer)len + pos + 1;
 }
 
 extern int str_unpack (lua_State *L) {
@@ -559,7 +560,7 @@ extern int str_unpack (lua_State *L) {
     switch (opt) {
       case Kint:
       case Kuint: {
-        lua_Integer res = unpackint(L, data + pos, h.islittle, size,
+        lua53_Integer res = unpackint(L, data + pos, h.islittle, size,
                                        (opt == Kint));
         lua_pushinteger(L, res);
         break;

@@ -37,6 +37,7 @@ function paste(txt,nolimit)
 				<style type="text/css">
 					body {
 						font-family: "Lucida Console", Monaco, monospace;
+						white-space: nowrap;
 					}
 				</style>
 				<meta charset="utf-8"/>

@@ -32,8 +32,19 @@ do
 			return o
 		end,
 		__pairs=function(s)
-			return pairs(getmetatable(s).prx)
+			return function(t,k) local nk,v=next(t,k) return nk,s[nk] end,getmetatable(s).prx,nil
 		end,
+		__next=function(s,k)
+			local nk,v=next(getmetatable(s).prx,k)
+			if nk then
+				return nk,s[nk]
+			end
+			return nk,v
+		end,
+		__len=function(s)
+			local p=getmetatable(s)
+			return #p.prx
+		end
 	}
 
 	function persist(name,default)
@@ -51,15 +62,28 @@ do
 end
 
 do
-	function saveData(dir,t)
-		if fs.exists(dir) then
-			fs.delete(dir)
-		end
+	local function fcpy(t)
 		if type(t)=="table" then
+			local o={}
+			for k,v in pairs(t) do
+				o[tostring(k)]=fcpy(v)
+			end
+			return o
+		else
+			return t
+		end
+	end
+	function saveData(dir,t)
+		if type(t)=="table" then
+			if fs.exists(dir) then
+				fs.delete(dir)
+			end
 			fs.makeDir(dir)
 			for k,v in pairs(t) do
 				saveData(fs.combine(dir,tostring(k)),v)
 			end
+		elseif type(t)=="nil" then
+			fs.delete(dir)
 		else
 			fs.write(dir,serialize(t))
 		end
@@ -80,13 +104,15 @@ do
 	local pmt
 	pmt={
 		__newindex=function(s,n,d)
+			n=tostring(n)
 			local p=getmetatable(s)
 			local prx=p.prx
-			prx[n]=d
-			rawset(s,n,nil)
+			prx[n]=fcpy(d)
+			p.cprx[n]=nil
 			saveData(fs.combine(p.dir,tostring(n)),d)
 		end,
 		__index=function(s,n)
+			n=tostring(n)
 			local p=getmetatable(s)
 			local prx=p.prx
 			local o=prx[n]
@@ -94,14 +120,26 @@ do
 				local op=table.copy(pmt)
 				op.dir=fs.combine(p.dir,tostring(n))
 				op.prx=o
-				rawset(s,n,setmetatable({},op))
-				return s[n]
+				op.cprx={}
+				p.cprx[n]=setmetatable({},op)
+				return p.cprx[n]
 			end
 			return o
 		end,
 		__pairs=function(s)
-			return pairs(getmetatable(s).prx)
+			return function(t,k) local nk,v=next(t,k) return nk,s[nk] end,getmetatable(s).prx,nil
 		end,
+		__next=function(s,k)
+			local nk,v=next(getmetatable(s).prx,k)
+			if nk then
+				return nk,s[nk]
+			end
+			return nk,v
+		end,
+		__len=function(s)
+			local p=getmetatable(s)
+			return #p.prx
+		end
 	}
 	
 	function persistf(name,default)
@@ -115,6 +153,7 @@ do
 		local mt=table.copy(pmt)
 		mt.dir=dir
 		mt.prx=prx
+		mt.cprx={}
 		return setmetatable({},mt)
 	end
 end

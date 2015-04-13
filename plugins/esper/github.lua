@@ -1,8 +1,3 @@
-local notifs={
-	--["PixelToast/TestRepo"]={"#V"},
-	["MightyPirates/OpenComputers"]={"#oc"},
-}
-
 function gitshorturl(url)
 	local req=http("http://git.io/",{
 		post="url="..urlencode(url),
@@ -11,17 +6,25 @@ function gitshorturl(url)
 	return req.headers.location
 end
 
-local db=persist("github")
-for repo,chan in pairs(notifs) do
+githubdb=persist("github")
+local db=githubdb
+if not db.following then
+	db.following={}
+end
+for repo,fdata in pairs(db.following) do
+	local chan=fdata.chan
 	async.new(function()
+		do return end
 		while true do
+			print("[github] checking updates for "..repo)
 			local events=git.get("repos/"..repo.."/events")
+			print("[github] done checking updates")
 			local mxid=0
 			if next(events.data) then
 				local ot={}
 				for s,j in ipairs(events.data) do
 					mxid=math.max(mxid,uniso8601(j.created_at))
-					if uniso8601(j.created_at)>(db.lastupdate or 0) then
+					if uniso8601(j.created_at)>(fdata.lastupdate or 0) then
 						local actype=j.payload.issue and "issue" or (j.payload.commit and "commit" or "pull request")
 						local data=j.payload.comment or j.payload.issue or j.payload.pull_request
 						local action=j.payload.action
@@ -56,7 +59,7 @@ for repo,chan in pairs(notifs) do
 						end
 					end
 				end
-				db.lastupdate=mxid
+				db.following[repo].lastupdate=mxid
 				ot=table.reverse(ot)
 				if #ot>5 then
 					irc.say(chan,"["..repo:match("/(.+)").."] "..(#ot).." updates "..paste(table.concat(ot,"\n")))

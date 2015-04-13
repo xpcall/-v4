@@ -1,0 +1,7 @@
+port=8080
+bindTo="*"
+domains={
+	default={
+		dir="www"
+	},
+}

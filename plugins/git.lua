@@ -11,6 +11,8 @@ function git.get(url,data)
 	local res=http((url:match("^https?://") and "" or "https://api.github.com/")..url,data)
 	if res.result then
 		res.data=json.decode(res.data)
+	else
+		error(res.data)
 	end
 	return res
 end

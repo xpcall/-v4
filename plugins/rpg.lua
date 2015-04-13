@@ -1,9 +1,12 @@
+print("wut")
+
 rpgdata=persistf(network.."-rpg")
 local data=rpgdata
 if not data.active then data.active={} end
 if not data.items then data.items={} end
 if not data.users then data.users={} end
-if not data.users then data.market={} end
+if not data.market then data.market={} end
+rpg={}
 
 hook.new("msg",function(user,chan,txt)
 	local cmd,param=txt:match("^%)(%S+) ?(.*)")
@@ -17,7 +20,7 @@ hook.new("msg",function(user,chan,txt)
 		local rs,err=xpcall(function()
 			local res=hook.queue("rpg_"..cmd,data.users[user.account],user,chan,param)
 			if res then
-				respond(user,user.nick..", "..res)
+				respond(user,"\15"..user.nick..", "..res)
 			end
 		end,debug.traceback)
 		if not rs then
@@ -87,8 +90,13 @@ local function itemName(n,p)
 	if not i then
 		return false
 	end
-	return (p and i.plural or i.name) or n
+	local clr=""
+	if i.color then
+		clr="\3"..("0"):rep(2-(#tostring(i.color)))..i.color
+	end
+	return "\2"..clr..((p and i.plural or i.name) or n).."\15"
 end
+rpg.itemName=itemName
 
 local function findItem(n)
 	for k,v in pairs(data.items) do
@@ -98,21 +106,27 @@ local function findItem(n)
 	end
 	return false
 end
+rpg.findItem=findItem
 
 local function findUser(n)
 	local o=admin.perms[n]
-	if not o or not o.account then
+	if not o then
 		return false
 	end
 	return o.account
 end
+rpg.findUser=findUser
 
 local function purgeItem(n)
 	data.items[n]=nil
-	for k,v in pairs(market[n] or {}) do
-		
+	data.market[n]=nil
+	for k,v in pairs(rpgdata.users) do
+		if (v.items or {})[n] then
+			v.items[n]=nil
+		end
 	end
 end
+rpg.purgeItem=purgeItem
 
 local function addItem(d,n,a)
 	if a==0 then
@@ -122,7 +136,9 @@ local function addItem(d,n,a)
 		data.items[n]={}
 	end
 	if not d.items then
-		d.items={}
+		d.items={
+			soul={count=1},
+		}
 	end
 	if not d.items[n] then
 		d.items[n]={}
@@ -137,16 +153,25 @@ local function addItem(d,n,a)
 	end
 	return "( "..(a>0 and "+" or "")..a.." "..itemName(n,a>1).." )"
 end
+rpg.addItem=addItem
 
-local begCooldown=3600
-hook.new("rpg_beg",function(dat,user,chan,txt)
-	if not dat.lastbeg then dat.lastbeg=0 end
-	if socket.gettime()-dat.lastbeg<begCooldown then
-		return "You must wait "..toTime(begCooldown-(socket.gettime()-dat.lastbeg)).." before begging again"
+function rpg.regItems(t)
+	for k,v in pairs(t) do
+		if not rpgdata.items[k] then
+			rpgdata.items[k]=v
+		end
 	end
-	dat.lastbeg=socket.gettime()
-	return "You get some change "..addItem(dat,"gold",math.random(1,100))
-end)
+end
+
+rpg.regItems({
+	gold={
+		color=8,
+	},
+	soul={
+		plural="souls",
+		color=0,
+	},
+})
 
 hook.new("rpg_give",function(dat,user,chan,txt)
 	local usr,amt,item=txt:match("^(%S+) (%S+) (.-)$")
@@ -187,7 +212,7 @@ hook.new("rpg_inv",function(dat,user,chan,txt)
 	for k,v in pairs(dat.items) do
 		local amt=v.count or 0
 		if amt~=0 then
-			table.insert(o,amt.." "..itemName(k,amt<1))
+			table.insert(o,amt.." "..itemName(k,amt>1))
 		end
 	end
 	if not next(o) then
@@ -196,147 +221,6 @@ hook.new("rpg_inv",function(dat,user,chan,txt)
 	return limitoutput(table.concat(o," "))
 end)
 
-local function sortMarket(n)
-	local opts={}
-	for k,v in pairs(data.market[it]) do
-		local o=table.copy(v)
-		o.seller=k
-		table.insert(opts,o)
-	end
-	table.sort(opts,function(a,b)
-		return a.price<b.price
-	end)
-	return opts
+for k,v in pairs(fs.list("plugins/rpg")) do
+	reqplugin("rpg/"..v)
 end
-
-local function tryBuy(n,a)
-	local opts=sortMarket(n)
-	local o={}
-	local tc=0
-	while #opts>0 and a>0 do
-		local c=opts[1]
-		table.remove(opts,1)
-		local am=math.min(c.count,a)
-		a=a-am
-		o[c.seller]=c.cost*am
-		tc=tc+(c.cost*am)
-	end
-	if a>0 then
-		return false
-	end
-	return tc,o
-end
-
-hook.new("rpg_cost",function(dat,user,chan,txt)
-	local amt,item=txt:match("^(%S+) (.-)$")
-	if amt then
-		amt=tonumber(amt)
-		if not amt then
-			return "Usage: cost [<amount> ]<item>"
-		end
-		if amt~=floor(amt) then
-			return "Amount must be an integer"
-		elseif amt<1 then
-			return "Amount must be greater than 0"
-		end
-		local it=findItem(item)
-		if not item then
-			return "Could not find item "..item
-		end
-		local tc,to=tryBuy()
-		if #to>1 then
-			local o={}
-			for k,v in pairs(to) do
-				local dm=data.market[k]
-				table.insert(o,(dm.price*v).." gold / "..v.." ("..k..")")
-			end
-			return tc.." gold for "..amt.." "..itemName(it,amt>1).." "..paste(table.concat(o,"\n"))
-		end
-		return 
-	else
-		local it=findItem(item)
-		if not item then
-			return "Could not find item "..item
-		end
-		local opts=sortMarket(it)
-		local ap=0
-		for k,v in pairs(opts) do
-			ap=ap+v.price
-		end
-		ap=math.round(ap/#opts,100)
-		local o={}
-		for k,v in pairs(opts) do
-			table.insert(o,v.price.." gold * "..v.count.." ("..k..")")
-		end
-		if (#opts>5) then
-			return "In stock: "..itemName(it,true).." Average price: "..ap.." gold "..paste(table.concat(o,"\n"))
-		end
-		return table.concat(o," | ")
-	end
-end)
-
-hook.new("rpg_buy",function(dat,user,chan,txt)
-	local amt,item=txt:match("^(%S+) (.-)$")
-	if amt then
-		if not tonumber(amt) then
-			return "Usage: buy [<amount> ]<item>"
-		end
-	else
-		item=txt
-	end
-	local it=findItem(item)
-	if not item then
-		return "Could not find item "..item
-	end
-	local opts=sortMarket(it)
-	if not next(opts) then
-		return itemName(it,true).." "..(data.items[it].plural and "arent" or "is not").." in the market"
-	end
-	if amt then
-		amt=tonumber(amt)
-		if amt~=floor(amt) then
-			return "Amount must be an integer"
-		elseif amt<1 then
-			return "Amount must be greater than 0"
-		end
-		local tc,d=tryBuy(it,amt)
-		if not tct then
-			return "Not enough "..itemName(it,true).." in the market"
-		end
-		local cm=(dat.items.gold or {}).count or 0
-		if tc>cm then
-			return "You do not have "..(cm==0 and "any" or "enough").." gold"
-		end
-		for k,v in pairs(d) do
-			local dm=data.market[k]
-			local msg=addItem(data.users[k],"gold",v*dm.cost)
-			for n,l in pairs(admin.perms) do
-				if k==l.account then
-					send("NOTICE "..n.." :"..user.nick.." bought "..v.." "..itemName(it,v>1).." "..msg)
-				end
-			end
-			dm.count=dm.count-v
-			if dm.count==0 then
-				data.market[k]=nil
-			end
-		end
-		addItem(dat,it,amt)
-		return "Bought "..amt.." "..itemName(it,v>1).." for "..tc.." gold"
-	else
-		local ap=0
-		for k,v in pairs(opts) do
-			ap=ap+v.price
-		end
-		ap=ap/#opts
-		local o={}
-		for k,v in pairs(opts) do
-			table.insert(o,v.price.." gold * "..v.count.." ("..k..")")
-		end
-		if (#opts>5) then
-			return "In stock: "..itemName(it,true).." Average price: "..ap.." gold "..paste(table.concat(o,"\n"))
-		end
-		return table.concat(o," | ")
-	end
-end)
-
-

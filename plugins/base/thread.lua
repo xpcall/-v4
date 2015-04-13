@@ -41,5 +41,6 @@ function thread.new(func,...)
 	end
 	return setmetatable({
 		ptr=thread,
+		vm=vm,
 	},{__index=tfuncs})
 end

@@ -1,8 +1,8 @@
 ahttp={}
+local lport=network=="freenode" and 1339 or 1341
+--[===[local cbp={}
 local cb={}
 ahttp.callback=cb
-local lport=network=="freenode" and 1339 or 1341
-local cbp={}
 local function prc(cid,url,post)
 	local ptr=ffi.new("char*[1]")
 	local thread=thread.new(function(cid,url,post,lport,ptr)
@@ -27,7 +27,7 @@ local function prc(cid,url,post)
 	return ptr
 end
 
---[===[local function prc(cid,url,post)
+local function prc(cid,url,post)
 	cbd[cid]={url,post}
 	local file=io.open("asynctemp.lua","w")
 	file:write([[
@@ -139,18 +139,7 @@ end
 	io.popen("luajit asynctemp.lua")
 end]===]
 
-server.listen(lport,function(cl)
-	local cid=tonumber(cl.receive())
-	cl.close()
-	if not cb[cid] then
-		error("invalid index "..tostring(cid))
-	end
-	local t,e=unserialize(ffi.string(cbp[cid][0]),true)
-	if not t then
-		error("Serialization error "..e)
-	end
-	cb[cid](unpack(t))
-end)
+--[[
 
 ahttp={}
 
@@ -171,6 +160,50 @@ function ahttp.get(url,post)
 	cb[cid]=nil
 	cbp[cid]=nil
 	return unpack(res)
+end]]
+
+local cb={}
+server.listen(lport,function(cl)
+	local cid=tonumber(cl.receive())
+	cl.close()
+	local c=cb[cid]
+	if not cb[cid] then
+		error("invalid index "..tostring(cid))
+	end
+	local data=pipe.read(c.pr)
+	pipe.close(c.pr)
+	pipe.close(c.pw)
+	print(data)
+	local res=unserialize(data)
+	if not res then
+		error("yyyyyy "..c.vm._G.out)
+	end
+	cb[cid].thread(res)
+end)
+
+local function httpthread(cid,data,serialize,lport,pipefn)
+	print("[http thread] start")
+	dofile("plugins/base/pipe.lua")
+	local ltn12=require("ltn12")
+	local t={}
+	data.sink=ltn12.sink.table(t)
+	local http
+	if data.url:match("^https://") then
+		http=require("ssl.https")
+	else
+		http=require("socket.http")
+	end
+	local b,c,h=http.request(data)
+	print("[http thread] requesting")
+	pipe.write(assert(pipefn,"no fn"),assert(serialize({result=b,data=table.concat(t),code=c,headers=h,url=data.url})),true)
+	local socket=require("socket")
+	print("[http thread] done")
+	local sv=assert(socket.connect("127.0.0.1",lport))
+	print("[http thread] connected")
+	sv:send(cid.."\n")
+	print("[http thread] sent")
+	sv:receive()
+	print("[http thread] received")
 end
 
 setmetatable(http,{__call=function(s,url,data)
@@ -192,8 +225,21 @@ setmetatable(http,{__call=function(s,url,data)
 		data.source=ltn12.source.string(data.post or data.put)
 		data.headers["Content-Length"]=#(data.post or data.put)
 	end
-	local t={}
-	data.sink=ltn12.sink.table(t)
-	local b,c,h=(url:match("^https://") and https or http).request(data)
-	return {result=b,data=table.concat(t),code=c,headers=h,url=data.url}
+	local cid=1
+	while cb[cid] do
+		cid=cid+1
+	end
+	--local acurrent=getfenv(2).async.current
+	if acurrent then
+		print("[http] requesting asyncronously")
+		local pr,pw=pipe.new()
+		cb[cid]={vm=thread.new(httpthread,cid,data,serialize,lport,pw).vm,thread=acurrent,pr=pr,pw=pw}
+		return coroutine.yield()
+	else
+		print("[http] requesting")
+		local t={}
+		data.sink=ltn12.sink.table(t)
+		local b,c,h=(data.url:match("^https://") and https or http).request(data)
+		return {result=b,data=table.concat(t),code=c,headers=h,url=data.url}
+	end
 end})

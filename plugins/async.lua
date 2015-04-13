@@ -5,12 +5,12 @@ function async.new(func,err)
 	local co=coroutine.create(func)
 	local sfunc
 	function sfunc(...)
-		local prev=async.current
-		async.current=sfunc
-		hook.del(sfunc)
 		if coroutine.status(co)=="dead" then
 			return
 		end
+		hook.del(sfunc)
+		local prev=async.current
+		async.current=sfunc
 		local p={coroutine.resume(co,...)}
 		async.current=prev
 		if coroutine.status(co)=="dead" then

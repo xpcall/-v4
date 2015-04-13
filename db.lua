@@ -118,6 +118,14 @@ function tpairs(tbl)
 	end
 end
 
+--[[local opairs=pairs
+function pairs(t)
+	if type(t)=="table" and (getmetatable(t) or {}).__pairs then
+		return (getmetatable(t) or {}).__pairs(t)
+	end
+	return opairs(t)
+end]]
+
 function mean(...)
 	local p={...}
 	local n=0
@@ -552,8 +560,8 @@ function serializehtml(t)
 					.table {
 						border-style: solid;
 						border-width: 2px;
-						border-color: #101010;
-						padding: 16px;
+						border-color: #404040;
+						padding: 8px;
 						display: inline-block;
 						background-color: #1f1f1f;
 					}
@@ -673,7 +681,7 @@ function consoleCat(a,b,al,bl)
 	return table.concat(at,"\n")
 end
 
-function _consoleSerialize(t,r)
+function _cserialize(t,r)
 	r=r or {}
 	if r[t] then
 		return tostring(t)
@@ -681,18 +689,15 @@ function _consoleSerialize(t,r)
 	local tpe=type(t)
 	if tpe=="table" then
 		local err,res=pcall(function()
-			if not next(t) then
-				return box.e
-			end
 			local ok={}
 			local ov={}
 			local u={}
 			local n=1
 			r[t]=true
-			while t[n] do
+			while t[n]~=nil do
 				u[n]=true
 				table.insert(ok," ")
-				table.insert(ov,_consoleSerialize(t[n],r))
+				table.insert(ov,consoleCat("   ",_cserialize(t[n],r)))
 				n=n+1
 			end
 			local oi={}
@@ -701,12 +706,20 @@ function _consoleSerialize(t,r)
 					table.insert(oi,{k,v})
 				end
 			end
+			if #oi==0 then
+				for l1=1,#ov do
+					ov[l1]=ov[l1]:sub(4)
+				end
+			end
 			table.sort(oi,function(a,b)
 				return tostring(a[1])<tostring(b[1])
 			end)
 			for k,v in ipairs(oi) do
-				table.insert(ok,_consoleSerialize(v[1],r))
-				table.insert(ov,consoleCat(" = ",_consoleSerialize(v[2],r)))
+				table.insert(ok,_cserialize(v[1],r))
+				table.insert(ov,consoleCat(" = ",_cserialize(v[2],r)))
+			end
+			if #ok==0 then
+				return box.e
 			end
 			local _
 			local kl=0
@@ -740,14 +753,15 @@ function _consoleSerialize(t,r)
 		end
 		return tostring(t)
 	elseif tpe=="string" then
-		return serialize(t)
+		local o=string.format("%q",t):gsub("\\\n","\\n"):gsub("%z","\\z")
+		return o
 	else
 		return tostring(t)
 	end
 end
 
-function consoleSerialize(t)
-	return _consoleSerialize(t)
+function cserialize(t)
+	return _cserialize(t)
 end
 
 --[[function split(T,func) -- splits a table
