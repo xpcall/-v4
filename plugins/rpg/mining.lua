@@ -107,13 +107,47 @@ hook.new("rpg_mine",function(dat,user,chan,txt)
 end)
 
 hook.new("rpg_refine",function(dat,user,chan,txt)
-	if dat.beginRefine and dat.refineLength then
+	if dat.beginRefine and dat.refineLength and dat.refineItem then
 		if socket.gettime()-dat.beginRefine >= dat.refineLength then
-			return "Refined "..rpg.addItem(dat,)
+			local it=rpg.findItem(txt)
+			local wt={}
+			local tw=0
+			for k,v in ipairs(it.refine) do
+				local amt=1
+				if v.minYield and v.maxYield then
+					amt=math.random(v.minYield,v.maxYield)
+				end
+				wt[k]={tw+1,tw+v.weight,amt}
+				tw=tw+v.weight
+			end
+			local n=math.random(1,tw)
+			local amt
+			local it
+			for k,v in pairs(wt) do
+				if n>=v[1] and n<=v[2] then
+					it=k
+					amt=v[3]
+					break
+				end
+			end
+			dat.beginRefine = nil
+			dat.refineLength = nil
+			dat.refineItem = nil
+			return "Refined "..rpg.addItem(dat,it,amt)
 		else
-			return "Refining will finish in "..toTime(mineCooldown-(socket.gettime()-dat.lastMine))
+			return "Refining will finish in "..toTime(dat.refineLength-(socket.gettime()-dat.beginRefine))
 		end
 	else
-		
+		local it=rpg.findItem(txt)
+		if not it then
+			return "No such item"
+		end
+		if not it.refine then
+			return "Cannot refine item"
+		end
+		dat.beginRefine = socket.gettime()
+		dat.refineLength = math.random(it.minRefineTime,it.maxRefineTime)
+		dat.refineItem = txt
+		return "Refining will take "..toTime(dat.refineLength-(socket.gettime()-dat.beginRefine))
 	end
 end)
