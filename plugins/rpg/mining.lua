@@ -6,6 +6,18 @@ rpg.regItems({
 		ore={
 			weight=1000,
 		},
+		refine={
+			{item="dust",weight=1000},
+			{item="coal",weight=200},
+			{item="iron",weight=100},
+			{item="saphire",weight=50},
+			{item="ruby",weight=50},
+			{item="emerald",weight=50},
+			{item="gold",weight=25,minYield=1,maxYield=50},
+			{item="diamond",weight=10,minYield=1,maxYield=5},
+			minRefineTime=60*60*5, --five minutes
+			maxRefineTime=60*60*15, --fifteen minutes
+		},
 		color=14,
 	},
 	coal={
@@ -91,5 +103,17 @@ hook.new("rpg_mine",function(dat,user,chan,txt)
 		return "Mined "..rpg.addItem(dat,it,amt)
 	else
 		return "You must wait "..toTime(mineCooldown-(socket.gettime()-dat.lastMine)).." before mining again"
+	end
+end)
+
+hook.new("rpg_refine",function(dat,user,chan,txt)
+	if dat.beginRefine and dat.refineLength then
+		if socket.gettime()-dat.beginRefine >= dat.refineLength then
+			return "Refined "..rpg.addItem(dat,)
+		else
+			return "Refining will finish in "..toTime(mineCooldown-(socket.gettime()-dat.lastMine))
+		end
+	else
+		
 	end
 end)
