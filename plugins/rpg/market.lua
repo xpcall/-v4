@@ -59,9 +59,9 @@ hook.new("rpg_cost",function(dat,user,chan,txt)
 		end
 		return tc.." gold for "..amt.." "..rpg.itemName(it,amt>1).." ( "..next(to).." )"
 	else
-		local it=rpg.findItem(item)
+		local it=rpg.findItem(txt)
 		if not it then
-			return "Could not find item "..item
+			return "Could not find item "..txt
 		end
 		local opts=sortMarket(it)
 		local ap=0
@@ -117,7 +117,7 @@ hook.new("rpg_buy",function(dat,user,chan,txt)
 		end
 		dm.count=dm.count-v
 		if dm.count==0 then
-			rpgdata.market[k]=nil
+			rpgdata.market[it][k]=nil
 		end
 	end
 	rpg.addItem(dat,it,amt)
@@ -132,17 +132,6 @@ hook.new("rpg_sell",function(dat,user,chan,txt)
 			if v[user.account] then
 				mks[k]=v[user.account]
 			end
-		end
-		if item and item~="" then
-			local it=rpg.findItem(item)
-			if not it then
-				return "Could not find item "..item
-			end
-			local c=mks[it]
-			if not c then
-				return "You are not selling any "..rpg.itemName(it,true)
-			end
-			return "You are selling "..c.count.." "..rpg.itemName(it,c.count>1).." for "..c.cost.." gold each"
 		end
 		if not next(mks) then
 			return "You are not selling anything"
@@ -162,7 +151,7 @@ hook.new("rpg_sell",function(dat,user,chan,txt)
 	if not amt then
 		item,cost=txt:match("^(.-) (%S+)$")
 		if not tonumber(cost) then
-			return "Usage: sell [[<amount> ]<item> <cost>,[item]]"
+			return "Usage: sell [[<amount> ]<item>[ <cost>],[item]]"
 		end
 	else
 		if amt~=math.floor(amt) then
@@ -237,4 +226,48 @@ hook.new("rpg_unsell",function(dat,user,chan,txt)
 end)
 
 hook.new("rpg_market",function(dat,user,chan,txt)
+	local o=""
+	if txt~="" then
+		local it=rpg.findItem(txt)
+		if not it then
+			return "Could not find item "..txt
+		end
+		if not rpgdata.market[it] then
+			return "No "..rpg.itemName(it,true).." in the market"
+		end
+		o=o..rpg.itemName(it,true,true)..": \n"
+		local ps={}
+		for k,v in pairs(rpgdata.market[it]) do
+			local o=table.copy(v)
+			o.seller=k
+			table.insert(ps,o)
+		end
+		table.sort(ps,function(a,b)
+			return a.cost<b.cost
+		end)
+		if next(ps) then
+			for k,v in pairs(ps) do
+				o=o.."    "..v.cost.." * "..v.count.." ( "..v.seller..")\n"
+			end
+		end
+		return paste(o)
+	end
+	for k,v in pairs(rpgdata.market) do
+		o=o..rpg.itemName(k,true,true)..":\n"
+		local ps={}
+		for n,l in pairs(rpgdata.market[k]) do
+			local o=table.copy(l)
+			o.seller=n
+			table.insert(ps,o)
+		end
+		table.sort(ps,function(a,b)
+			return a.cost<b.cost
+		end)
+		if next(ps) then
+			for n,l in pairs(ps) do
+				o=o.."    "..l.cost.." gold * "..l.count.." ( "..l.seller.." )\n"
+			end
+		end
+	end
+	return paste(o)
 end)

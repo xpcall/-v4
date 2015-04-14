@@ -85,16 +85,20 @@ function toTime(s)
 	end
 end
 
-local function itemName(n,p)
+local function itemName(n,p,f)
 	local i=data.items[n]
 	if not i then
 		return false
 	end
-	local clr=""
-	if i.color then
-		clr="\3"..("0"):rep(2-(#tostring(i.color)))..i.color
+	if not f then
+		local clr=""
+		if i.color then
+			clr="\3"..("0"):rep(2-(#tostring(i.color)))..i.color
+		end
+		return "\2"..clr..((p and i.plural or i.name) or n).."\15"
+	else
+		return (p and i.plural or i.name) or n
 	end
-	return "\2"..clr..((p and i.plural or i.name) or n).."\15"
 end
 rpg.itemName=itemName
 

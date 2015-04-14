@@ -75,7 +75,7 @@ hook.new("rpg_mine",function(dat,user,chan,txt)
 		local amt
 		local it
 		for k,v in pairs(wt) do
-			if n>v[1] and n<v[2] then
+			if n>=v[1] and n<=v[2] then
 				it=k
 				amt=v[3]
 				break

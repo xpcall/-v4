@@ -76,7 +76,7 @@ local operator={
 	esper={
 		["ping"]=true,
 		["vifino"]=true,
-		["ds84182"]=true,
+		--s["ds84182"]=true,
 	},
 	freenode={
 		["^v"]=true,
