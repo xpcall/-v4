@@ -1,5 +1,7 @@
 --[===[
 
+MP238 cpu
+
 32 bit registers:
 	rw 0x00-FA    # general purpose
 	r  0xFB    uo # ALU out
@@ -205,6 +207,63 @@ function asmbinary(txt)
 	return o
 end
 
+--[[
+
+	MP238-L Specifications
+
+	Types:
+		constant
+		register
+		interrupt
+		memory
+	
+	Constant registers:
+		uo = 0xFB -- ALU output
+		ui = 0xFC -- ALU carry in
+		uc = 0xFD -- ALU carry out
+		ip = 0xFE -- Instruction number
+		ht = 0xFF -- Halt
+	
+	Statements:
+		register|interrupt|memory=value; --
+		function(...);                   --
+		-%l+;                            -- unassigns register
+		label;                           -- 
+	
+	Objects:
+		register  R[*]        --
+		register  %l+         -- assigns next available register
+		interrupt I[constant] --
+		memory    M[*]        --
+		constant  %d+         --
+		constant  0x%x+       --
+	
+	Functions:
+		register ALU(OP,A,B[,C])     -- ALU Operator
+			OP: constant operator    --
+			A: first number          --
+			B: second number         --
+			C: optional carry in     --
+		instruction I(A)             -- Waits for interrupt A to update
+			A: constant interrupt    --
+		constant C(A)                -- Gets the constant value of A
+			A: anything with a value --
+	
+	ALU Operators:
+		0x00 = ui+A+B
+		0x01 = ui-A-B
+		0x02 = ui+A*B
+		0x03 = ui?A:B
+		0x04 = A&B
+		0x05 = A|B
+		0x06 = A^B
+		0x07 = A>>B
+		0x08 = A<<B
+		0x09 = A==B
+		0x0A = !A
+		0x0B = A>B
+]]
+
 function asmcompile(txt,raw)
 	local dregs={
 		[0xFB]="uo",
@@ -215,6 +274,7 @@ function asmcompile(txt,raw)
 	}
 	local regs={}
 	local jmps={}
+	local lbls={}
 	local function findNext(txt,ch)
 		local bb={
 			["("]=1,
@@ -291,9 +351,6 @@ function asmcompile(txt,raw)
 		local nr=newReg()
 		regs[nr]=n
 		return nr
-	end
-	local function cl()
-		return "line "..debug.traceback():match("^.-\n.-\n%s*.-(%d+).-\n")
 	end
 	local function cleanup(v)
 		if v.temp then
@@ -401,6 +458,26 @@ function asmcompile(txt,raw)
 				if kr.type=="constant" then
 					o={type="interrupt",value=kr.value}
 				end
+			elseif g=="M" then
+				if kr.type=="constant" then
+					o={type="memory",value=kr.value}
+				elseif kr.type=="register" then
+					if kr.temp then
+						kr.code=(kr.code or "").."rsm "..kr.value.." "..kr.value.."\n"
+						return kr
+					else
+						local o={
+							type="register",
+							temp=true,
+							value=newReg()
+						}
+						regs[o.value]=true
+						o.notemp=kr.code or ""
+						o.notempv=kr.value
+						o.code=(kr.code or "").."rsm "..o.value.." "..kr.value.."\n"
+						return o
+					end
+				end
 			end
 			if kr.temp then
 				reg[kr.value]=nil
@@ -413,6 +490,10 @@ function asmcompile(txt,raw)
 		local rg=txt:match("^(%l+)$")
 		if rg then
 			return {type="register",value=getReg(rg)}
+		end
+		local lb=txt:match("^:(%l+)$")
+		if lb then
+			return {type="label",value=lb}
 		end
 		local num=txt:match("^(%d+)$")
 		if num then

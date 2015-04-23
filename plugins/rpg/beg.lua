@@ -1,11 +1,11 @@
 rpg.regItems({
 	millisecond={
 		plural="milliseconds",
-		color=13,
+		color=6,
 	},
-	millisecond={
+	nanoseconds={
 		plural="nanoseconds",
-		color=13,
+		color=6,
 	},
 })
 local begCooldown=3600
@@ -16,7 +16,7 @@ hook.new("rpg_beg",function(dat,user,chan,txt)
 		if timeLeft<0.0001 then
 			return "You must wait "..toTime(timeLeft).." before begging again "..rpg.addItem(dat,"nanosecond",1000-math.floor(timeLeft*1000000))
 		elseif timeLeft<1 then
-			return "You must wait "..toTime(timeLeft).." before begging again "..rpg.addItem(dat,"nanosecond",1000-math.floor(timeLeft*1000))
+			return "You must wait "..toTime(timeLeft).." before begging again "..rpg.addItem(dat,"millisecond",1000-math.floor(timeLeft*1000))
 		end
 		return "You must wait "..toTime(timeLeft).." before begging again"
 	end

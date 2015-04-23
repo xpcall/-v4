@@ -1,6 +1,6 @@
 local attr={}
 local function getAttr(file,force)
-	if attr[file]==nil or socket.gettime()>=(attr[file] or {blife=0}).blife then
+	--if attr[file]==nil or socket.gettime()>=(attr[file] or {blife=0}).blife then
 		attr[file]=lfs.attributes(file) or false
 		local dat=attr[file]
 		if dat then
@@ -14,7 +14,7 @@ local function getAttr(file,force)
 				end
 			end
 		end
-	end
+	--end
 	return attr[file]
 end
 local filedata={}

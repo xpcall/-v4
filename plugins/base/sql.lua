@@ -109,7 +109,7 @@ do
 			local prx=p.prx
 			prx[n]=fcpy(d)
 			p.cprx[n]=nil
-			saveData(fs.combine(p.dir,tostring(n)),d)
+			saveData(fs.combine(p.dir,n),fcpy(d))
 		end,
 		__index=function(s,n)
 			n=tostring(n)

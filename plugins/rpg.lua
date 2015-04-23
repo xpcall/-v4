@@ -1,5 +1,3 @@
-print("wut")
-
 rpgdata=persistf(network.."-rpg")
 local data=rpgdata
 if not data.active then data.active={} end
@@ -16,6 +14,10 @@ hook.new("msg",function(user,chan,txt)
 		end
 		if not data.users[user.account] then
 			data.users[user.account]={}
+		end
+		local dat=data.users[user.account]
+		if not dat.items then
+			dat.items={soul={count=1}}
 		end
 		local rs,err=xpcall(function()
 			local res=hook.queue("rpg_"..cmd,data.users[user.account],user,chan,param)
@@ -132,6 +134,17 @@ local function purgeItem(n)
 end
 rpg.purgeItem=purgeItem
 
+local function renameItem(n,ni)
+	data.items[n]=nil
+	data.market[n]=nil
+	for k,v in pairs(rpgdata.users) do
+		if (v.items or {})[n] then
+			v.items[n]=nil
+		end
+	end
+end
+rpg.purgeItem=purgeItem
+
 local function addItem(d,n,a)
 	if a==0 then
 		return ""
@@ -140,12 +153,10 @@ local function addItem(d,n,a)
 		data.items[n]={}
 	end
 	if not d.items then
-		d.items={
-			soul={count=1},
-		}
+		d.items={soul={count=1}}
 	end
 	if not d.items[n] then
-		d.items[n]={}
+		d.items[n]={count=0}
 	end
 	local it=d.items[n]
 	if not it.count then
@@ -210,7 +221,7 @@ end)
 
 hook.new("rpg_inv",function(dat,user,chan,txt)
 	if not dat.items then
-		dat.items={}
+		dat.items={soul={count=1}}
 	end
 	local o={}
 	for k,v in pairs(dat.items) do
@@ -222,7 +233,24 @@ hook.new("rpg_inv",function(dat,user,chan,txt)
 	if not next(o) then
 		return "Nothing"
 	end
-	return limitoutput(table.concat(o," "))
+	return table.concat(o," ")
+end)
+
+hook.new("rpg_pinv",function(dat,user,chan,txt)
+	if not dat.items then
+		dat.items={soul={count=1}}
+	end
+	local o={}
+	for k,v in pairs(dat.items) do
+		local amt=v.count or 0
+		if amt~=0 then
+			table.insert(o,amt.." "..itemName(k,amt>1))
+		end
+	end
+	if not next(o) then
+		return "Nothing"
+	end
+	send("NOTICE "..user.nick.." :"..table.concat(o," "))
 end)
 
 for k,v in pairs(fs.list("plugins/rpg")) do

@@ -20,7 +20,7 @@ local function err(cl,txt)
 	webserver.servehead(cl,res)
 	webserver.serveres(cl,res)
 end
-function runlua(code,cl,res)
+function webserver.runlua(code,cl,res)
 	if type(func)=="string" then
 		local rr
 		func,rr=loadstring(func,"="..cl.path)

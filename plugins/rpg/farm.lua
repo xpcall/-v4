@@ -53,7 +53,7 @@ hook.new("rpg_plant",function(dat,user,chan,txt)
 	if not rpgdata.items[it].crop then
 		return "Not a crop"
 	end
-	if not dat.items[it] then
+	if not dat.items[it] or dat.items[it].count==0 then
 		return "You do not have any "..rpg.itemName(it,true)
 	end
 	dat.farm[it]=socket.gettime()+rpgdata.items[it].crop.growTime

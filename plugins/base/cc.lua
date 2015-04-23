@@ -36,7 +36,7 @@ function cc.compile(file,prefs)
 	end
 	
 	if not prefs.ofile then
-		prefs.ofile=file:gsub("%.c$",".so")
+		prefs.ofile=file:gsub("%.(.-)$",".so")
 	end	
 	local oc="clang "..file.." -o "..prefs.ofile.." -shared -Wall -Werror -fPIC "
 	
@@ -68,5 +68,5 @@ end
 function cc.load(file,prefs)
 	prefs=prefs or {}
 	cc.compile(file,prefs)
-	return ffi.load(prefs.ofile)
+	return ffi.load("./"..prefs.ofile)
 end

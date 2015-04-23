@@ -2,6 +2,7 @@
 hook.new("raw",function(txt)
 	txt:gsub("^:"..cnick.." MODE "..cnick.." :%+i",function()
 		send("CAP REQ account-notify")
+		send("NS IDENTIFY "..file["pass/nspassword-"..network..".txt"]:match("%S+"))
 		async.new(function()
 			async.wait(2)
 			send("JOIN ##powder-bots")

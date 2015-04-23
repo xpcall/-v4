@@ -75,8 +75,8 @@ local trusted={
 local operator={
 	esper={
 		["ping"]=true,
-		["vifino"]=true,
-		--s["ds84182"]=true,
+		--["vifino"]=true,
+		--["ds84182"]=true,
 	},
 	freenode={
 		["^v"]=true,
@@ -162,13 +162,14 @@ do
 	})
 end
 
+defnick=cnick
 local whqueue={}
 local authed=false
 hook.new("raw",function(txt)
 	if txt=="QUIT" then
 		admin.chans={}
 		admin.perms={}
-		cnick="^v"
+		cnick=defnick
 	end
 	txt:gsub("^:%S+ 319 "..cnick.." "..cnick.." :(.*)",function(chans)
 		for chan in chans:gmatch("#%S+") do
@@ -323,6 +324,10 @@ hook.new("raw",function(txt)
 	txt:gsub("^:([^%s!]+)![^%s@]+@%S+ NICK :(.+)",function(nick,tonick)
 		if nick==cnick then
 			cnick=tonick
+			if tonick:match("^Guest") then
+				send("QUIT")
+				os.exit()
+			end
 		end
 		if admin.perms[nick] then
 			for k,v in pairs(admin.chans) do
@@ -340,7 +345,7 @@ hook.new("raw",function(txt)
 		if nick==cnick then
 			admin.chans={}
 			admin.perms={}
-			cnick="^v"
+			cnick=defnick
 		else
 			admin.perms[nick]=nil
 			for k,v in pairs(admin.chans) do
