@@ -32,6 +32,15 @@ function crypt.newKey(key,priv)
 end
 local network={}
 networktest=network
-function networktest.newNode()
-	
+function networktest.new()
+	return {
+		key=crypt.newKey(),
+		ip=math.random(0,255).."."..math.random(0,255)..math.random(0,255),
+		onReceive=function(txt,ip)
+			
+		end,
+		send=function(id,txt)
+			
+		end
+	}
 end

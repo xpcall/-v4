@@ -225,25 +225,25 @@ end
 		ht = 0xFF -- Halt
 	
 	Statements:
-		register|interrupt|memory=value; --
-		function(...);                   --
-		-%l+;                            -- unassigns register
-		label;                           -- 
+		register|interrupt|memory=value; -- 
+		function(...);                   -- 
+		-name;                           -- unassigns register
+		:label                           -- 
 	
 	Objects:
-		register  R[*]        --
-		register  %l+         -- assigns next available register
-		interrupt I[constant] --
-		memory    M[*]        --
-		constant  %d+         --
-		constant  0x%x+       --
+		register  R[*]        -- 
+		register  name        -- assigns next available register
+		interrupt I[constant] -- 
+		memory    M[*]        -- 
+		constant  %d+         -- 
+		constant  0x%x+       -- 
 	
 	Functions:
 		register ALU(OP,A,B[,C])     -- ALU Operator
-			OP: constant operator    --
-			A: first number          --
-			B: second number         --
-			C: optional carry in     --
+			OP: constant operator    -- 
+			A: first number          -- 
+			B: second number         -- 
+			C: optional carry in     -- 
 		instruction I(A)             -- Waits for interrupt A to update
 			A: constant interrupt    --
 		constant C(A)                -- Gets the constant value of A
@@ -415,10 +415,6 @@ function asmcompile(txt,raw)
 		txt=txt:match("^%s*(.-)%s*$")
 		while txt:match("^%(.-%)$") do
 			txt=txt:match("^%(%s*(.-)%s*%)$")
-		end
-		local jmp,etxt=txt:match("^<%s*(%l+)%s*>%s*(.-)$")
-		if jmp then
-			table.insert()
 		end
 		local fp,etxt=findNext(txt,"=")
 		if etxt and etxt:sub(1,1)=="=" then

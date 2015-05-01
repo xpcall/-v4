@@ -92,7 +92,7 @@ function urldecode(txt)
 end
 
 function htmlencode(txt)
-	local o=txt:gsub("&","&amp;"):gsub("<","&lt;"):gsub(">","&gt;"):gsub("\"","&quot;"):gsub("'","&apos;"):gsub("\r?\n","<br>"):gsub("\t","&nbsp;&nbsp;&nbsp;&nbsp;"):gsub("  "," &nbsp;")
+	local o=txt:gsub("&","&amp;"):gsub("<","&lt;"):gsub(">","&gt;"):gsub("\"","&quot;"):gsub("'","&apos;"):gsub("\r?\n","<br>"):gsub("\t","&nbsp;&nbsp;&nbsp;&nbsp;"):gsub(" ","&nbsp;")
 	return o
 end
 
@@ -195,6 +195,16 @@ function table.reverse(tbl)
 	return tbl
 end
 
+function table.cat(...)
+	local o={}
+	for k,v in pairs({...}) do
+		for l1=1,#v do
+			table.insert(o,v[l1])
+		end
+	end
+	return o
+end
+
 function table.copy(t)
 	local ot={}
 	for k,v in pairs(t) do
@@ -205,6 +215,21 @@ function table.copy(t)
 		end
 	end
 	return ot
+end
+
+function table.sub(t,i,v)
+	if i<0 then
+		i=#t+i+1
+	end
+	v=v or #t
+	if v<0 then
+		v=#t+v+1
+	end
+	local o={}
+	for l1=i,v do
+		table.insert(o,t[l1])
+	end
+	return o
 end
 
 function string.min(...)
@@ -610,6 +635,11 @@ local box={
 	rd="┌",
 	ld="┐",
 	lu="┘",
+	lrd="┬",
+	udr="├",
+	x="┼",
+	lud="┤",
+	lur="┴",
 	e="[]"
 }
 
@@ -623,9 +653,12 @@ local box={
 	e="[]"
 }]]
 
-local function txtbl(s,mx)
-	local o=s:tmatch("[^\r\n]+")
+function txtbl(s,mx)
 	mx=mx or 0
+	if s=="" and mx>0 then
+		s=" "
+	end
+	local o=s:tmatch("[^\r\n]+")
 	for l1=1,#o do
 		mx=math.max(mx,utf8len(o[l1]))
 	end
@@ -636,9 +669,6 @@ local function txtbl(s,mx)
 end
 
 function consoleBox(s)
-	if s=="" then
-		s=" "
-	end
 	local t,l=txtbl(s)
 	for l1=1,#t do
 		t[l1]=box.ud..t[l1]..box.ud
@@ -679,6 +709,45 @@ function consoleCat(a,b,al,bl)
 		at[l1]=at[l1]..bt[l1]
 	end
 	return table.concat(at,"\n")
+end
+
+function consoleTable(t)
+	local ncols=0
+	local nrows=0
+	for k,v in pairs(t) do
+		nrows=math.max(nrows,k)
+		for n,l in pairs(v) do
+			ncols=math.max(ncols,n)
+		end
+	end
+	local wcols={}
+	local hrows={}
+	for l1=1,nrows do
+		for l2=1,ncols do
+			local d,mx=txtbl(t[l1][l2] or "")
+			wcols[l2]=math.max(wcols[l2] or 0,mx)
+			hrows[l1]=math.max(hrows[l1] or 0,#d)
+		end
+	end
+	local sp={}
+	for l1=1,ncols do
+		table.insert(sp,(box.lr):rep(wcols[l1]))
+	end
+	local ocols={box.rd..table.concat(sp,box.lrd)..box.ld}
+	for l1=1,nrows do
+		local orow={}
+		for l2=1,ncols do
+			table.insert(orow,table.concat(txtbl(t[l1][l2] or "",wcols[l2]),"\n"))
+			table.insert(orow,(box.ud.."\n"):rep(hrows[l1]))
+		end
+		local o=(box.ud.."\n"):rep(hrows[l1])
+		for l2=1,#orow do
+			o=consoleCat(o,orow[l2])
+		end
+		table.insert(ocols,o)
+		table.insert(ocols,l1==nrows and (box.ur..table.concat(sp,box.lur)..box.lu) or (box.udr..table.concat(sp,box.x)..box.lud))
+	end
+	return table.concat(ocols,"\n")
 end
 
 function _cserialize(t,r)

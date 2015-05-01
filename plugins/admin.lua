@@ -75,8 +75,8 @@ local trusted={
 local operator={
 	esper={
 		["ping"]=true,
-		--["vifino"]=true,
-		--["ds84182"]=true,
+		["vifino"]=true,
+		["ds84182"]=true,
 	},
 	freenode={
 		["^v"]=true,
@@ -212,6 +212,8 @@ hook.new("raw",function(txt)
 			elseif mode=="v" then
 				hook.queue(pm=="+" and "voice" or "devoice",nick,chan,user)
 				admin.perms[user].voice[chan]=pm=="+" or nil
+			elseif mode=="b" then
+				hook.queue(pm=="+" and "ban" or "unban",nick,chan,user)
 			end
 		end
 	end)
