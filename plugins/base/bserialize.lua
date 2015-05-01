@@ -245,7 +245,7 @@ function _unbserialize(t,r,og)
 		end
 		return t,o
 	elseif tpe==7 then
-		local ref=string.unpack(">I"..n,n)
+		local ref=string.unpack(">I"..n,rd(n))
 		if r[ref] then
 			return t,r[ref]
 		else
